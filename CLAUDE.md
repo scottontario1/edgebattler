@@ -14,7 +14,9 @@
 - `src/units.js`: unit roster/stats and procedural low-poly figures (fallback; M toggles)
 - `src/models.js`: loads KayKit GLB characters per unit (gear visibility, weapon attachment, idle animations)
 - `src/portraits.js`: SVG bust portraits generated from each unit's `look`
-- `src/ui.js`: cursor, hover/select, movement/attack range, unit card, terrain panel, roster
-- `src/camera.js`: ortho camera (40° tilt), wheel zoom, right-drag pan
+- `src/ui.js`: HUD (objective, turn/roster, unit card, terrain chip, actions, inspect sheet), selection, range/danger overlays, targeting + forecast. Styles use the tokens at the top of `src/style.css`; portrait and short-landscape layouts reflow via media queries that must stay in sync with `insets()` in `src/camera.js`
+- `src/combat.js`: weapon table and combat forecast (hit/crit/damage/doubling, weapon triangle)
+- `src/camera.js`: ortho camera (40° tilt, 52° in portrait) framed to the space the HUD leaves free; wheel/pinch zoom, drag pan
 - `tools/blender/`: headless Blender scripts that build `public/models/env/*.glb`. `build_env.py` = stone bridge + cliff backdrop; `build_buildings.py` = castle + cottages; `common.py` = shared helpers. Blender material names (stone, roof_faction, banner, window…) are swapped for game materials in `buildingMaterials()` in `src/map.js`. Rebuild with `C:/Users/scott/tools/blender-5.2.1-windows-x64/blender.exe -b --factory-startup -P tools/blender/build_env.py`. Keep `LAND_TOP`/`WATER_Y` in sync with `src/map.js`.
+- Screenshots: `node tools/shot.mjs out.png 1280 800 [query]` (headless Chrome, device emulation, `STEPS` env for scripted input). Query flags: `zoom`, `focus=c,r`, `select=id`, `act=attack,inspect,danger,grid`, `target=id`, `place=id:c,r`. Before/after captures live in `docs/redesign/`.
 - Dev only: `window.__game` exposes `{ THREE, scene, camera, renderer, units }` for console inspection.
