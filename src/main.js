@@ -44,8 +44,9 @@ scene.add(sun);
 
 const map = buildMap(scene);
 const units = createUnits(scene);
-const { camera, resize } = createCamera(renderer.domElement);
-const ui = createUI({ renderer, camera, scene, units });
+const view = createCamera(renderer.domElement);
+const { camera, resize } = view;
+const ui = createUI({ renderer, camera, scene, units, view });
 if (import.meta.env.DEV) window.__game = { THREE, scene, camera, renderer, units };
 
 const composer = new EffectComposer(renderer);
@@ -68,6 +69,7 @@ let hd = true;
 const hdLabel = document.getElementById('hd');
 const modelLabel = document.getElementById('models');
 addEventListener('keydown', (e) => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
   if (e.key.toLowerCase() === 'm') {
     modelLabel.textContent = units.toggleModels() ? 'KayKit models' : 'procedural';
     return;
