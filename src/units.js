@@ -328,10 +328,10 @@ export function createUnits(scene) {
     const u = { data, group, figure, ring, hp, phase: i * 0.9, model: null };
 
     // Swap in the illustrated model once it loads; the procedural figure stays as the fallback.
-    // Brenna and Dreg are illustrated 2D sprites (src/sprites.js); `?sprites=0` keeps the 3D models
+    // Every class is an illustrated 2D sprite (src/sprites.js); `?sprites=0` keeps the 3D models
     // for comparison. Sprites face screen-right, so red mirrors to face the blue army.
-    const asSprite = hasSprite(data.id) && new URLSearchParams(location.search).get('sprites') !== '0';
-    (asSprite ? buildSprite(data.id, data.faction, { flip: data.faction === 'red' }) : buildModel(data.id, data.faction)).then((m) => {
+    const asSprite = hasSprite(data.cls) && new URLSearchParams(location.search).get('sprites') !== '0';
+    (asSprite ? buildSprite(data.cls, data.faction, { flip: data.faction === 'red' }) : buildModel(data.id, data.faction)).then((m) => {
       m.root.position.y = 0.01;
       if (!m.billboard) m.root.rotation.y = facing;
       m.root.traverse((o) => { o.userData.unitId = data.id; });

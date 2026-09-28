@@ -7,9 +7,10 @@ import { isPortrait } from './camera.js';
 // cutout: alpha-tested so it depth-sorts against trees, bridges and neighbours, and unlit so the
 // painted colours and ink lines are what the player sees.
 
-// Visible height of the drawn character (hair to boot sole) in world units. The old 3D
-// models stood 1.3 tall; sprites keep that so map footprints and selection stay the same.
-const SPRITE_HEIGHT = { brenna: 1.3, dreg: 1.34 };
+// Unit class -> sprite name (public/sprites/manifest.json, built by tools/assets/prep_sprites.py,
+// which also holds each drawing's world height). Recruits are one drawing per class; the red army
+// uses a pre-tinted `_red` variant in which only the blue cloth is recoloured.
+const SPRITE_FOR = { paladin: 'brenna', barbarian: 'dreg', pikeman: 'pikeman', archer: 'archer', cavalier: 'cavalier' };
 // Tilt of the map camera (src/camera.js). An upright plane is foreshortened by cos(tilt), so it
 // is stretched by 1/cos(tilt) to read at its drawn proportions instead of looking squashed.
 const TILT = { landscape: THREE.MathUtils.degToRad(40), portrait: THREE.MathUtils.degToRad(52) };
@@ -47,17 +48,17 @@ function alphaMask(img) {
   };
 }
 
-export const hasSprite = (id) => id in SPRITE_HEIGHT;
+export const hasSprite = (cls) => cls in SPRITE_FOR;
 
 // Same interface as buildHero() in models.js: { root, setActive(bool), update(dt, t) }.
 // `flip` mirrors the drawing so it faces the other way (sprites face screen-right).
-export async function buildSprite(id, faction, { flip = false } = {}) {
+export async function buildSprite(cls, faction, { flip = false } = {}) {
   const manifest = await manifestP;
-  const info = manifest[id];
-  const tex = await texture(`${import.meta.env.BASE_URL}${info.file}`);
+  const info = manifest[SPRITE_FOR[cls]];
+  const tex = await texture(`${import.meta.env.BASE_URL}${info.files[faction] ?? info.files.blue}`);
 
-  // World size of the whole image: visibleHeight pixels correspond to SPRITE_HEIGHT.
-  const ppu = info.visibleHeight / SPRITE_HEIGHT[id];
+  // World size of the whole image: visibleHeight pixels correspond to the drawing's world height.
+  const ppu = info.visibleHeight / info.height;
   const w = info.size[0] / ppu;
   const h = info.size[1] / ppu;
   const geo = new THREE.PlaneGeometry(w, h);
