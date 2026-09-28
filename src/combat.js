@@ -4,6 +4,7 @@ import { TERRAIN, terrainAt } from './map.js';
 export const WEAPONS = {
   'Silver Rapier': { mt: 7, hit: 90, crit: 10, rng: [1, 1], kind: 'sword' },
   'Iron Sword': { mt: 6, hit: 90, crit: 0, rng: [1, 1], kind: 'sword' },
+  'Iron Pike': { mt: 8, hit: 75, crit: 0, rng: [1, 1], kind: 'lance' },
   'Iron Lance': { mt: 7, hit: 80, crit: 0, rng: [1, 1], kind: 'lance' },
   'Steel Lance': { mt: 9, hit: 75, crit: 0, rng: [1, 1], kind: 'lance' },
   Longbow: { mt: 6, hit: 75, crit: 0, rng: [2, 2], kind: 'bow' },

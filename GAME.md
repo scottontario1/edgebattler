@@ -4,25 +4,29 @@
 A fantasy turn-based tactics game on a square grid, in the spirit of Advance Wars (map control, terrain, clear turn phases) with Fire Emblem–style western-fantasy characters (portraits, classes, stats, weapon triangle).
 
 ## Core loop (planned)
-Player phase: select unit → see blue move / red attack range → move → attack, wait or use item → end turn. Enemy phase: AI moves. Win by routing the enemy boss or seizing the castle.
+Player phase: select unit → see blue move / red attack range → move → attack, wait or use item → end turn. Enemy phase: AI moves. Win by routing the enemy or seizing the castle.
 
 ## Units (current demo)
+No named cast beyond two heroes. Everything else is an unnamed, recruitable troop class: a template in
+`RECRUIT` (`src/units.js`) plus a per-unit look (skin, hair, eyes), built on the shared humanoid
+(`tools/blender/humanoid.py`) in `tools/blender/build_recruits.py`. Either army fields them and they can
+be recruited in play by instantiating the template.
+
 | Class | Move type | Range | Notes |
 |---|---|---|---|
-| Lord | foot | 1 | Lose if they fall |
-| Knight | armor | 1 | High DEF, no mountains (no knights fielded in chapter I) |
-| Paladin | armor | 1 | Brenna: sword; armored like a knight (design_assets/brenna paladin.png) |
-| Barbarian | armor | 1 | Dreg: axe; armored like a knight (design_assets/dreg barbarian.png) |
-| Archer | foot | 2 | Can't counter at range 1 |
-| Mage / Shaman | foot | 1–2 | Magic hits RES |
-| Cavalier | mounted | 1 | MOV 7, slowed by forest |
-| Brigand / Warlord | foot / armor | 1 | Axes |
+| Pikeman (recruit) | foot | 1 | Pike (lance triangle), solid DEF |
+| Archer (recruit) | foot | 2 | Can't counter at range 1 |
+| Cavalier (recruit) | mounted | 1 | MOV 7, slowed by forest, rides the barded horse |
+| Paladin, Brenna (named, blue) | armor | 1 | Sword; design_assets/brenna paladin.png |
+| Barbarian, Dreg (named, red) | armor | 1 | Axe; design_assets/dreg barbarian.png |
+
+Ideas for later classes on the same humanoid: mage, wyvern rider, knight, healer.
 
 ## Terrain
 Plains, Road, Bridge (cost 1) · Forest (DEF +1, AVO +20, cost 2) · Mountain (DEF +2, AVO +30, cost 3, foot only) · Village · Castle (DEF +3) · River (impassable).
 
 ## Art direction
-Illustrated 2.5D tactics (Fire Emblem / Unicorn Overlord / Triangle Strategy): heroic ~3.75-head figures, painted anime faces, matte cloth/fur, cel-shaded metal, inked outlines, bold silhouettes. The KayKit chibi bodies are being phased out; new characters are built on `tools/blender/humanoid.py`.
+Illustrated 2.5D tactics (Fire Emblem / Unicorn Overlord / Triangle Strategy): heroic ~3.75-head figures, painted anime faces, matte cloth/fur, cel-shaded metal, inked outlines, bold silhouettes. Every character is built on `tools/blender/humanoid.py` (the old KayKit chibi bodies are gone).
 
 Previous notes:
 Low-poly, flat-shaded procedural models; warm sunlight; parchment and gold UI; painted SVG bust portraits. Camera: orthographic, tilted 52°.

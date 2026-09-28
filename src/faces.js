@@ -15,6 +15,8 @@ const shade = (hex, amt) => {
 // One preset per gaze. Positions in head space; brow tilt > 0 raises the outer end.
 const GAZE = {
   noble: { eyeX: 0.056, eyeZ: 0.998, w: 0.074, h: 0.05, brow: 0.014, browZ: 1.055, browW: 0.0075, lidLow: 0.2, mouth: 'calm', blush: 0.35 },
+  steady: { eyeX: 0.056, eyeZ: 0.996, w: 0.07, h: 0.045, brow: 0.006, browZ: 1.045, browW: 0.011, lidLow: 0.3, mouth: 'calm', blush: 0 },
+  keen: { eyeX: 0.056, eyeZ: 0.997, w: 0.074, h: 0.05, brow: 0.016, browZ: 1.05, browW: 0.0085, lidLow: 0.24, mouth: 'calm', blush: 0.1 },
   fierce: { eyeX: 0.057, eyeZ: 0.993, w: 0.07, h: 0.036, brow: -0.02, browZ: 1.036, browW: 0.016, lidLow: 0.42, mouth: 'hidden', blush: 0 },
 };
 

@@ -23,16 +23,8 @@ const FACTION = {
 // Per-unit character notes (gender cues, expression, marks). Units not listed
 // get a deterministic persona derived from their id.
 const PERSONA = {
-  aldric: { fem: false, young: true, mood: 'calm', mouth: 'smile' },
   brenna: { fem: true, mood: 'determined', mouth: 'neutral' },
-  wren: { fem: false, young: true, mood: 'calm', mouth: 'smirk', freckles: true },
-  elowen: { fem: true, mood: 'soft', mouth: 'smile', elf: true },
-  garrick: { fem: false, mood: 'stern', mouth: 'neutral' },
-  morvath: { fem: false, mood: 'angry', mouth: 'snarl', scar: 'eye' },
   dreg: { fem: false, mood: 'angry', mouth: 'frown', scar: 'nose' },
-  sable: { fem: true, mood: 'sly', mouth: 'smirk', mole: true },
-  vex: { fem: false, gaunt: true, mood: 'sly', mouth: 'grin', paint: true },
-  grisk: { fem: false, mood: 'angry', mouth: 'grin', scar: 'cheek', earring: true },
 };
 
 const F = (n) => Math.round(n * 100) / 100;
@@ -110,7 +102,7 @@ function strand(rx, ry, tx, ty, b1, b2 = b1, off = 0, a = 0.1, b = 0.75) {
 
 // What covers the crown of the head; mirrors each class's battlefield model.
 const HEADWEAR_COVERS = {
-  knight: 'helm', cavalier: 'helm', warlord: 'helm', brigand: 'band', archer: 'hood', mage: 'hat', lord: 'none',
+  knight: 'helm', pikeman: 'helm', cavalier: 'helm', warlord: 'helm', brigand: 'band', archer: 'hood', mage: 'hat', lord: 'none',
   paladin: 'none', barbarian: 'none',
 };
 
@@ -245,7 +237,7 @@ function behind(c) {
   }
   // Weapons match the unit's battlefield model: lances for knights and the cavalier, the
   // boss's great axe, the brigand's hand axe, the mage's crystal staff.
-  if (u.cls === 'knight' || u.cls === 'cavalier') s += lance(c, 73, 124, 80, 30);
+  if (u.cls === 'knight' || u.cls === 'cavalier' || u.cls === 'pikeman') s += lance(c, 73, 124, 80, 30);
   if (u.cls === 'warlord') s += greatAxe(c);
   if (u.cls === 'brigand') s += handAxe(c);
   if (u.cls === 'mage' && u.faction !== 'red') s += staff(c);
@@ -385,6 +377,7 @@ function body(c) {
 
   switch (u.cls) {
     case 'knight':
+    case 'pikeman':
     case 'cavalier':
     case 'paladin': {
       let emblem = u.faction === 'blue'
@@ -832,6 +825,7 @@ function headwear(c) {
         <path d="M49.8 37.8 L50.6 36.8" stroke="#fff" stroke-width="0.6"/>
         <path d="M36 43.5 Q50 37 65 42.5" stroke="#fff5c8" stroke-width="0.4" fill="none" opacity="0.8"/>`;
     case 'knight':
+    case 'pikeman':
     case 'cavalier': {
       // low crest ridge like the model's helmet; the cavalier's plume is drawn behind the head
       const top = `<path d="M47.5 23 C48 17 49.5 14.5 50.5 14 C51.5 14.5 53 17 53.5 23 Z" fill="${steelV}" stroke="${edge}" stroke-width="0.5"/>`;

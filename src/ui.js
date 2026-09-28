@@ -285,7 +285,7 @@ export function createUI({ renderer, camera, scene, units, view }) {
 
   const state = {
     hoverId: null,
-    selectedId: 'aldric',
+    selectedId: 'brenna',
     cursorTile: [3, 9],
     mode: 'idle', // 'idle' | 'target'
     targetId: null,
@@ -599,9 +599,9 @@ export function createUI({ renderer, camera, scene, units, view }) {
 
   setCursor(...state.cursorTile);
   cursor.visible = false;
-  // ?select=garrick&act=attack|inspect|danger|grid — reproducible states for screenshots.
+  // ?select=brenna&act=attack|inspect|danger|grid — reproducible states for screenshots.
   const q = new URLSearchParams(location.search);
-  for (const spec of (q.get('place') || '').split(';').filter(Boolean)) { // place=grisk:7,6
+  for (const spec of (q.get('place') || '').split(';').filter(Boolean)) { // place=pike_r1:7,6
     const [id, at] = spec.split(':'), u = units.byId.get(id);
     if (!u || !at) continue;
     [u.data.c, u.data.r] = at.split(',').map(Number);

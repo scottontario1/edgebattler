@@ -71,7 +71,7 @@ const modelLabel = document.getElementById('models');
 addEventListener('keydown', (e) => {
   if (e.ctrlKey || e.metaKey || e.altKey) return;
   if (e.key.toLowerCase() === 'm') {
-    modelLabel.textContent = units.toggleModels() ? 'KayKit models' : 'procedural';
+    modelLabel.textContent = units.toggleModels() ? 'illustrated models' : 'procedural';
     return;
   }
   if (e.key.toLowerCase() !== 'h') return;

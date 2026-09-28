@@ -2,39 +2,36 @@ import * as THREE from 'three';
 import { toWorld, tileTop, FACTION_COLORS } from './map.js';
 import { buildModel } from './models.js';
 
-// `cls` picks the 3D model and portrait gear; `title` is what the UI shows.
+// `cls` picks the 3D model and portrait gear (models.js MODEL_SPECS); `title` is what the UI
+// shows. Brenna and Dreg are the two named heroes. Everything else is an unnamed recruit: a class
+// template (RECRUIT) plus a per-unit look, so more can be recruited in play the same way.
+const RECRUIT = {
+  pikeman: { name: 'Pikeman', title: 'Recruit', lv: 2, hp: 24, str: 8, mag: 0, skl: 5, spd: 4, def: 9, res: 1, mov: 4, weapon: 'Iron Pike' },
+  archer: { name: 'Archer', title: 'Recruit', lv: 2, hp: 18, str: 6, mag: 0, skl: 8, spd: 7, def: 3, res: 1, mov: 5, weapon: 'Longbow' },
+  cavalier: { name: 'Cavalier', title: 'Recruit', lv: 3, hp: 24, str: 8, mag: 0, skl: 5, spd: 8, def: 7, res: 1, mov: 7, weapon: 'Iron Lance' },
+};
+const recruit = (cls, id, faction, c, r, look, over = {}) => {
+  const t = { ...RECRUIT[cls], ...over };
+  return { id, cls, faction, c, r, name: t.name, title: t.title, lv: t.lv, hp: t.hp, maxHp: t.hp, str: t.str, mag: t.mag, skl: t.skl,
+    spd: t.spd, def: t.def, res: t.res, mov: t.mov, weapon: t.weapon, look };
+};
+
 export const UNITS = [
-  { id: 'aldric', name: 'Aldric', title: 'Lord', cls: 'lord', faction: 'blue', c: 3, r: 9, lv: 3,
-    hp: 22, maxHp: 22, str: 7, mag: 1, skl: 8, spd: 9, def: 6, res: 3, mov: 5, weapon: 'Silver Rapier',
-    look: { skin: '#f2cda9', hair: '#d9a441', eyes: '#3b6ea8', style: 'swept' } },
   { id: 'brenna', name: 'Brenna', title: 'Paladin', cls: 'paladin', faction: 'blue', c: 5, r: 9, lv: 4,
     hp: 28, maxHp: 28, str: 9, mag: 0, skl: 5, spd: 3, def: 13, res: 1, mov: 4, weapon: 'Iron Sword',
     look: { skin: '#f0cdb4', hair: '#c9b6e6', eyes: '#5a64c8', style: 'long' } },
-  { id: 'wren', name: 'Wren', title: 'Archer', cls: 'archer', faction: 'blue', c: 1, r: 9, lv: 2,
-    hp: 18, maxHp: 19, str: 6, mag: 0, skl: 9, spd: 8, def: 4, res: 2, mov: 5, weapon: 'Longbow',
-    look: { skin: '#d9a57c', hair: '#6b4226', eyes: '#3f7a4a', style: 'short' } },
-  { id: 'elowen', name: 'Elowen', title: 'Mage', cls: 'mage', faction: 'blue', c: 4, r: 10, lv: 3,
-    hp: 16, maxHp: 16, str: 1, mag: 9, skl: 6, spd: 7, def: 2, res: 8, mov: 5, weapon: 'Fire Staff',
-    look: { skin: '#f6dcc4', hair: '#dfe3ec', eyes: '#7a4fb0', style: 'long' } },
-  { id: 'garrick', name: 'Garrick', title: 'Cavalier', cls: 'cavalier', faction: 'blue', c: 3, r: 7, lv: 4,
-    hp: 24, maxHp: 24, str: 8, mag: 0, skl: 6, spd: 7, def: 8, res: 2, mov: 7, weapon: 'Steel Lance',
-    look: { skin: '#c68f63', hair: '#3a2a1e', eyes: '#4a3524', style: 'short', beard: true } },
+  recruit('pikeman', 'pike_b1', 'blue', 3, 9, { skin: '#e8b995', hair: '#6b4226', eyes: '#4a6a9a', style: 'short' }),
+  recruit('pikeman', 'pike_b2', 'blue', 4, 10, { skin: '#c68f63', hair: '#2b2018', eyes: '#4a3524', style: 'short' }),
+  recruit('archer', 'archer_b1', 'blue', 1, 9, { skin: '#f0cdb4', hair: '#b5462b', eyes: '#3f7a4a', style: 'short' }),
+  recruit('cavalier', 'cav_b1', 'blue', 3, 7, { skin: '#d9a57c', hair: '#3a2a1e', eyes: '#5a7a3a', style: 'short' }),
 
-  { id: 'morvath', name: 'Morvath', title: 'Warlord', cls: 'warlord', faction: 'red', c: 12, r: 2, lv: 10, boss: true,
-    hp: 38, maxHp: 38, str: 14, mag: 0, skl: 9, spd: 7, def: 11, res: 4, mov: 5, weapon: 'Great Axe',
-    look: { skin: '#cf9d78', hair: '#1c1714', eyes: '#b83a2a', style: 'none', beard: true } },
   { id: 'dreg', name: 'Dreg', title: 'Barbarian', cls: 'barbarian', faction: 'red', c: 10, r: 3, lv: 5,
     hp: 27, maxHp: 27, str: 9, mag: 0, skl: 4, spd: 2, def: 12, res: 0, mov: 4, weapon: 'Steel Axe',
     look: { skin: '#d8a98a', hair: '#9c4722', eyes: '#5b7088', style: 'long', beard: true } },
-  { id: 'sable', name: 'Sable', title: 'Archer', cls: 'archer', faction: 'red', c: 12, r: 4, lv: 4,
-    hp: 19, maxHp: 19, str: 7, mag: 0, skl: 8, spd: 7, def: 4, res: 1, mov: 5, weapon: 'Steel Bow',
-    look: { skin: '#e9c2a0', hair: '#1f1a24', eyes: '#8a2f3a', style: 'long' } },
-  { id: 'vex', name: 'Vex', title: 'Shaman', cls: 'mage', faction: 'red', c: 11, r: 1, lv: 5,
-    hp: 17, maxHp: 17, str: 0, mag: 8, skl: 5, spd: 6, def: 2, res: 7, mov: 5, weapon: 'Flux',
-    look: { skin: '#d9c7b8', hair: '#5b2a7a', eyes: '#c9a24a', style: 'long' } },
-  { id: 'grisk', name: 'Grisk', title: 'Brigand', cls: 'brigand', faction: 'red', c: 9, r: 6, lv: 4,
-    hp: 26, maxHp: 26, str: 10, mag: 0, skl: 3, spd: 5, def: 4, res: 0, mov: 5, weapon: 'Hand Axe',
-    look: { skin: '#c98d62', hair: '#b8552a', eyes: '#3a2a1a', style: 'none', beard: true } },
+  recruit('pikeman', 'pike_r1', 'red', 9, 6, { skin: '#d8a98a', hair: '#2b2b2b', eyes: '#5a4a3a', style: 'short' }, { lv: 3 }),
+  recruit('archer', 'archer_r1', 'red', 12, 4, { skin: '#e9c2a0', hair: '#1f1a24', eyes: '#8a2f3a', style: 'long' }, { weapon: 'Steel Bow' }),
+  recruit('archer', 'archer_r2', 'red', 11, 1, { skin: '#c98d62', hair: '#7a5a3a', eyes: '#3a2a1a', style: 'short' }),
+  recruit('cavalier', 'cav_r1', 'red', 12, 2, { skin: '#e0b090', hair: '#5a3820', eyes: '#6a4a2a', style: 'short' }, { weapon: 'Steel Lance', lv: 4 }),
 ];
 
 const matCache = new Map();
@@ -185,6 +182,7 @@ function buildFigure(u) {
       axe(g, h.right, true);
       break;
     }
+    case 'pikeman':
     case 'knight': {
       const h = humanoid(g, { torso: 0xb9bec8, legs: 0x8d929c, arms: 0xb9bec8, skin: L.skin, bulk: 1.3 });
       add(g, sphere(0.095), metal(), 0, 0.6, 0);
@@ -328,7 +326,7 @@ export function createUnits(scene) {
     scene.add(group);
     const u = { data, group, figure, ring, hp, phase: i * 0.9, model: null };
 
-    // Swap in the KayKit model once it loads; the procedural figure stays as the fallback.
+    // Swap in the illustrated model once it loads; the procedural figure stays as the fallback.
     buildModel(data.id, data.faction).then((m) => {
       m.root.position.y = 0.01;
       m.root.rotation.y = facing;
@@ -340,7 +338,7 @@ export function createUnits(scene) {
     return u;
   });
 
-  // M flips between the KayKit models and the original procedural figures.
+  // M flips between the illustrated models and the original procedural figures.
   let useModels = true;
   function applyStyle(u) {
     const on = useModels && !!u.model;

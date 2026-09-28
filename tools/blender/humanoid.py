@@ -60,11 +60,11 @@ def V(*a):
 # ---- geometry helpers -------------------------------------------------------------
 
 def orient_z(o, direction):
-    """Rotate an object built along +Z so it points along `direction`, and apply."""
-    o.rotation_mode = 'QUATERNION'
-    o.rotation_quaternion = Vector(direction).normalized().to_track_quat('Z', 'Y')
-    activate(o)
-    bpy.ops.object.transform_apply(rotation=True)
+    """Rotate an object built along +Z so it points along `direction`. Rotates about the part's
+    own centre (some helpers bake their location into the mesh, leaving the origin at 0)."""
+    c = sum((o.matrix_world @ Vector(v) for v in o.bound_box), Vector()) / 8
+    q = Vector(direction).normalized().to_track_quat('Z', 'Y')
+    xform([o], Matrix.Translation(c) @ q.to_matrix().to_4x4() @ Matrix.Translation(-c))
     return o
 
 
@@ -161,8 +161,8 @@ def make_joints(hand_r, hand_l, ws=1.0, stance=None):
     J['neck'] = Mt @ V(0, 0, NECK_Z)
     for side, s in (('l', 1), ('r', -1)):
         hip = V(s * st['hip_x'], 0.0, HIP_Z - 0.01)
-        ankle = V(*st['ankle_' + side], ANKLE_Z)
-        pole = V(s * 0.12, -1.0, 0.0)
+        ankle = V(*st['ankle_' + side], st.get('ankle_z', ANKLE_Z))
+        pole = V(s * st.get('knee_out', 0.12), -1.0, 0.0)
         knee, ankle = ik2(hip, ankle, THIGH_LEN, SHIN_LEN, pole)
         toe = V(*st['toe_' + side], 0.0).normalized()
         sh = Mt @ V(s * 0.155 * ws, 0, SHOULDER_Z)
@@ -220,10 +220,10 @@ def head_pt(head, az, el, out=0.0):
     return Vector(loc) + Vector(nrm) * out
 
 
-def hair_cap(head, mat, scale, hairline, nape_z, thick=0.012):
+def hair_cap(head, mat, scale, hairline, nape_z, thick=0.012, from_idx=3):
     """Solid skull cap in the hair colour over the crown and back. hairline(x) is the lowest
     z kept at the front (y<0); nape_z the lowest z kept at the back."""
-    o = loft('cap', head_stations(1.0, 1.0, scale)[3:], mat, sides=24, caps=(False, True))
+    o = loft('cap', head_stations(1.0, 1.0, scale)[from_idx:], mat, sides=24, caps=(False, True))
     o.data.transform(Matrix.Translation(HEAD_C - HEAD_C))
     bm = bmesh.new()
     bm.from_mesh(o.data)
@@ -254,7 +254,7 @@ def boot(prefix, ankle, toe, mats, pointed=0.0, heel_h=0.026, cuff_r=0.05, shaft
             (0.075, 0.042, 0.043, 0.034), (0.125 + 0.02 * pointed, 0.03, 0.03, 0.024),
             (0.16 + 0.05 * pointed, 0.026, 0.012 + 0.006 * (1 - pointed), 0.018)]
     sts = []
-    base = Vector((ankle.x, ankle.y, 0))
+    base = Vector((ankle.x, ankle.y, ankle.z - ANKLE_Z))  # foot sole plane (0 when standing, higher in stirrups)
     for s, z, w, h in prof:
         sts.append((base + t * (s * k) + up * (z * k), w * k, h * k, lat, up))
     foot = loft(prefix + '_foot', sts, mats['boot'], sides=12)
