@@ -253,7 +253,35 @@ function buildFigure(u) {
   return g;
 }
 
+// HP bar floating just in front of the unit's base, always facing the camera: gold frame,
+// dark navy track, faction-coloured fill (blue #4fb3ff / red #ff5a4a). Bars live in a
+// separate overlay scene that main.js draws after post-processing, so ambient occlusion
+// never darkens them and they stay readable over scenery.
+const HP_W = 0.5;
+const HP_OFFSET = new THREE.Vector3(0, 0.07, 0.43);
+function hpBar(overlay, data) {
+  const bar = new THREE.Group();
+  const sprite = (color, w, h, anchorLeft = false) => {
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ color, depthTest: false, depthWrite: false, toneMapped: false }));
+    s.scale.set(w, h, 1);
+    if (anchorLeft) { s.center.set(0, 0.5); s.position.x = -w / 2; }
+    s.renderOrder = 6;
+    bar.add(s);
+    return s;
+  };
+  sprite(0xc9a24a, HP_W + 0.035, 0.075);
+  sprite(0x0d1526, HP_W + 0.015, 0.055);
+  const fill = sprite(data.faction === 'blue' ? 0x4fb3ff : 0xff5a4a, HP_W, 0.04, true);
+  fill.renderOrder = 7;
+  overlay.add(bar);
+  return {
+    bar,
+    set(ratio) { fill.scale.x = HP_W * THREE.MathUtils.clamp(ratio, 0, 1); },
+  };
+}
+
 export function createUnits(scene) {
+  const overlay = new THREE.Scene();
   const list = UNITS.map((data, i) => {
     const group = new THREE.Group();
     const p = toWorld(data.c, data.r);
@@ -275,12 +303,14 @@ export function createUnits(scene) {
     figure.scale.multiplyScalar(1.6);
     group.add(figure);
 
+    const hp = hpBar(overlay, data);
+
     group.traverse((o) => { o.userData.unitId = data.id; });
     scene.add(group);
-    const u = { data, group, figure, ring, phase: i * 0.9, model: null };
+    const u = { data, group, figure, ring, hp, phase: i * 0.9, model: null };
 
     // Swap in the KayKit model once it loads; the procedural figure stays as the fallback.
-    buildModel(data.id).then((m) => {
+    buildModel(data.id, data.faction).then((m) => {
       m.root.position.y = 0.05;
       m.root.rotation.y = facing;
       m.root.traverse((o) => { o.userData.unitId = data.id; });
@@ -305,6 +335,7 @@ export function createUnits(scene) {
   return {
     list,
     byId,
+    overlay,
     unitAt: (c, r) => list.find((u) => u.data.c === c && u.data.r === r),
     toggleModels() {
       useModels = !useModels;
@@ -318,8 +349,11 @@ export function createUnits(scene) {
         const active = u.data.id === activeId;
         if (u.model) {
           u.model.setActive(active);
-          u.model.mixer.update(dt);
+          u.model.update(dt, t);
         }
+        u.hp.set(u.data.hp / u.data.maxHp);
+        u.hp.bar.position.copy(u.group.position).add(HP_OFFSET);
+        u.hp.bar.visible = u.group.visible;
         const amp = active ? 0.05 : 0.012;
         const speed = active ? 5 : 2;
         u.figure.position.y = 0.05 + Math.abs(Math.sin(t * speed + u.phase)) * amp;

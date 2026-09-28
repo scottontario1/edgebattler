@@ -94,4 +94,8 @@ renderer.setAnimationLoop(() => {
   ui.update(t);
   if (hd) composer.render();
   else renderer.render(scene, camera);
+  // HUD-style overlay (unit HP bars) drawn on top, untouched by AO/bloom.
+  renderer.autoClear = false;
+  renderer.render(units.overlay, camera);
+  renderer.autoClear = true;
 });
