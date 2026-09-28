@@ -470,7 +470,7 @@ const cobbleTile = (seed) => paintCanvas(512, seed, (g, s, rand) => {
     for (let c = 0; c < n; c++) {
       const x = (c + (r % 2) * 0.5 + (rand() - 0.5) * 0.2) * cs, y = (r + 0.5 + (rand() - 0.5) * 0.2) * cs;
       const rx = cs * (0.38 + rand() * 0.08), ry = cs * (0.34 + rand() * 0.08), a = rand() * 3;
-      const l = 52 + rand() * 16;
+      const l = 40 + rand() * 14;
       for (const ox of [-s, 0, s]) for (const oy of [-s, 0, s]) {
         g.fillStyle = 'rgba(40,30,20,0.4)';
         g.beginPath(); g.ellipse(x + ox + 1, y + oy + 1.5, rx, ry, a, 0, Math.PI * 2); g.fill();

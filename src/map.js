@@ -304,6 +304,119 @@ function castle(parent, x, z, y, faction) {
   parent.add(g);
 }
 
+// ------------------------------------------------------------------ landmark dressing
+// Small set pieces that frame the objectives and routes. All sit on tile edges or corners so the
+// middle of every tile stays clear for units.
+const fireMat = new THREE.MeshStandardMaterial({ color: 0xffb347, emissive: 0xff7a1a, emissiveIntensity: 2.2, roughness: 0.6 });
+const ironMat = mat(0x2b2622, { roughness: 0.6, metalness: 0.4 });
+
+function brazier(parent, x, z, rand) {
+  const y = groundY(x, z);
+  add(parent, new THREE.CylinderGeometry(0.018, 0.026, 0.16, 6), stoneMat, x, y + 0.08, z);
+  add(parent, new THREE.CylinderGeometry(0.05, 0.03, 0.04, 8), ironMat, x, y + 0.18, z);
+  const flame = add(parent, new THREE.ConeGeometry(0.035, 0.08 + rand() * 0.02, 6), fireMat, x, y + 0.235, z, false);
+  flame.rotation.y = rand() * 3;
+}
+
+function bannerPole(parent, x, z, color, rand) {
+  const y = groundY(x, z);
+  add(parent, new THREE.CylinderGeometry(0.008, 0.01, 0.46, 5), mat(0x3b2a1a), x, y + 0.23, z);
+  add(parent, new THREE.SphereGeometry(0.014, 6, 4), mat(0xd4a93c, { metalness: 0.8, roughness: 0.3 }), x, y + 0.47, z);
+  add(parent, box, mat(0x3b2a1a), x, y + 0.42, z).scale.set(0.11, 0.01, 0.01);
+  const cloth = add(parent, new THREE.PlaneGeometry(0.09, 0.2, 1, 3), mat(color, { side: THREE.DoubleSide, roughness: 0.75 }), x, y + 0.31, z + 0.004);
+  cloth.rotation.y = (rand() - 0.5) * 0.2;
+  // Swallowtail notch at the bottom.
+  const pos = cloth.geometry.attributes.position;
+  for (let i = 0; i < pos.count; i++) if (pos.getY(i) < -0.09 && Math.abs(pos.getX(i)) < 0.01) pos.setY(i, -0.06);
+}
+
+function barrel(parent, x, z, rand) {
+  const y = groundY(x, z);
+  const b = add(parent, new THREE.CylinderGeometry(0.035, 0.035, 0.08, 10), woodMat, x, y + 0.04, z);
+  b.rotation.y = rand() * 3;
+  add(parent, new THREE.TorusGeometry(0.036, 0.004, 4, 12), ironMat, x, y + 0.06, z).rotation.x = Math.PI / 2;
+}
+
+function crate(parent, x, z, rand) {
+  const y = groundY(x, z), s = 0.06 + rand() * 0.02;
+  const c = add(parent, box, woodMat, x, y + s / 2, z);
+  c.scale.setScalar(s);
+  c.rotation.y = rand() * 1.5;
+}
+
+function well(parent, x, z) {
+  const y = groundY(x, z);
+  add(parent, new THREE.CylinderGeometry(0.06, 0.065, 0.07, 10, 1, true), stoneMat, x, y + 0.035, z);
+  add(parent, new THREE.CylinderGeometry(0.05, 0.05, 0.01, 10), mat(0x1e3a4a, { roughness: 0.2 }), x, y + 0.05, z);
+  for (const s of [-1, 1]) add(parent, box, woodMat, x + s * 0.055, y + 0.1, z).scale.set(0.012, 0.13, 0.012);
+  const roof = add(parent, new THREE.ConeGeometry(0.1, 0.07, 4), mat(0x9a4a2c), x, y + 0.2, z);
+  roof.rotation.y = Math.PI / 4;
+}
+
+function haystack(parent, x, z, rand) {
+  const y = groundY(x, z);
+  add(parent, new THREE.SphereGeometry(0.07, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2), mat(0xd8b25a, { roughness: 1 }), x, y, z).scale.y = 1.3 + rand() * 0.3;
+}
+
+function signpost(parent, x, z, rand) {
+  const y = groundY(x, z);
+  add(parent, box, woodMat, x, y + 0.09, z).scale.set(0.016, 0.18, 0.016);
+  const a = add(parent, box, woodMat, x + 0.03, y + 0.15, z);
+  a.scale.set(0.08, 0.025, 0.008);
+  a.rotation.y = 0.3 + rand() * 0.3;
+  const b = add(parent, box, woodMat, x - 0.02, y + 0.11, z);
+  b.scale.set(0.07, 0.022, 0.008);
+  b.rotation.y = -0.5 - rand() * 0.3;
+}
+
+// Sharpened stakes along a line: a field fortification facing `face` (+1 / -1 along z or x).
+function stakes(parent, x0, z0, x1, z1, lean, rand) {
+  const n = Math.max(3, Math.round(Math.hypot(x1 - x0, z1 - z0) / 0.07));
+  for (let i = 0; i <= n; i++) {
+    const t = i / n, x = x0 + (x1 - x0) * t, z = z0 + (z1 - z0) * t;
+    const st = add(parent, new THREE.ConeGeometry(0.012, 0.16 + rand() * 0.04, 5), woodMat, x, groundY(x, z) + 0.06, z);
+    st.rotation.set(lean[1] * 0.5, 0, -lean[0] * 0.5);
+  }
+}
+
+function landmarks(parent, rand, castles, villages) {
+  for (const k of castles) {
+    const color = FACTION_COLORS[k.faction];
+    // Gate framed by braziers and banner poles on the front corners of the tile.
+    brazier(parent, k.x - 0.44, k.z + 0.44, rand);
+    brazier(parent, k.x + 0.44, k.z + 0.44, rand);
+    bannerPole(parent, k.x - 0.47, k.z + 0.3, color, rand);
+    bannerPole(parent, k.x + 0.47, k.z + 0.3, color, rand);
+    for (let i = 0; i < 3; i++) (rand() < 0.5 ? barrel : crate)(parent, k.x + 0.36 + rand() * 0.1, k.z - 0.1 + i * 0.09, rand);
+  }
+  for (const v of villages) {
+    well(parent, v.x + 0.44, v.z - 0.1);
+    haystack(parent, v.x - 0.46, v.z + 0.02, rand);
+    oak(parent, v.x - 0.46, v.z - 0.46, groundY(v.x - 0.46, v.z - 0.46), rand, 0.85);
+  }
+  // Road dressing: a signpost at every bend or junction of the road, on the outside corner.
+  for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
+    if (terrainAt(c, r) !== 'R') continue;
+    const n = DIRS.filter(([dc, dr]) => inBounds(c + dc, r + dr) && 'RBCK'.includes(terrainAt(c + dc, r + dr)));
+    const bend = n.length === 2 && n[0][0] !== -n[1][0];
+    if (!(bend || n.length > 2) || rand() < 0.3) continue;
+    const { x, z } = toWorld(c, r);
+    const sx = -(n[0][0] + n[1][0]) || 1, sz = -(n[0][1] + n[1][1]) || 1;
+    signpost(parent, x + sx * 0.42, z + sz * 0.42, rand);
+  }
+  // Bridge head: lanterns on the four end posts, and a stake line guarding the east bank.
+  for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
+    if (terrainAt(c, r) !== 'B') continue;
+    const { x, z } = toWorld(c, r);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+      add(parent, new THREE.SphereGeometry(0.022, 8, 6), fireMat, x + sx * 0.75, LAND_TOP + 0.235, z + sz * 0.275, false);
+    }
+    // Stakes along the east bank lip either side of the bridgehead, leaning out over the river.
+    if (inBounds(c + 1, r - 1) && terrainAt(c + 1, r - 1) === 'G') stakes(parent, x + 0.64, z - 1.35, x + 0.64, z - 0.7, [-1, 0], rand);
+    if (inBounds(c + 1, r + 1) && terrainAt(c + 1, r + 1) === 'G') stakes(parent, x + 0.64, z + 0.7, x + 0.64, z + 1.35, [-1, 0], rand);
+  }
+}
+
 // The flag animates, so it stays out of the merged static geometry.
 function makeFlag(x, y, z, faction, flags) {
   const flagGeo = new THREE.PlaneGeometry(0.24, 0.13, 16, 4);
@@ -528,6 +641,8 @@ function plateauTrees(backdrop) {
 // Castles and cottages (tools/blender/build_buildings.py). Blender material names map to
 // game materials here, so faction colours and shared textures stay in one place.
 export const KEEP_POLE_TOP = 1.16; // matches build_buildings.py
+// The enemy keep is the objective, so it is built a size larger and towers over its tile.
+const CASTLE_SCALE = { blue: 1.05, red: 1.25 };
 
 function buildingMaterials(faction) {
   const fc = FACTION_COLORS[faction ?? 'blue'];
@@ -570,7 +685,7 @@ function loadBuildings(scene, castles, villages) {
   const load = (f) => gltfLoader.loadAsync(ENV + f).then((g) => g.scene);
   Promise.all([load('castle.glb'), load('cottage_a.glb'), load('cottage_b.glb')]).then(([castleM, cotA, cotB]) => {
     const group = new THREE.Group();
-    for (const c of castles) placeModel(group, castleM, c.faction, c.x, c.y, c.z);
+    for (const c of castles) placeModel(group, castleM, c.faction, c.x, c.y, c.z, 0, CASTLE_SCALE[c.faction]);
     for (const v of villages) {
       placeModel(group, cotA, null, v.x - 0.2, v.y, v.z - 0.24, v.turn + 0.1, 0.95);
       placeModel(group, cotB, null, v.x + 0.21, v.y, v.z - 0.2, v.turn - 0.12, 0.85);
@@ -1079,7 +1194,8 @@ export function buildMap(scene) {
       if (t === 'C' || t === 'K') {
         const faction = t === 'C' ? 'blue' : 'red';
         castles.push({ x: p.x, z: p.z, y: top, faction });
-        makeFlag(p.x, top + KEEP_POLE_TOP - 0.07, p.z - 0.08, faction, flags);
+        const k = CASTLE_SCALE[faction];
+        makeFlag(p.x, top + (KEEP_POLE_TOP - 0.07) * k, p.z - 0.08 * k, faction, flags);
       }
       if (t === 'B') bridgeTiles.push(p);
       if (t === 'G') {
@@ -1114,6 +1230,7 @@ export function buildMap(scene) {
     tree(statics, x, z, FLOOR_Y, rand, 1.25, 0.9);
   }
 
+  landmarks(statics, rng(77), castles, villages);
   scene.add(mergeStatics(statics));
   scene.add(grassBlades(grassTiles, rand, time));
   scene.add(wheatPatches(villages, rand, time));
