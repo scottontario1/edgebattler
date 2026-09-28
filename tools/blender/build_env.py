@@ -128,6 +128,31 @@ def build_bridge():
             parts.append(cube('post', (0.1, 0.1, 0.17), (px, y, 0.085)))
             parts.append(cube('postcap', (0.12, 0.12, 0.03), (px, y, 0.185)))
 
+    # Abutments: stepped wing walls laid against the gorge faces on both banks (the gorge walls
+    # sit at x = +-0.5, the tile edges), so the bridge is anchored into the banks rather than
+    # resting on them, plus a few riprap boulders where the walls meet the water.
+    bed = -(LAND_TOP - 0.05)
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            steps = 4
+            for k in range(steps):
+                y0 = (width / 2 - 0.05) + k * 0.1
+                top = -0.02 - k * 0.07
+                h = top - bed
+                parts.append(cube(f'wing{sx}{sy}{k}', (0.08 - k * 0.008, 0.1 - 0.004, h),
+                                  (sx * (0.5 - 0.035 + k * 0.004), sy * (y0 + 0.05), bed + h / 2)))
+                parts.append(cube(f'wingcap{sx}{sy}{k}', (0.1 - k * 0.008, 0.1, 0.025),
+                                  (sx * (0.5 - 0.035 + k * 0.004), sy * (y0 + 0.05), top + 0.012)))
+        for i in range(3):
+            bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=1, radius=rng.uniform(0.04, 0.07),
+                                                  location=(sx * rng.uniform(0.36, 0.44), rng.uniform(-0.4, 0.4),
+                                                            -(LAND_TOP - WATER_Y) - 0.01))
+            b = bpy.context.active_object
+            b.name = 'riprap'
+            b.scale = (1.0, rng.uniform(0.8, 1.3), 0.7)
+            bpy.ops.object.transform_apply(scale=True)
+            parts.append(b)
+
     for o in parts:
         o.data.materials.append(stone)
         bevel(o, 0.01 if o.name != 'body' else 0.02)

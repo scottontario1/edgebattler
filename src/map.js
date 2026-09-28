@@ -764,7 +764,13 @@ function bankOffset(x, z) {
     }
   }
   let out = [0, 0];
-  const w = smoothstep(0.4, 0, best) * smoothstep(0, 0.35, Math.min(x, z, W - x, H - z));
+  // Keep the banks square where the bridge abutments sit.
+  let nearBridge = 9;
+  for (let r = Math.floor(z) - 1; r <= Math.floor(z) + 1; r++) for (let c = Math.floor(x) - 1; c <= Math.floor(x) + 1; c++) {
+    if (!inBounds(c, r) || terrainAt(c, r) !== 'B') continue;
+    nearBridge = Math.min(nearBridge, Math.hypot(Math.max(c - x, 0, x - c - 1), Math.max(r - z, 0, z - r - 1)));
+  }
+  const w = smoothstep(0.1, 0.5, nearBridge) * smoothstep(0.4, 0, best) * smoothstep(0, 0.35, Math.min(x, z, W - x, H - z));
   if (w > 0) {
     const [dx, dz] = bankProjection(qx, qz);
     out = [dx * w, dz * w];
@@ -986,7 +992,12 @@ function buildGround(scene, rand) {
     yards.push([c + 0.5, r + 0.58, 0.3, 0.22]);
     fields.push([c + 0.5 + 0.22, r + 0.56, c + 0.5 + 0.46, r + 0.9], [c + 0.5 - 0.46, r + 0.56, c + 0.5 - 0.22, r + 0.9]);
   }
-  const atlas = terrainAtlas({ cols: W, rows: H, px: 128, cellClass, roads: roadPaths(rand), fields, yards, seed: 12 });
+  const paved = [];
+  for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
+    if (terrainAt(c, r) === 'B') paved.push({ x: c - 0.1, y: r + 0.5, r: 0.55 }, { x: c + 1.1, y: r + 0.5, r: 0.55 });
+    if ('CK'.includes(terrainAt(c, r))) paved.push({ x: c + 0.5, y: r + 0.5, r: 0.75 });
+  }
+  const atlas = terrainAtlas({ cols: W, rows: H, px: 128, cellClass, roads: roadPaths(rand), fields, yards, paved, seed: 12 });
 
   // Land: one indexed grid (shared vertices, smooth normals) over every land tile.
   const n = W * SUB + 1, m = H * SUB + 1;

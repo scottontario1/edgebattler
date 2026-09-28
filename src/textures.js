@@ -461,6 +461,28 @@ const pavingTile = (seed) => paintCanvas(512, seed, (g, s, rand) => {
   speckle(g, s, rand, 3000, (r) => `rgba(0,0,0,${r() * 0.15})`);
 });
 
+// Small rounded cobbles set in packed dirt, for road approaches.
+const cobbleTile = (seed) => paintCanvas(512, seed, (g, s, rand) => {
+  g.fillStyle = hsl(34, 30, 42);
+  g.fillRect(0, 0, s, s);
+  const n = 22, cs = s / n;
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      const x = (c + (r % 2) * 0.5 + (rand() - 0.5) * 0.2) * cs, y = (r + 0.5 + (rand() - 0.5) * 0.2) * cs;
+      const rx = cs * (0.38 + rand() * 0.08), ry = cs * (0.34 + rand() * 0.08), a = rand() * 3;
+      const l = 52 + rand() * 16;
+      for (const ox of [-s, 0, s]) for (const oy of [-s, 0, s]) {
+        g.fillStyle = 'rgba(40,30,20,0.4)';
+        g.beginPath(); g.ellipse(x + ox + 1, y + oy + 1.5, rx, ry, a, 0, Math.PI * 2); g.fill();
+        g.fillStyle = hsl(36 + rand() * 8, 12 + rand() * 8, l);
+        g.beginPath(); g.ellipse(x + ox, y + oy, rx, ry, a, 0, Math.PI * 2); g.fill();
+        g.fillStyle = hsl(40, 20, l + 12, 0.5);
+        g.beginPath(); g.ellipse(x + ox - rx * 0.2, y + oy - ry * 0.3, rx * 0.5, ry * 0.35, a, 0, Math.PI * 2); g.fill();
+      }
+    }
+  }
+});
+
 const bedTile = (seed) => paintCanvas(256, seed, (g, s, rand) => {
   g.fillStyle = '#2b4640';
   g.fillRect(0, 0, s, s);
@@ -492,7 +514,7 @@ function curvePath(g, pts) {
  *  yards:  ellipses [x, y, rx, ry] in tile units, painted as trodden dirt
  * Row 0 is the top of the canvas (v = 1 with the default flipY).
  */
-export function terrainAtlas({ cols, rows, px = 128, cellClass, roads = [], fields = [], yards = [], seed = 1 }) {
+export function terrainAtlas({ cols, rows, px = 128, cellClass, roads = [], fields = [], yards = [], paved = [], seed = 1 }) {
   const w = cols * px, h = rows * px;
   const rand = rng(seed);
   const canvas = makeCanvas(w, h), g = canvas.getContext('2d');
@@ -509,6 +531,18 @@ export function terrainAtlas({ cols, rows, px = 128, cellClass, roads = [], fiel
   fillWith(meadowTile(seed + 1))(g, w, h);
   paintThrough(g, makeMask(w, h, noise, everywhere, 0, (a, n) => smooth(0.56, 0.76, n) * 0.4), fillWith(hsl(70, 78, 60)));
   paintThrough(g, makeMask(w, h, noise, everywhere, 0, (a, n) => smooth(0.44, 0.24, n) * 0.4), fillWith(hsl(112, 55, 24)));
+
+  // Macro variation: broad warm (sunlit, golden) and cool (lush, blue-green) regions a few tiles
+  // across, so the meadow pattern never reads as a repeat.
+  const macro = noiseField(w, h, rand, [[cols * 0.28, 1], [cols * 0.6, 0.4]]);
+  paintThrough(g, makeMask(w, h, macro, everywhere, 0, (a, n) => smooth(0.55, 0.8, n) * 0.28), fillWith(hsl(52, 70, 62)));
+  paintThrough(g, makeMask(w, h, macro, everywhere, 0, (a, n) => smooth(0.45, 0.2, n) * 0.3), fillWith(hsl(128, 45, 26)));
+
+  // Canopy shade and leaf litter spill a little beyond the forest edge, and damp, lusher grass
+  // lines the river gorge, so the boundaries blend over neighbouring tiles.
+  paintThrough(g, makeMask(w, h, noise, cellsOf('forest'), px * 0.35, (a, n) => smooth(0.05, 0.6, a + (n - 0.5) * 0.3) * 0.45), fillWith(hsl(110, 45, 16)));
+  paintThrough(g, makeMask(w, h, noise, cellsOf('bed'), px * 0.3, (a, n) => smooth(0.02, 0.4, a + (n - 0.5) * 0.2) * 0.35), fillWith(hsl(120, 50, 24)));
+  paintThrough(g, makeMask(w, h, noise, cellsOf('rock'), px * 0.3, (a, n) => smooth(0.1, 0.5, a + (n - 0.5) * 0.5) * 0.5), fillWith(rockyTile(seed + 8)));
 
   paintThrough(g, makeMask(w, h, noise, cellsOf('forest'), px * 0.16, ragged(0.7)), fillWith(forestFloorTile(seed + 2)));
   paintThrough(g, makeMask(w, h, noise, cellsOf('rock'), px * 0.2, ragged(0.7, 0.45, 0.62)), fillWith(rockyTile(seed + 3)));
@@ -536,6 +570,16 @@ export function terrainAtlas({ cols, rows, px = 128, cellClass, roads = [], fiel
   const road = makeMask(w, h, noise, roadShape(0.52), px * 0.06, ragged(0.55));
   paintThrough(g, road, fillWith(dirt));
   paintThrough(g, makeMask(w, h, noise, roadShape(0.22), px * 0.08, (a, n) => a * (0.2 + n * 0.3)), fillWith(hsl(40, 50, 74)));
+  // Cobbled approaches where the road meets a bridge or gate (paved: circles { x, y, r }).
+  if (paved.length) {
+    const clipped = (tg) => {
+      tg.beginPath();
+      for (const { x, y, r } of paved) { tg.moveTo(x * px + r * px, y * px); tg.arc(x * px, y * px, r * px, 0, Math.PI * 2); }
+      tg.clip();
+      roadShape(0.5)(tg);
+    };
+    paintThrough(g, makeMask(w, h, noise, clipped, px * 0.06, ragged(0.9, 0.3, 0.6)), fillWith(cobbleTile(seed + 7)), 0.85);
+  }
   g.lineCap = 'round';
   for (let i = 0; i < w * h * 0.006; i++) {
     const x = rand() * w, y = rand() * h;
