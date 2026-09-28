@@ -14,7 +14,7 @@ export const UNITS = [
     hp: 18, maxHp: 19, str: 6, mag: 0, skl: 9, spd: 8, def: 4, res: 2, mov: 5, weapon: 'Longbow',
     look: { skin: '#d9a57c', hair: '#6b4226', eyes: '#3f7a4a', style: 'short' } },
   { id: 'elowen', name: 'Elowen', title: 'Mage', cls: 'mage', faction: 'blue', c: 4, r: 10, lv: 3,
-    hp: 16, maxHp: 16, str: 1, mag: 9, skl: 6, spd: 7, def: 2, res: 8, mov: 5, weapon: 'Fire Tome',
+    hp: 16, maxHp: 16, str: 1, mag: 9, skl: 6, spd: 7, def: 2, res: 8, mov: 5, weapon: 'Fire Staff',
     look: { skin: '#f6dcc4', hair: '#dfe3ec', eyes: '#7a4fb0', style: 'long' } },
   { id: 'garrick', name: 'Garrick', title: 'Cavalier', cls: 'cavalier', faction: 'blue', c: 3, r: 7, lv: 4,
     hp: 24, maxHp: 24, str: 8, mag: 0, skl: 6, spd: 7, def: 8, res: 2, mov: 7, weapon: 'Steel Lance',

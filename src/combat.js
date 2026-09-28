@@ -7,7 +7,7 @@ export const WEAPONS = {
   'Steel Lance': { mt: 9, hit: 75, crit: 0, rng: [1, 1], kind: 'lance' },
   Longbow: { mt: 6, hit: 75, crit: 0, rng: [2, 2], kind: 'bow' },
   'Steel Bow': { mt: 8, hit: 70, crit: 0, rng: [2, 2], kind: 'bow' },
-  'Fire Tome': { mt: 5, hit: 90, crit: 0, rng: [1, 2], kind: 'tome', magic: true },
+  'Fire Staff': { mt: 5, hit: 90, crit: 0, rng: [1, 2], kind: 'tome', magic: true },
   Flux: { mt: 7, hit: 80, crit: 0, rng: [1, 2], kind: 'tome', magic: true },
   'Great Axe': { mt: 12, hit: 65, crit: 5, rng: [1, 1], kind: 'axe' },
   'Hand Axe': { mt: 7, hit: 60, crit: 0, rng: [1, 1], kind: 'axe' },
