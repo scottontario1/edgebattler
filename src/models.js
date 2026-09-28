@@ -309,6 +309,7 @@ function addOutlines(root, faction, width) {
     hull.castShadow = false;
     hull.receiveShadow = false;
     hull.frustumCulled = o.frustumCulled;
+    hull.raycast = () => {}; // picking uses the real mesh; skip re-skinning the hull
     o.add(hull); // identity transform: follows the mesh, its bones and its visibility
   }
 }
