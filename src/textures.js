@@ -106,7 +106,7 @@ export function rockTexture(seed) {
 
 // Cliff walls, world-scaled (1 texture = 1 world unit): a grass lip with hanging tufts over
 // blocky grey-tan rock courses. `moss` (0..1) adds moss patches and drips for river banks.
-export function cliffTexture(seed, moss = 0) {
+export function cliffTexture(seed, moss = 0, lip = true) {
   return canvasTexture(512, seed, (g, s, rand) => {
     const lip = s * 0.06;
     g.fillStyle = '#6d6556';
@@ -158,6 +158,7 @@ export function cliffTexture(seed, moss = 0) {
       g.lineWidth = 2 + rand() * 5;
       g.beginPath(); g.moveTo(x, lip); g.lineTo(x + (rand() - 0.5) * 8, lip + len); g.stroke();
     }
+    if (!lip) return;
     // Grass lip and tufts hanging over the edge.
     g.fillStyle = hsl(86, 52, 40);
     g.fillRect(0, 0, s, lip);
@@ -548,14 +549,6 @@ export function terrainAtlas({ cols, rows, px = 128, cellClass, roads = [], fiel
 
   // Riverbed under the water (hard edge: it sits at the foot of the gorge walls).
   paintThrough(g, makeMask(w, h, noise, cellsOf('bed'), 0, (a) => a), fillWith(bedTile(seed + 6)));
-
-  // Faint tile grid so the board still reads without heavy gaps between tiles.
-  g.strokeStyle = 'rgba(24,36,12,0.16)';
-  g.lineWidth = Math.max(1, px / 90);
-  g.beginPath();
-  for (let c = 1; c < cols; c++) { g.moveTo(c * px, 0); g.lineTo(c * px, h); }
-  for (let r = 1; r < rows; r++) { g.moveTo(0, r * px); g.lineTo(w, r * px); }
-  g.stroke();
 
   return finishTexture(canvas);
 }

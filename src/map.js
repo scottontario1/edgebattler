@@ -204,22 +204,36 @@ function tree(parent, x, z, y, rand, scale, pineShare = 0.8) {
   (rand() < pineShare ? pine : oak)(parent, x, z, y, rand, scale);
 }
 
-// Forest tile: a tight clump of dark pines around the edge with a clearing in the middle (and
-// nothing directly in front of it) so a unit standing there stays visible.
-function forestClump(parent, x, z, y, rand) {
+// Forest: trees are laid on a jittered lattice across every forest tile, including the borders
+// between two forest tiles, so neighbouring tiles fuse into one wood with a dense, dark canopy.
+// Along the edge of the wood the lattice thins and shrinks into a ragged fringe, and each tile
+// keeps a small clearing in the middle (open toward the camera) so a unit there stays visible.
+function forestMass(parent, c, r, rand) {
+  const isF = (cc, rr) => inBounds(cc, rr) && terrainAt(cc, rr) === 'F';
+  const { x, z } = toWorld(c, r);
+  const edgeN = !isF(c, r - 1), edgeS = !isF(c, r + 1), edgeW = !isF(c - 1, r), edgeE = !isF(c + 1, r);
   const spots = [];
-  for (let k = 0; k < 60 && spots.length < 9; k++) {
-    const dx = (rand() - 0.5) * 0.9, dz = (rand() - 0.5) * 0.9;
-    if (Math.hypot(dx, dz * 1.2) < 0.22) continue;
-    if (dz > 0 && Math.abs(dx) < 0.24) continue;
-    if (spots.some(([sx, sz]) => Math.hypot(sx - dx, sz - dz) < 0.15)) continue;
-    spots.push([dx, dz]);
+  for (const gx of [-0.375, -0.125, 0.125, 0.375]) {
+    for (const gz of [-0.375, -0.125, 0.125, 0.375]) {
+      const dx = gx + (rand() - 0.5) * 0.14, dz = gz + (rand() - 0.5) * 0.14;
+      if (Math.hypot(dx, dz * 1.2) < 0.22 || (dz > 0 && Math.abs(dx) < 0.22)) continue;
+      const edge = (edgeW && dx < -0.3) || (edgeE && dx > 0.3) || (edgeN && dz < -0.3) || (edgeS && dz > 0.3);
+      if (edge && rand() < 0.3) continue;
+      spots.push([dx, dz, edge]);
+    }
   }
-  for (const [dx, dz] of spots) {
-    const front = dz > 0.15 ? 0.78 : 1; // keep the near row a little lower
-    tree(parent, x + dx, z + dz, y, rand, (0.72 + rand() * 0.2) * front, 0.85);
+  // Fill the seam toward forest neighbours (east and south, so each seam is filled once).
+  if (!edgeE) spots.push([0.5 + (rand() - 0.5) * 0.1, -0.3 + rand() * 0.2, false]);
+  if (!edgeS) spots.push([(rand() - 0.5) * 0.3 - 0.3, 0.5 + (rand() - 0.5) * 0.1, false]);
+  for (const [dx, dz, edge] of spots) {
+    const front = dz > 0.15 ? 0.8 : 1; // keep the near row a little lower
+    const scale = (edge ? 0.62 + rand() * 0.18 : 0.76 + rand() * 0.22) * front;
+    tree(parent, x + dx, z + dz, groundY(x + dx, z + dz), rand, scale, edge ? 0.7 : 0.9);
   }
-  if (rand() < 0.7) bush(parent, x + (rand() - 0.5) * 0.7, z + 0.3 + rand() * 0.12, y, rand, 0.9);
+  if (rand() < 0.7) {
+    const bx = x + (rand() - 0.5) * 0.7, bz = z + 0.3 + rand() * 0.12;
+    bush(parent, bx, bz, groundY(bx, bz), rand, 0.9);
+  }
 }
 
 // Split-rail fence from (x0, z0) to (x1, z1).
@@ -300,19 +314,66 @@ function makeFlag(x, y, z, faction, flags) {
   flags.push({ mesh: flag, base: flagGeo.attributes.position.array.slice() });
 }
 
-function mountain(parent, x, z, y, rand, seed) {
-  const peakGeo = roughen(new THREE.ConeGeometry(0.42, 0.66, 9, 5), seed, 0.35);
-  const peak = add(parent, peakGeo, rockMat, x, y + 0.33, z);
-  peak.rotation.y = rand() * Math.PI;
-  const snow = add(parent, roughen(new THREE.ConeGeometry(0.15, 0.22, 9, 2), seed + 1, 0.2), mat(0xf6f4ee, { roughness: 0.6 }), x, y + 0.56, z);
-  snow.rotation.y = peak.rotation.y;
-  const small = add(parent, roughen(new THREE.ConeGeometry(0.22, 0.34, 7, 3), seed + 2, 0.35), rockMat,
-    x + (rand() - 0.5) * 0.4, y + 0.17, z + 0.22);
-  small.rotation.y = rand() * Math.PI;
-  for (let i = 0; i < 3; i++) {
-    add(parent, new THREE.DodecahedronGeometry(0.035 + rand() * 0.03, 0), rockMat,
-      x + (rand() - 0.5) * 0.8, y + 0.02, z + (rand() - 0.5) * 0.8);
+// Mountains are rocky crags rather than snowy cones: clusters of leaning, faceted spires in warm
+// grey-tan stone with moss on every upward-facing facet, so they sit in the lush palette but still
+// read as rough, slow ground. Each face is coloured flat (non-indexed geometry, per-face colour).
+const cragMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, flatShading: true });
+const CRAG_ROCK = [0x8c8272, 0x857d70, 0x938672, 0x7e786e];
+
+function cragGeometry(radius, height, sides, seed, rand, lean = 0.12) {
+  let geo = new THREE.CylinderGeometry(radius * (0.3 + rand() * 0.2), radius, height, sides, 4);
+  geo.translate(0, height / 2, 0);
+  const pos = geo.attributes.position;
+  const lx = (rand() - 0.5) * lean, lz = (rand() - 0.5) * lean;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i), k = y / height;
+    const n = vnoise(x * 9 + seed, y * 9, z * 9, seed) - 0.5;
+    const s = 1 + n * 0.55 * (1 - k * 0.4);
+    // Ledges: pinch some rings in so the spire steps like stacked strata.
+    const ledge = 1 - 0.12 * Math.max(0, Math.sin(k * 9 + seed));
+    pos.setXYZ(i, x * s * ledge + lx * k * height, y + n * 0.04, z * s * ledge + lz * k * height);
   }
+  geo = geo.toNonIndexed();
+  geo.computeVertexNormals();
+  const p = geo.attributes.position, nrm = geo.attributes.normal;
+  const colors = new Float32Array(p.count * 3);
+  const base = new THREE.Color(CRAG_ROCK[Math.floor(rand() * CRAG_ROCK.length)]);
+  const moss = new THREE.Color(0x5f8c34), c = new THREE.Color(), fn = new THREE.Vector3();
+  for (let f = 0; f < p.count; f += 3) {
+    fn.set(0, 0, 0);
+    for (let v = 0; v < 3; v++) fn.x += nrm.getX(f + v), fn.y += nrm.getY(f + v), fn.z += nrm.getZ(f + v);
+    fn.normalize();
+    const y = (p.getY(f) + p.getY(f + 1) + p.getY(f + 2)) / 3 / height;
+    c.copy(base).multiplyScalar(0.6 + 0.45 * y + (rand() - 0.5) * 0.16);
+    if (fn.y > 0.45 && rand() < 0.85) c.copy(moss).multiplyScalar(0.8 + rand() * 0.35);
+    for (let v = 0; v < 3; v++) colors.set([c.r, c.g, c.b], (f + v) * 3);
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  return geo;
+}
+
+function crag(parent, x, z, y, rand, seed, radius, height, sides = 6) {
+  const m = add(parent, cragGeometry(radius, height, sides, seed, rand), cragMat, x, y - 0.02, z);
+  m.rotation.y = rand() * Math.PI;
+  return m;
+}
+
+function mountain(parent, x, z, y, rand, seed, c, r) {
+  // Main spire toward the back, two flanking peaks, and scree toward the front; the front centre
+  // stays low so a unit standing here is still visible.
+  crag(parent, x + (rand() - 0.5) * 0.2, z - 0.18 - rand() * 0.08, y, rand, seed * 7 + 1, 0.27, 0.62 + rand() * 0.22);
+  crag(parent, x - 0.26 - rand() * 0.08, z + (rand() - 0.5) * 0.2, y, rand, seed * 7 + 2, 0.19, 0.34 + rand() * 0.18);
+  crag(parent, x + 0.26 + rand() * 0.08, z + (rand() - 0.5) * 0.2, y, rand, seed * 7 + 3, 0.18, 0.3 + rand() * 0.18);
+  for (let i = 0; i < 4; i++) {
+    const a = rand() * Math.PI * 2, d = 0.25 + rand() * 0.15;
+    crag(parent, x + Math.cos(a) * d, z + Math.abs(Math.sin(a)) * d * 0.9, y, rand, seed * 7 + 4 + i, 0.05 + rand() * 0.05, 0.05 + rand() * 0.08, 5);
+  }
+  // Saddle rocks where the massif continues into the next mountain tile, so neighbours join up.
+  for (const [dc, dr] of [[1, 0], [0, 1]]) {
+    if (!inBounds(c + dc, r + dr) || terrainAt(c + dc, r + dr) !== 'M' || rand() < 0.25) continue;
+    crag(parent, x + dc * 0.5 + (rand() - 0.5) * 0.15, z + dr * 0.5 - (dr ? 0.12 : 0.1), y, rand, seed * 7 + 9, 0.16, 0.26 + rand() * 0.2);
+  }
+  if (rand() < 0.45) pine(parent, x + (rand() < 0.5 ? -1 : 1) * (0.35 + rand() * 0.08), z - 0.35, y, rand, 0.55);
 }
 
 function sliceGeometry(geo, start, count) {
@@ -378,7 +439,9 @@ function grassBlades(tiles, rand, time) {
   let i = 0;
   for (const { t, x, z, h } of tiles) {
     for (let k = 0; k < (perTile[t] || 0); k++) {
-      p.set(x + (rand() - 0.5) * 0.9, h, z + (rand() - 0.5) * 0.9);
+      p.set(x + (rand() - 0.5) * 0.98, h, z + (rand() - 0.5) * 0.98);
+      p.y = groundY(p.x, p.z);
+      if (h - p.y > 0.04) continue; // no blades on the rocky slopes
       e.set((rand() - 0.5) * 0.5, rand() * Math.PI, (rand() - 0.5) * 0.5);
       q.setFromEuler(e);
       const k2 = 0.7 + rand() * 0.8;
@@ -389,6 +452,7 @@ function grassBlades(tiles, rand, time) {
       i++;
     }
   }
+  mesh.count = i;
   return mesh;
 }
 
@@ -628,12 +692,37 @@ const smoothstep = (a, b, x) => {
   return t * t * (3 - 2 * t);
 };
 
+// Height of the land surface at (x, z) in tile units (x = column, z = row, 0..W / 0..H).
+// Each land tile keeps a flat top at groundTop, but where it sits above a neighbouring land
+// tile its outer rim falls away in a rugged slope down to the neighbour's level, so hills and
+// mountain massifs read as one continuous landform instead of stacked blocks. The lower tile
+// stays flat, and the river gorge and map edge keep their sheer walls.
+const SLOPE_RUN = 0.36; // horizontal run of a one-level (0.3) slope
+function landHeight(x, z) {
+  const c0 = Math.floor(x), r0 = Math.floor(z);
+  let h = Infinity;
+  const k = (LEVEL / SLOPE_RUN) * (0.75 + 0.5 * vnoise(x * 3.1, z * 3.1, 0, 23));
+  for (let r = r0 - 1; r <= r0 + 1; r++) {
+    for (let c = c0 - 1; c <= c0 + 1; c++) {
+      if (!inBounds(c, r) || isWaterCell(c, r)) continue;
+      const dx = Math.max(c - x, 0, x - (c + 1)), dz = Math.max(r - z, 0, z - (r + 1));
+      h = Math.min(h, groundTop(c, r) + k * Math.hypot(dx, dz));
+    }
+  }
+  return h;
+}
+
+// Ground height under a world-space point (props sit on slopes instead of floating).
+const groundY = (x, z) => landHeight(x + W / 2, z + H / 2);
+
 const cliffMat = new THREE.MeshStandardMaterial({ map: cliffTexture(90, 0.25), roughness: 1, flatShading: true });
 const mossyCliffMat = new THREE.MeshStandardMaterial({ map: cliffTexture(91, 1), roughness: 1, flatShading: true });
 
 // [bottom, top] of the wall on side `dir` of tile (c, r), or null if the ground doesn't step down.
 function wallSpan(c, r, [dc, dr]) {
   if (!inBounds(c, r)) return null;
+  // Land-to-land steps are slopes in the top surface (landHeight), not walls.
+  if (!isWaterCell(c, r) && inBounds(c + dc, r + dr) && !isWaterCell(c + dc, r + dr)) return null;
   const top = groundTop(c, r), bottom = heightAt(c + dc, r + dr);
   return bottom < top - 1e-4 ? [bottom, top] : null;
 }
@@ -651,19 +740,20 @@ function pushWall(out, c, r, dir) {
   const same = (s) => s && Math.abs(s[0] - bottom) < 1e-4 && Math.abs(s[1] - top) < 1e-4;
   const runA = same(alongX ? wallSpan(c - 1, r, dir) : wallSpan(c, r - 1, dir));
   const runB = same(alongX ? wallSpan(c + 1, r, dir) : wallSpan(c, r + 1, dir));
-  const nu = 6, nv = Math.max(2, Math.ceil((top - bottom) / 0.06));
+  const nu = SUB, nv = Math.max(2, Math.ceil((top - bottom) / 0.06));
   const grid = [];
   for (let j = 0; j <= nv; j++) {
-    const s = j / nv, y = bottom + (top - bottom) * s;
+    const s = j / nv;
     for (let i = 0; i <= nu; i++) {
       const t = i / nu;
       const x = a[0] + (b[0] - a[0]) * t, z = a[1] + (b[1] - a[1]) * t;
+      const yTop = isWaterCell(c, r) ? top : landHeight(x + W / 2, z + H / 2), y = bottom + (yTop - bottom) * s;
       // Bulge the face outward with noise; the top and bottom rows and open ends stay put so the
       // wall still meets the tile tops and neighbouring walls without cracks.
       const fade = Math.min(runA ? 1 : smoothstep(0, 0.3, t), runB ? 1 : smoothstep(1, 0.7, t));
       const k = Math.pow(4 * s * (1 - s), 0.5) * fade;
       const d = ((vnoise(x * 4.5, y * 6, z * 4.5, 11) - 0.3) * 0.08 + (vnoise(x * 13, y * 13, z * 13, 12) - 0.5) * 0.025) * k;
-      grid.push({ p: [x + dc * d, y, z + dr * d], uv: [alongX ? x : z, 1 - (top - y)] });
+      grid.push({ p: [x + dc * d, y, z + dr * d], uv: [alongX ? x : z, 1 - (yTop - y)] });
     }
   }
   const target = isWaterCell(c, r) || !inBounds(c + dc, r + dr) || !isWaterCell(c + dc, r + dr) ? out.cliff : out.moss;
@@ -796,6 +886,36 @@ function riverDetail(parent, rocks, rand) {
   bush(parent, ix + 0.06, iz + 0.07, WATER_Y + 0.07, rand, 0.8);
 }
 
+// Steep parts of the ground surface (hill and massif slopes) blend to the same rock courses as
+// the gorge walls, with a sunlit grass rim along the brow, so every height change reads the same
+// way: bright lip, darker rock face.
+function groundMaterial(atlas) {
+  const material = new THREE.MeshStandardMaterial({ map: atlas, roughness: 0.95 });
+  const rock = cliffTexture(92, 0.4, false);
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uRock = { value: rock };
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vWPos;\nvarying vec3 vWNrm;')
+      .replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
+        vWPos = (modelMatrix * vec4(transformed, 1.0)).xyz;
+        vWNrm = normalize(mat3(modelMatrix) * objectNormal);`);
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nuniform sampler2D uRock;\nvarying vec3 vWPos;\nvarying vec3 vWNrm;')
+      .replace('#include <map_fragment>', `#include <map_fragment>
+        vec3 wn = normalize(vWNrm);
+        float steep = smoothstep(0.86, 0.62, wn.y);
+        vec2 ruv = vec2(abs(wn.x) > abs(wn.z) ? vWPos.z : vWPos.x, vWPos.y * 1.6);
+        vec3 rockCol = texture2D(uRock, ruv).rgb;
+        float rim = smoothstep(0.995, 0.93, wn.y) * (1.0 - steep);
+        diffuseColor.rgb = mix(diffuseColor.rgb * (1.0 + rim * 0.35), rockCol * 0.92, steep);`);
+  };
+  return material;
+}
+
+// Subdivisions per tile edge of the ground surface; the gorge walls use the same count so their
+// top row meets the surface vertex for vertex.
+const SUB = 8;
+
 function buildGround(scene, rand) {
   const cellClass = (c, r) => ({ G: 'grass', R: 'grass', F: 'forest', V: 'village', M: 'rock', C: 'stone', K: 'stone', W: 'bed', B: 'bed' })[terrainAt(c, r)];
   const yards = [], fields = [];
@@ -805,23 +925,55 @@ function buildGround(scene, rand) {
     fields.push([c + 0.5 + 0.22, r + 0.56, c + 0.5 + 0.46, r + 0.9], [c + 0.5 - 0.46, r + 0.56, c + 0.5 - 0.22, r + 0.9]);
   }
   const atlas = terrainAtlas({ cols: W, rows: H, px: 128, cellClass, roads: roadPaths(rand), fields, yards, seed: 12 });
-  const tops = { pos: [], uv: [] }, walls = { cliff: { pos: [], uv: [] }, moss: { pos: [], uv: [] } };
+
+  // Land: one indexed grid (shared vertices, smooth normals) over every land tile.
+  const n = W * SUB + 1, m = H * SUB + 1;
+  const pos = new Float32Array(n * m * 3), uv = new Float32Array(n * m * 2);
+  for (let j = 0; j < m; j++) {
+    for (let i = 0; i < n; i++) {
+      const x = i / SUB, z = j / SUB, k = j * n + i;
+      const h = landHeight(x, z);
+      pos.set([x - W / 2, Number.isFinite(h) ? h : 0, z - H / 2], k * 3);
+      uv.set([x / W, 1 - z / H], k * 2);
+    }
+  }
+  const index = [];
+  for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
+    if (isWaterCell(c, r)) continue;
+    for (let j = r * SUB; j < (r + 1) * SUB; j++) for (let i = c * SUB; i < (c + 1) * SUB; i++) {
+      const a = j * n + i, b = a + 1, d = a + n, e = d + 1;
+      index.push(a, d, e, a, e, b);
+    }
+  }
+  const land = new THREE.BufferGeometry();
+  land.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  land.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  land.setIndex(index);
+  land.computeVertexNormals();
+
+  // River bed: one flat quad per water cell.
+  const bed = { pos: [], uv: [] }, walls = { cliff: { pos: [], uv: [] }, moss: { pos: [], uv: [] } };
   for (let r = 0; r < H; r++) {
     for (let c = 0; c < W; c++) {
+      for (const dir of DIRS) pushWall(walls, c, r, dir);
+      if (!isWaterCell(c, r)) continue;
       const y = groundTop(c, r), x0 = c - W / 2, z0 = r - H / 2;
       const u0 = c / W, u1 = (c + 1) / W, v0 = 1 - r / H, v1 = 1 - (r + 1) / H;
-      tops.pos.push(x0, y, z0, x0, y, z0 + 1, x0 + 1, y, z0 + 1, x0, y, z0, x0 + 1, y, z0 + 1, x0 + 1, y, z0);
-      tops.uv.push(u0, v0, u0, v1, u1, v1, u0, v0, u1, v1, u1, v0);
-      for (const dir of DIRS) pushWall(walls, c, r, dir);
+      bed.pos.push(x0, y, z0, x0, y, z0 + 1, x0 + 1, y, z0 + 1, x0, y, z0, x0 + 1, y, z0 + 1, x0 + 1, y, z0);
+      bed.uv.push(u0, v0, u0, v1, u1, v1, u0, v0, u1, v1, u1, v0);
     }
   }
   const group = new THREE.Group();
-  const topMesh = new THREE.Mesh(toGeometry(tops), new THREE.MeshStandardMaterial({ map: atlas, roughness: 0.95 }));
-  const cliffs = new THREE.Mesh(toGeometry(walls.cliff), cliffMat);
-  const mossy = new THREE.Mesh(toGeometry(walls.moss), mossyCliffMat);
-  for (const m of [topMesh, cliffs, mossy]) {
-    m.castShadow = m.receiveShadow = true;
-    group.add(m);
+  const topMat = groundMaterial(atlas);
+  const meshes = [
+    new THREE.Mesh(land, topMat),
+    new THREE.Mesh(toGeometry(bed), topMat),
+    new THREE.Mesh(toGeometry(walls.cliff), cliffMat),
+    new THREE.Mesh(toGeometry(walls.moss), mossyCliffMat),
+  ];
+  for (const mesh of meshes) {
+    mesh.castShadow = mesh.receiveShadow = true;
+    group.add(mesh);
   }
   scene.add(group);
 }
@@ -857,8 +1009,8 @@ export function buildMap(scene) {
 
       if (t === 'G' || t === 'V' || t === 'F') grassTiles.push({ t, x: p.x, z: p.z, h: top });
       if (t === 'W' || t === 'B') waterCells.push([c, r]);
-      if (t === 'F') forestClump(statics, p.x, p.z, top, rand);
-      if (t === 'M') mountain(statics, p.x, p.z, top, rand, mountainSeed++);
+      if (t === 'F') forestMass(statics, c, r, rand);
+      if (t === 'M') mountain(statics, p.x, p.z, top, rand, mountainSeed++, c, r);
       if (t === 'V') villages.push({ x: p.x, z: p.z, y: top, turn: (rand() - 0.5) * 0.3 });
       if (t === 'C' || t === 'K') {
         const faction = t === 'C' ? 'blue' : 'red';
@@ -868,11 +1020,14 @@ export function buildMap(scene) {
       if (t === 'B') bridgeTiles.push(p);
       if (t === 'G') {
         if (rand() < 0.3) {
-          add(statics, new THREE.DodecahedronGeometry(0.03 + rand() * 0.025, 0), rockMat,
-            p.x + (rand() - 0.5) * 0.8, top + 0.01, p.z + (rand() - 0.5) * 0.8);
+          const rx = p.x + (rand() - 0.5) * 0.8, rz = p.z + (rand() - 0.5) * 0.8;
+          add(statics, new THREE.DodecahedronGeometry(0.03 + rand() * 0.025, 0), rockMat, rx, groundY(rx, rz) + 0.01, rz);
         }
         // A bush in one corner of some meadow tiles, clear of the unit in the middle.
-        if (rand() < 0.35) bush(statics, p.x + (rand() < 0.5 ? -1 : 1) * 0.38, p.z - 0.2 - rand() * 0.2, top, rand, 0.8);
+        if (rand() < 0.35) {
+          const bx = p.x + (rand() < 0.5 ? -1 : 1) * 0.38, bz = p.z - 0.2 - rand() * 0.2;
+          bush(statics, bx, bz, groundY(bx, bz), rand, 0.8);
+        }
         // Fences along stretches of road.
         for (const [dc, dr] of DIRS) {
           if (!inBounds(c + dc, r + dr) || terrainAt(c + dc, r + dr) !== 'R' || rand() > 0.3) continue;
