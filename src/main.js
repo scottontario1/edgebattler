@@ -12,14 +12,17 @@ import { createUnits } from './units.js';
 import { createCamera } from './camera.js';
 import { createUI } from './ui.js';
 
-// Supersample on standard-DPI screens; cap at 2x so 4K stays smooth.
-const pixelRatio = () => Math.min(Math.max(devicePixelRatio, 1.5), 2);
+// Render one pixel per CSS pixel; SMAA handles edges without supersampling every pass.
+const PIXEL_RATIO = 1;
+const FRAME_INTERVAL = 1000 / 60;
 
 const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
-renderer.setPixelRatio(pixelRatio());
+renderer.setPixelRatio(PIXEL_RATIO);
 renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+// Refresh once per displayed frame, then reuse for the AO scene pass.
+renderer.shadowMap.autoUpdate = false;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
 document.getElementById('app').appendChild(renderer.domElement);
@@ -35,7 +38,7 @@ scene.add(new THREE.HemisphereLight(0xfff0d8, 0x3d4a2c, 1.0));
 const sun = new THREE.DirectionalLight(0xffdcaa, 2.8);
 sun.position.set(-7, 14, 8);
 sun.castShadow = true;
-sun.shadow.mapSize.set(4096, 4096);
+sun.shadow.mapSize.set(2048, 2048);
 Object.assign(sun.shadow.camera, { left: -11, right: 11, top: 9, bottom: -9, near: 1, far: 40 });
 sun.shadow.bias = -0.0003;
 sun.shadow.normalBias = 0.015;
@@ -50,7 +53,7 @@ const ui = createUI({ renderer, camera, scene, units, view });
 if (import.meta.env.DEV) window.__game = { THREE, scene, camera, renderer, units };
 
 const composer = new EffectComposer(renderer);
-composer.setPixelRatio(pixelRatio());
+composer.setPixelRatio(PIXEL_RATIO);
 composer.setSize(innerWidth, innerHeight);
 composer.addPass(new RenderPass(scene, camera));
 const gtao = new GTAOPass(scene, camera, innerWidth, innerHeight);
@@ -61,7 +64,7 @@ composer.addPass(gtao);
 const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.35, 0.5, 1.0);
 composer.addPass(bloom);
 composer.addPass(new OutputPass());
-const smaa = new SMAAPass(innerWidth * pixelRatio(), innerHeight * pixelRatio());
+const smaa = new SMAAPass(innerWidth * PIXEL_RATIO, innerHeight * PIXEL_RATIO);
 composer.addPass(smaa);
 
 // H toggles the post-processing stack for slower GPUs.
@@ -76,28 +79,43 @@ addEventListener('keydown', (e) => {
   }
   if (e.key.toLowerCase() !== 'h') return;
   hd = !hd;
-  renderer.setPixelRatio(hd ? pixelRatio() : 1);
   hdLabel.textContent = hd ? 'HD on' : 'HD off';
 });
 
 addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight);
-  composer.setPixelRatio(pixelRatio());
   composer.setSize(innerWidth, innerHeight);
   resize();
 });
 
-const clock = new THREE.Clock();
-renderer.setAnimationLoop(() => {
-  if (!innerWidth || !innerHeight) return; // hidden tab / zero-size frame
-  const t = clock.getElapsedTime();
+let lastFrame = null;
+let lastAnimationTime = null;
+let t = 0;
+function renderFrame(now) {
+  if (document.hidden || !innerWidth || !innerHeight) return;
+  const elapsed = lastFrame === null ? 0 : now - lastFrame;
+  // Allow for timestamp rounding at 60 Hz; retain the remainder on faster displays.
+  if (lastFrame !== null && elapsed < FRAME_INTERVAL - 0.1) return;
+  lastFrame = now - (Math.max(0, elapsed - FRAME_INTERVAL) % FRAME_INTERVAL);
+  // Pause animation time while hidden and avoid large jumps after a stalled frame.
+  if (lastAnimationTime !== null) t += Math.min((now - lastAnimationTime) / 1000, 0.1);
+  lastAnimationTime = now;
   map.animate(t);
   units.update(t, ui.activeId());
   ui.update(t);
+  renderer.shadowMap.needsUpdate = true;
   if (hd) composer.render();
   else renderer.render(scene, camera);
   // HUD-style overlay (unit HP bars) drawn on top, untouched by AO/bloom.
   renderer.autoClear = false;
   renderer.render(units.overlay, camera);
   renderer.autoClear = true;
-});
+}
+
+function updateVisibility() {
+  lastFrame = null;
+  lastAnimationTime = null;
+  renderer.setAnimationLoop(document.hidden ? null : renderFrame);
+}
+document.addEventListener('visibilitychange', updateVisibility);
+updateVisibility();

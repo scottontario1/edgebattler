@@ -10,7 +10,7 @@
 ## Layout
 - `src/map.js`: terrain layout, tile meshes, props (trees, mountains, villages, castles, bridge), water and flag animation
 - `src/textures.js`: high-res canvas textures (grass, dirt, rock, stone, wood, riverbed, water normal map)
-- `src/main.js`: renderer + post-processing (GTAO ambient occlusion, bloom, SMAA, 1.5–2x supersampling); H toggles HD
+- `src/main.js`: renderer + post-processing (GTAO ambient occlusion, bloom, SMAA at 1x CSS resolution); 2048px shadows refreshed once per rendered frame, 60 FPS cap, and hidden-tab pause; H toggles HD
 - `src/units.js`: roster (Brenna, Dreg + recruits from the `RECRUIT` class templates) and procedural low-poly figures (fallback; M toggles)
 - `src/models.js`: class -> model table (`MODEL_SPECS`) and `buildHero()`: matte standard materials for cloth/fur/skin at roughness 0.9+, hard cel-shaded polished `MeshToonMaterial` metals, per-unit skin/hair/iris/brow colours, faction `cloth` recolour, unlit `ink` and decal materials (the outline and faces are built into the GLBs), `HERO_SCALE`, procedural idle and ready pose; `buildModel()` seats the cavalier rider on the horse
 - `src/sprites.js`: the sprite direction (`docs/asset-pipeline-plan.md`): every class (Brenna, Dreg, pikeman, archer, cavalier) is an illustrated 2D cutout from `design_assets/*_sprite.png` on upright, alpha-tested, unlit camera-facing planes (stretched by 1/cos(tilt), picking follows the alpha mask). `tools/assets/prep_sprites.py` trims/downscales them into `public/sprites/` + `manifest.json` (foot anchor, crop offsets); sources are never edited; recruit classes get a `_red` variant (blue cloth hue-shifted to crimson) for the red army. `?sprites=0` shows the old 3D models for comparison
