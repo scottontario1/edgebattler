@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 
-// Near top-down orthographic camera, tilted so unit models read clearly.
-const TILT = THREE.MathUtils.degToRad(52);
+// Orthographic camera tilted 40° from horizontal so cliffs, the river gorge and the
+// backdrop read as terrain height, while unit models still face the viewer.
+const TILT = THREE.MathUtils.degToRad(40);
 const DIST = 30;
 
 export function createCamera(dom) {
@@ -17,7 +18,7 @@ export function createCamera(dom) {
   function resize() {
     const aspect = innerWidth / innerHeight;
     // Fit the 16 x 12 map with room for the UI panels.
-    const viewH = Math.max(12, 18.5 / aspect);
+    const viewH = Math.max(10.5, 18.5 / aspect);
     camera.left = (-viewH * aspect) / 2;
     camera.right = (viewH * aspect) / 2;
     camera.top = viewH / 2;

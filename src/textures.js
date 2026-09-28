@@ -104,6 +104,53 @@ export function rockTexture(seed) {
   });
 }
 
+// Tile side walls: grass lip with hanging tufts over layered rock strata.
+export function cliffTexture(seed) {
+  return canvasTexture(512, seed, (g, s, rand) => {
+    g.fillStyle = '#7d7260';
+    g.fillRect(0, 0, s, s);
+    for (let y = s * 0.12; y < s; y += 14 + rand() * 26) {
+      const band = 24 + rand() * 30;
+      g.fillStyle = hsl(34 + rand() * 10, 10 + rand() * 10, 34 + rand() * 18, 0.55);
+      g.fillRect(0, y, s, band * 0.7);
+      g.fillStyle = 'rgba(30,24,18,0.45)';
+      g.fillRect(0, y + band * 0.7, s, 2 + rand() * 2);
+    }
+    for (let i = 0; i < 90; i++) {
+      const x = rand() * s, y = s * 0.12 + rand() * s;
+      g.fillStyle = 'rgba(28,22,16,0.4)';
+      g.fillRect(x, y, 1.5 + rand() * 2, 10 + rand() * 30);
+    }
+    blotches(g, s, rand, 30, 'rgba(210,200,178,0.22)', 'rgba(40,34,26,0.3)');
+    speckle(g, s, rand, 3000, (r) => hsl(40, 8 + r() * 10, 30 + r() * 40, 0.5));
+    // Grass lip and tufts hanging over the edge.
+    g.fillStyle = hsl(90, 42, 36);
+    g.fillRect(0, 0, s, s * 0.08);
+    for (let i = 0; i < 160; i++) {
+      const x = rand() * s, len = s * (0.02 + rand() * 0.09);
+      g.strokeStyle = hsl(84 + rand() * 16, 40 + rand() * 15, 24 + rand() * 18, 0.95);
+      g.lineWidth = 2 + rand() * 4;
+      g.beginPath(); g.moveTo(x, 0); g.lineTo(x + (rand() - 0.5) * 6, s * 0.07 + len); g.stroke();
+    }
+  });
+}
+
+// Falling water: bright vertical streaks, scrolled downward at runtime.
+export function waterfallTexture() {
+  return canvasTexture(256, 5, (g, s, rand) => {
+    g.fillStyle = '#5f9fc8';
+    g.fillRect(0, 0, s, s);
+    for (let i = 0; i < 220; i++) {
+      const x = rand() * s, y = rand() * s, len = 20 + rand() * 90;
+      g.strokeStyle = `rgba(235,248,255,${0.25 + rand() * 0.6})`;
+      g.lineWidth = 1 + rand() * 3;
+      for (const oy of [-s, 0]) {
+        g.beginPath(); g.moveTo(x, y + oy); g.lineTo(x + (rand() - 0.5) * 2, y + oy + len); g.stroke();
+      }
+    }
+  });
+}
+
 export function stoneTexture(seed) {
   return canvasTexture(512, seed, (g, s, rand) => {
     g.fillStyle = '#6f6a5e';

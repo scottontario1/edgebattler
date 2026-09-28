@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import {
   grassTexture, dirtTexture, rockTexture, stoneTexture, woodTexture, riverbedTexture,
-  waterNormalTexture, floorTexture,
+  waterNormalTexture, floorTexture, cliffTexture, waterfallTexture,
 } from './textures.js';
 
 // 16 x 12 battlefield. Row 0 is the far (north) edge, row 11 the near edge.
@@ -52,12 +53,32 @@ export function toWorld(c, r) {
   return new THREE.Vector3(c - (W - 1) / 2, 0, r - (H - 1) / 2);
 }
 
+// Elevation: the river runs in a gorge (level 0), land sits at level 1, and mountains
+// plus a few wooded hills rise to level 2. Each level adds LEVEL world units of height.
+export const LEVEL = 0.3;
+const HILLS = new Set(['1,2', '2,2', '1,3', '2,1', '10,9', '11,9', '9,10', '10,10', '11,10']);
+export const LAND_TOP = TERRAIN.G.h + LEVEL; // 0.52; tools/blender/build_env.py matches this
+export const WATER_Y = 0.16;
+
+export function levelAt(c, r) {
+  const t = terrainAt(c, r);
+  if (t === 'W' || t === 'B') return 0;
+  if (t === 'M' || HILLS.has(`${c},${r}`)) return 2;
+  return 1;
+}
+
+// Top surface of the tile block itself.
+function groundTop(c, r) {
+  const t = terrainAt(c, r);
+  return t === 'W' || t === 'B' ? TERRAIN[t].h : TERRAIN[t].h + levelAt(c, r) * LEVEL;
+}
+
 // Height a unit (or overlay) stands at on this tile.
 export function tileTop(c, r) {
   const t = terrainAt(c, r);
-  if (t === 'B') return 0.2;
-  if (t === 'W') return 0.12;
-  return TERRAIN[t].h;
+  if (t === 'B') return LAND_TOP + 0.01; // bridge deck
+  if (t === 'W') return WATER_Y - 0.04;
+  return groundTop(c, r);
 }
 
 export function rng(seed) {
@@ -91,6 +112,14 @@ const TILE_MATS = {
 };
 TILE_MATS.K = TILE_MATS.C;
 TILE_MATS.B = TILE_MATS.W;
+
+// Tile blocks use the terrain texture on top and rock strata on the sides
+// (BoxGeometry face order: +x, -x, +y, -y, +z, -z).
+const cliffMats = variants((i) => new THREE.MeshStandardMaterial({ map: cliffTexture(90 + i), roughness: 1 }));
+const blockMats = (top, rand) => {
+  const side = cliffMats[Math.floor(rand() * cliffMats.length)];
+  return [side, side, top, side, side, side];
+};
 
 const rockMat = new THREE.MeshStandardMaterial({ map: rockTexture(80), roughness: 0.95, flatShading: true });
 const stoneMat = new THREE.MeshStandardMaterial({ map: stoneTexture(81), color: 0xe8e2d0, roughness: 0.9 });
@@ -241,6 +270,15 @@ function mountain(parent, x, z, y, rand, seed) {
   }
 }
 
+function sliceGeometry(geo, start, count) {
+  const out = new THREE.BufferGeometry();
+  for (const [name, attr] of Object.entries(geo.attributes)) {
+    const n = attr.itemSize;
+    out.setAttribute(name, new THREE.BufferAttribute(attr.array.slice(start * n, (start + count) * n), n));
+  }
+  return out;
+}
+
 // Collapse every static mesh into one mesh per material: ~2000 draw calls become ~40.
 function mergeStatics(root) {
   root.updateMatrixWorld(true);
@@ -251,9 +289,15 @@ function mergeStatics(root) {
     for (const name of Object.keys(geo.attributes)) {
       if (!['position', 'normal', 'uv'].includes(name)) geo.deleteAttribute(name);
     }
-    const key = `${o.material.uuid}|${o.castShadow}`;
-    if (!buckets.has(key)) buckets.set(key, { material: o.material, cast: o.castShadow, geos: [] });
-    buckets.get(key).geos.push(geo);
+    // Multi-material meshes are split into one piece per material group.
+    const parts = Array.isArray(o.material)
+      ? geo.groups.map((g) => [o.material[g.materialIndex], sliceGeometry(geo, g.start, g.count)])
+      : [[o.material, geo]];
+    for (const [material, part] of parts) {
+      const key = `${material.uuid}|${o.castShadow}`;
+      if (!buckets.has(key)) buckets.set(key, { material, cast: o.castShadow, geos: [] });
+      buckets.get(key).geos.push(part);
+    }
   });
   const out = new THREE.Group();
   for (const { material, cast, geos } of buckets.values()) {
@@ -301,6 +345,129 @@ function grassBlades(tiles, rand, time) {
   return mesh;
 }
 
+// Blender-built models (tools/blender/build_env.py). If a file is missing, the map falls
+// back to procedural pieces so the game still runs.
+const gltfLoader = new GLTFLoader();
+const ENV = 'models/env/';
+
+function woodenBridge(scene, p) {
+  const g = new THREE.Group();
+  add(g, box, woodMat, p.x, LAND_TOP - 0.02, p.z).scale.set(1.3, 0.05, 0.62);
+  for (const side of [-1, 1]) {
+    add(g, box, woodMat, p.x, LAND_TOP + 0.08, p.z + side * 0.29).scale.set(1.3, 0.03, 0.03);
+    for (let i = 0; i < 5; i++) add(g, box, woodMat, p.x - 0.6 + i * 0.3, LAND_TOP + 0.04, p.z + side * 0.29).scale.set(0.03, 0.08, 0.03);
+  }
+  scene.add(g);
+}
+
+function loadEnvironment(scene, bridgeTiles) {
+  gltfLoader.loadAsync(ENV + 'stone_bridge.glb').then((gltf) => {
+    gltf.scene.traverse((o) => {
+      if (!o.isMesh) return;
+      o.material = stoneMat;
+      o.castShadow = o.receiveShadow = true;
+    });
+    for (const p of bridgeTiles) {
+      const b = gltf.scene.clone();
+      b.position.set(p.x, LAND_TOP, p.z);
+      scene.add(b);
+    }
+  }).catch((err) => {
+    console.warn('stone bridge missing, using wooden bridge', err);
+    bridgeTiles.forEach((p) => woodenBridge(scene, p));
+  });
+
+  return gltfLoader.loadAsync(ENV + 'cliff_backdrop.glb').then((gltf) => {
+    const material = new THREE.MeshStandardMaterial({ vertexColors: true, flatShading: true, roughness: 0.95 });
+    gltf.scene.traverse((o) => {
+      if (!o.isMesh) return;
+      o.material = material;
+      o.castShadow = o.receiveShadow = true;
+    });
+    gltf.scene.position.z = -H / 2;
+    scene.add(gltf.scene);
+    scene.add(plateauTrees(gltf.scene));
+    return gltf.scene;
+  }).catch((err) => console.warn('cliff backdrop missing', err));
+}
+
+// Pine woods on the backdrop plateau: drop a ray onto the terrain and plant only on gentle
+// grassy ground (below the snow line, away from the river channel and cliff lip).
+function plateauTrees(backdrop) {
+  backdrop.updateMatrixWorld(true);
+  const rand = rng(33);
+  const trees = new THREE.Group();
+  const ray = new THREE.Raycaster();
+  const down = new THREE.Vector3(0, -1, 0);
+  const riverX = toWorld(7, 0).x;
+  for (let i = 0; i < 900 && trees.children.length < 260; i++) {
+    const x = (rand() - 0.5) * 21;
+    const z = -H / 2 - 0.9 - rand() * 4.5;
+    if (Math.abs(x - riverX) < 0.5) continue;
+    ray.set(new THREE.Vector3(x, 20, z), down);
+    const hit = ray.intersectObject(backdrop, true)[0];
+    if (!hit || hit.point.y > 3.1) continue;
+    const n = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
+    if (n.y < 0.85) continue;
+    pine(trees, x, z, hit.point.y - 0.02, rand, 1.1 + rand() * 0.4);
+  }
+  return mergeStatics(trees);
+}
+
+// The river enters over the north cliff (column 7). The fall arcs out from the lip like a
+// thrown stream: horizontal travel grows with the square root of the drop.
+function buildWaterfall(scene, riverMat) {
+  const x = toWorld(7, 0).x;
+  const zTop = -H / 2 - 0.62, zBottom = -H / 2 + 0.06;
+  const yTop = 1.3, yBottom = WATER_Y;
+  const tex = waterfallTexture();
+  tex.repeat.set(1.5, 1.2);
+  const fallMat = new THREE.MeshStandardMaterial({
+    map: tex, transparent: true, opacity: 0.92, roughness: 0.2, emissive: 0x4a88b0, emissiveIntensity: 0.25,
+  });
+  const segs = 16;
+  const geo = new THREE.PlaneGeometry(0.66, 1, 6, segs);
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const s = 0.5 - pos.getY(i); // 0 at the lip, 1 at the pool
+    pos.setY(i, yTop + (yBottom - yTop) * s);
+    pos.setZ(i, zTop + (zBottom - zTop) * Math.sqrt(s));
+    pos.setX(i, pos.getX(i) * (1 + s * 0.25));
+  }
+  geo.computeVertexNormals();
+  const fall = new THREE.Mesh(geo, fallMat);
+  fall.position.x = x;
+  scene.add(fall);
+
+  // Channel water on the plateau feeding the fall.
+  const channel = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 3).rotateX(-Math.PI / 2), riverMat);
+  channel.position.set(x, yTop + 0.01, zTop - 1.5);
+  scene.add(channel);
+
+  // Foam at the base: soft white puffs that swell and fade on a loop.
+  const foamMat = new THREE.MeshBasicMaterial({ color: 0xf4fbff, transparent: true, opacity: 0.55, depthWrite: false });
+  const puffs = [];
+  const rand = rng(21);
+  for (let i = 0; i < 14; i++) {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 8), foamMat.clone());
+    m.userData = { ox: (rand() - 0.5) * 0.7, oz: rand() * 0.35, phase: rand() };
+    m.scale.y = 0.5;
+    scene.add(m);
+    puffs.push(m);
+  }
+  return {
+    animate(t) {
+      tex.offset.y = t * 1.4;
+      for (const m of puffs) {
+        const k = (t * 0.6 + m.userData.phase) % 1;
+        m.position.set(x + m.userData.ox * (0.7 + k * 0.4), WATER_Y + 0.02 + k * 0.05, zBottom + m.userData.oz * k);
+        m.scale.setScalar(0.6 + k * 1.1).y *= 0.5;
+        m.material.opacity = 0.6 * (1 - k);
+      }
+    },
+  };
+}
+
 export function buildMap(scene) {
   const rand = rng(7);
   const flags = [];
@@ -315,6 +482,7 @@ export function buildMap(scene) {
   scene.add(floor);
 
   const waterGeos = [];
+  const bridgeTiles = [];
   let mountainSeed = 0;
 
   for (let r = 0; r < H; r++) {
@@ -323,31 +491,26 @@ export function buildMap(scene) {
       const info = TERRAIN[t];
       const p = toWorld(c, r);
       const materials = TILE_MATS[t];
-      add(statics, tileGeo(info.h), materials[Math.floor(rand() * materials.length)], p.x, info.h / 2, p.z, false);
+      const top = groundTop(c, r);
+      add(statics, tileGeo(top), blockMats(materials[Math.floor(rand() * materials.length)], rand), p.x, top / 2, p.z, false);
 
-      if (t === 'G' || t === 'V' || t === 'F') grassTiles.push({ t, x: p.x, z: p.z, h: info.h });
-      if (t === 'W' || t === 'B') waterGeos.push(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2).translate(p.x, 0.1, p.z));
+      if (t === 'G' || t === 'V' || t === 'F') grassTiles.push({ t, x: p.x, z: p.z, h: top });
+      if (t === 'W' || t === 'B') waterGeos.push(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2).translate(p.x, WATER_Y, p.z));
       if (t === 'F') {
         const n = 3 + Math.floor(rand() * 2);
-        for (let i = 0; i < n; i++) tree(statics, p.x + (rand() - 0.5) * 0.6, p.z + (rand() - 0.5) * 0.6, info.h, rand);
+        for (let i = 0; i < n; i++) tree(statics, p.x + (rand() - 0.5) * 0.6, p.z + (rand() - 0.5) * 0.6, top, rand);
       }
-      if (t === 'M') mountain(statics, p.x, p.z, info.h, rand, mountainSeed++);
+      if (t === 'M') mountain(statics, p.x, p.z, top, rand, mountainSeed++);
       if (t === 'V') {
-        house(statics, p.x - 0.06, p.z - 0.08, info.h, rand);
-        oak(statics, p.x + 0.3, p.z + 0.22, info.h, rand, 0.75);
+        house(statics, p.x - 0.06, p.z - 0.08, top, rand);
+        oak(statics, p.x + 0.3, p.z + 0.22, top, rand, 0.75);
       }
-      if (t === 'C') castle(statics, p.x, p.z, info.h, 'blue', flags);
-      if (t === 'K') castle(statics, p.x, p.z, info.h, 'red', flags);
-      if (t === 'B') {
-        add(statics, box, woodMat, p.x, 0.17, p.z).scale.set(1.04, 0.05, 0.62);
-        for (const side of [-1, 1]) {
-          add(statics, box, woodMat, p.x, 0.25, p.z + side * 0.29).scale.set(1.04, 0.03, 0.03);
-          for (let i = 0; i < 4; i++) add(statics, box, woodMat, p.x - 0.45 + i * 0.3, 0.22, p.z + side * 0.29).scale.set(0.03, 0.08, 0.03);
-        }
-      }
+      if (t === 'C') castle(statics, p.x, p.z, top, 'blue', flags);
+      if (t === 'K') castle(statics, p.x, p.z, top, 'red', flags);
+      if (t === 'B') bridgeTiles.push(p);
       if ((t === 'G' || t === 'R') && rand() < 0.25) {
         add(statics, new THREE.DodecahedronGeometry(0.03 + rand() * 0.025, 0), rockMat,
-          p.x + (rand() - 0.5) * 0.8, info.h + 0.01, p.z + (rand() - 0.5) * 0.8);
+          p.x + (rand() - 0.5) * 0.8, top + 0.01, p.z + (rand() - 0.5) * 0.8);
       }
     }
   }
@@ -373,10 +536,14 @@ export function buildMap(scene) {
   water.receiveShadow = true;
   scene.add(water);
 
+  loadEnvironment(scene, bridgeTiles);
+  const waterfall = buildWaterfall(scene, waterMat);
+
   return {
     animate(t) {
       time.value = t;
       waterNormal.offset.set(t * 0.02, t * 0.035);
+      waterfall.animate(t);
       for (const f of flags) {
         const pos = f.mesh.geometry.attributes.position;
         for (let i = 0; i < pos.count; i++) {

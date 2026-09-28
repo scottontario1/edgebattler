@@ -161,7 +161,8 @@ export function createUI({ renderer, camera, scene, units }) {
 
   const raycaster = new THREE.Raycaster();
   const ndc = new THREE.Vector2();
-  const ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.22);
+  const ground = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  const hitPoint = new THREE.Vector3();
   const figures = units.list.map((u) => u.group);
 
   function pick(e) {
@@ -173,10 +174,19 @@ export function createUI({ renderer, camera, scene, units }) {
       const u = units.byId.get(hit.object.userData.unitId).data;
       return [u.c, u.r];
     }
-    const p = new THREE.Vector3();
-    if (!raycaster.ray.intersectPlane(ground, p)) return null;
-    const c = Math.round(p.x + (W - 1) / 2), r = Math.round(p.z + (H - 1) / 2);
-    return inBounds(c, r) ? [c, r] : null;
+    // Tiles sit at different heights, so test each tile's top face and keep the nearest hit.
+    let best = null, bestDist = Infinity;
+    for (let r = 0; r < H; r++) {
+      for (let c = 0; c < W; c++) {
+        ground.constant = -tileTop(c, r);
+        if (!raycaster.ray.intersectPlane(ground, hitPoint)) continue;
+        const p = toWorld(c, r);
+        if (Math.abs(hitPoint.x - p.x) > 0.5 || Math.abs(hitPoint.z - p.z) > 0.5) continue;
+        const d = hitPoint.distanceToSquared(raycaster.ray.origin);
+        if (d < bestDist) { bestDist = d; best = [c, r]; }
+      }
+    }
+    return best;
   }
 
   renderer.domElement.addEventListener('pointermove', (e) => {

@@ -46,6 +46,7 @@ const map = buildMap(scene);
 const units = createUnits(scene);
 const { camera, resize } = createCamera(renderer.domElement);
 const ui = createUI({ renderer, camera, scene, units });
+if (import.meta.env.DEV) window.__game = { THREE, scene, camera, renderer, units };
 
 const composer = new EffectComposer(renderer);
 composer.setPixelRatio(pixelRatio());
