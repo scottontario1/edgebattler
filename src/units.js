@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { toWorld, tileTop, FACTION_COLORS } from './map.js';
 import { buildModel } from './models.js';
+import { buildSprite, hasSprite } from './sprites.js';
 
 // `cls` picks the 3D model and portrait gear (models.js MODEL_SPECS); `title` is what the UI
 // shows. Brenna and Dreg are the two named heroes. Everything else is an unnamed recruit: a class
@@ -327,9 +328,12 @@ export function createUnits(scene) {
     const u = { data, group, figure, ring, hp, phase: i * 0.9, model: null };
 
     // Swap in the illustrated model once it loads; the procedural figure stays as the fallback.
-    buildModel(data.id, data.faction).then((m) => {
+    // Brenna and Dreg are illustrated 2D sprites (src/sprites.js); `?sprites=0` keeps the 3D models
+    // for comparison. Sprites face screen-right, so red mirrors to face the blue army.
+    const asSprite = hasSprite(data.id) && new URLSearchParams(location.search).get('sprites') !== '0';
+    (asSprite ? buildSprite(data.id, data.faction, { flip: data.faction === 'red' }) : buildModel(data.id, data.faction)).then((m) => {
       m.root.position.y = 0.01;
-      m.root.rotation.y = facing;
+      if (!m.billboard) m.root.rotation.y = facing;
       m.root.traverse((o) => { o.userData.unitId = data.id; });
       group.add(m.root);
       u.model = m;

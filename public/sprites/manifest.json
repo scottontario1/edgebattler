@@ -1,0 +1,50 @@
+{
+  "brenna": {
+    "file": "sprites/brenna.png",
+    "source": "brenna_sprite.png",
+    "sourceSize": [
+      1122,
+      1402
+    ],
+    "cropBox": [
+      43,
+      94,
+      1102,
+      1353
+    ],
+    "scale": 0.29523809523809524,
+    "size": [
+      325,
+      384
+    ],
+    "anchor": [
+      0.5609047619047619,
+      0.9828373015873016
+    ],
+    "visibleHeight": 372
+  },
+  "dreg": {
+    "file": "sprites/dreg.png",
+    "source": "dreg_sprite.png",
+    "sourceSize": [
+      1122,
+      1402
+    ],
+    "cropBox": [
+      26,
+      66,
+      1121,
+      1368
+    ],
+    "scale": 0.2854950115118956,
+    "size": [
+      325,
+      384
+    ],
+    "anchor": [
+      0.5263915438778181,
+      0.9836315234075211
+    ],
+    "visibleHeight": 372
+  }
+}
