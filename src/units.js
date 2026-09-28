@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { toWorld, tileTop, FACTION_COLORS } from './map.js';
+import { buildModel } from './models.js';
 
 // `cls` picks the 3D model and portrait gear; `title` is what the UI shows.
 export const UNITS = [
@@ -269,24 +270,56 @@ export function createUnits(scene) {
     const figure = buildFigure(data);
     figure.position.y = 0.05;
     // Figures face the camera, turned slightly toward the enemy side.
-    figure.rotation.y = data.faction === 'blue' ? 0.45 : -0.45;
+    const facing = data.faction === 'blue' ? 0.45 : -0.45;
+    figure.rotation.y = facing;
     figure.scale.multiplyScalar(1.6);
     group.add(figure);
 
     group.traverse((o) => { o.userData.unitId = data.id; });
     scene.add(group);
-    return { data, group, figure, ring, phase: i * 0.9 };
+    const u = { data, group, figure, ring, phase: i * 0.9, model: null };
+
+    // Swap in the KayKit model once it loads; the procedural figure stays as the fallback.
+    buildModel(data.id).then((m) => {
+      m.root.position.y = 0.05;
+      m.root.rotation.y = facing;
+      m.root.traverse((o) => { o.userData.unitId = data.id; });
+      group.add(m.root);
+      u.model = m;
+      applyStyle(u);
+    }).catch((err) => console.warn(`model for ${data.id} failed, keeping procedural figure`, err));
+    return u;
   });
 
+  // M flips between the KayKit models and the original procedural figures.
+  let useModels = true;
+  function applyStyle(u) {
+    const on = useModels && !!u.model;
+    if (u.model) u.model.root.visible = on;
+    u.figure.visible = !on;
+  }
+
   const byId = new Map(list.map((u) => [u.data.id, u]));
+  let lastT = 0;
 
   return {
     list,
     byId,
     unitAt: (c, r) => list.find((u) => u.data.c === c && u.data.r === r),
+    toggleModels() {
+      useModels = !useModels;
+      list.forEach(applyStyle);
+      return useModels;
+    },
     update(t, activeId) {
+      const dt = Math.min(t - lastT, 0.1);
+      lastT = t;
       for (const u of list) {
         const active = u.data.id === activeId;
+        if (u.model) {
+          u.model.setActive(active);
+          u.model.mixer.update(dt);
+        }
         const amp = active ? 0.05 : 0.012;
         const speed = active ? 5 : 2;
         u.figure.position.y = 0.05 + Math.abs(Math.sin(t * speed + u.phase)) * amp;

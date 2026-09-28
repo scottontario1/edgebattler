@@ -65,7 +65,12 @@ composer.addPass(smaa);
 // H toggles the post-processing stack for slower GPUs.
 let hd = true;
 const hdLabel = document.getElementById('hd');
+const modelLabel = document.getElementById('models');
 addEventListener('keydown', (e) => {
+  if (e.key.toLowerCase() === 'm') {
+    modelLabel.textContent = units.toggleModels() ? 'KayKit models' : 'procedural';
+    return;
+  }
   if (e.key.toLowerCase() !== 'h') return;
   hd = !hd;
   renderer.setPixelRatio(hd ? pixelRatio() : 1);
