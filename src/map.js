@@ -204,6 +204,21 @@ function tree(parent, x, z, y, rand, scale, pineShare = 0.8) {
   (rand() < pineShare ? pine : oak)(parent, x, z, y, rand, scale);
 }
 
+// Tallest prop (world units above its own tile top) that can stand at depth offset dz (-0.5 back
+// .. +0.5 front) in tile (c, r) without hiding more than ~0.15 of a unit standing in the middle
+// of this tile or of the tile behind it. The camera looks down at 40 degrees from the south, so
+// each unit of depth in front of a figure hides tan(40) = 0.84 of its height, and a raised tile
+// hides more of a lower tile behind it.
+const TAN_TILT = Math.tan(THREE.MathUtils.degToRad(40));
+function occlusionCap(c, r, dz) {
+  const top = groundTop(c, r);
+  let cap = dz > 0 ? dz * TAN_TILT + 0.15 : Infinity;
+  if (inBounds(c, r - 1) && !isWaterCell(c, r - 1)) {
+    cap = Math.min(cap, (1 + dz) * TAN_TILT - (top - groundTop(c, r - 1)) + 0.15);
+  }
+  return Math.max(0.12, cap);
+}
+
 // Forest: trees are laid on a jittered lattice across every forest tile, including the borders
 // between two forest tiles, so neighbouring tiles fuse into one wood with a dense, dark canopy.
 // Along the edge of the wood the lattice thins and shrinks into a ragged fringe, and each tile
@@ -227,7 +242,7 @@ function forestMass(parent, c, r, rand) {
   if (!edgeS) spots.push([(rand() - 0.5) * 0.3 - 0.3, 0.5 + (rand() - 0.5) * 0.1, false]);
   for (const [dx, dz, edge] of spots) {
     const front = dz > 0.15 ? 0.8 : 1; // keep the near row a little lower
-    const scale = (edge ? 0.62 + rand() * 0.18 : 0.76 + rand() * 0.22) * front;
+    const scale = Math.min((edge ? 0.62 + rand() * 0.18 : 0.76 + rand() * 0.22) * front, occlusionCap(c, r, dz) / 0.55);
     tree(parent, x + dx, z + dz, groundY(x + dx, z + dz), rand, scale, edge ? 0.7 : 0.9);
   }
   if (rand() < 0.7) {
@@ -472,21 +487,29 @@ function crag(parent, x, z, y, rand, seed, radius, height, sides = 6) {
 }
 
 function mountain(parent, x, z, y, rand, seed, c, r) {
-  // Main spire toward the back, two flanking peaks, and scree toward the front; the front centre
-  // stays low so a unit standing here is still visible.
-  crag(parent, x + (rand() - 0.5) * 0.2, z - 0.18 - rand() * 0.08, y, rand, seed * 7 + 1, 0.27, 0.62 + rand() * 0.22);
-  crag(parent, x - 0.26 - rand() * 0.08, z + (rand() - 0.5) * 0.2, y, rand, seed * 7 + 2, 0.19, 0.34 + rand() * 0.18);
-  crag(parent, x + 0.26 + rand() * 0.08, z + (rand() - 0.5) * 0.2, y, rand, seed * 7 + 3, 0.18, 0.3 + rand() * 0.18);
+  // Main spire toward the back, two flanking peaks, and scree toward the front. Every crag is
+  // capped by occlusionCap so units here and on the tile behind stay visible.
+  const peak = (dx, dz, sd, radius, height, sides) => {
+    const h = Math.min(height, occlusionCap(c, r, dz));
+    crag(parent, x + dx, z + dz, y, rand, sd, radius * Math.min(1, 0.5 + h / height * 0.5), h, sides);
+  };
+  peak((rand() - 0.5) * 0.2, -0.2 - rand() * 0.08, seed * 7 + 1, 0.27, 0.62 + rand() * 0.22);
+  peak(-0.26 - rand() * 0.08, (rand() - 0.5) * 0.2, seed * 7 + 2, 0.19, 0.34 + rand() * 0.18);
+  peak(0.26 + rand() * 0.08, (rand() - 0.5) * 0.2, seed * 7 + 3, 0.18, 0.3 + rand() * 0.18);
   for (let i = 0; i < 4; i++) {
     const a = rand() * Math.PI * 2, d = 0.25 + rand() * 0.15;
-    crag(parent, x + Math.cos(a) * d, z + Math.abs(Math.sin(a)) * d * 0.9, y, rand, seed * 7 + 4 + i, 0.05 + rand() * 0.05, 0.05 + rand() * 0.08, 5);
+    peak(Math.cos(a) * d, Math.abs(Math.sin(a)) * d * 0.9, seed * 7 + 4 + i, 0.05 + rand() * 0.05, 0.05 + rand() * 0.08, 5);
   }
   // Saddle rocks where the massif continues into the next mountain tile, so neighbours join up.
   for (const [dc, dr] of [[1, 0], [0, 1]]) {
     if (!inBounds(c + dc, r + dr) || terrainAt(c + dc, r + dr) !== 'M' || rand() < 0.25) continue;
-    crag(parent, x + dc * 0.5 + (rand() - 0.5) * 0.15, z + dr * 0.5 - (dr ? 0.12 : 0.1), y, rand, seed * 7 + 9, 0.16, 0.26 + rand() * 0.2);
+    const dz = dr * 0.5 - (dr ? 0.12 : 0.1);
+    peak(dc * 0.5 + (rand() - 0.5) * 0.15, dz, seed * 7 + 9, 0.16, 0.26 + rand() * 0.2);
   }
-  if (rand() < 0.45) pine(parent, x + (rand() < 0.5 ? -1 : 1) * (0.35 + rand() * 0.08), z - 0.35, y, rand, 0.55);
+  if (rand() < 0.45) {
+    const px = x + (rand() < 0.5 ? -1 : 1) * (0.35 + rand() * 0.08);
+    pine(parent, px, z - 0.35, y, rand, Math.min(0.55, occlusionCap(c, r, -0.35) / 0.55));
+  }
 }
 
 function sliceGeometry(geo, start, count) {
