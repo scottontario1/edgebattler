@@ -3,30 +3,37 @@ import { W, H } from './map.js';
 
 // Orthographic camera tilted 40° from horizontal so cliffs, the river gorge and the
 // backdrop read as terrain height, while unit models still face the viewer.
-const TILT = THREE.MathUtils.degToRad(40);
+// Portrait screens tilt steeper (52°) so the map's depth uses the extra height.
+const TILT_LANDSCAPE = THREE.MathUtils.degToRad(40);
+const TILT_PORTRAIT = THREE.MathUtils.degToRad(52);
 const DIST = 30;
-const SIN = Math.sin(TILT), COS = Math.cos(TILT);
+let SIN = Math.sin(TILT_LANDSCAPE), COS = Math.cos(TILT_LANDSCAPE);
 const ZOOM_MIN = 0.55, ZOOM_MAX = 2.6;
 const DRAG_PX = 8; // movement before a press becomes a pan instead of a click/tap
 
 // The playable map in view space: 16 wide, 12 deep foreshortened by the tilt, plus ~0.9
 // world units of height (castle, trees, units) poking above the far row.
 const MAP_U = W + 0.4;
-const MAP_V = (H + 0.4) * SIN + 0.9 * COS;
-const MAP_VC = 0.45 * COS; // centre of that box, in view-space v, relative to the map centre
+const mapV = () => (H + 0.4) * SIN + 0.9 * COS;
+const mapVC = () => 0.45 * COS; // centre of that box, in view-space v, relative to the map centre
 
 // HUD space to keep clear of the map (CSS px). Landscape: small top panels sit over the
 // corner mountains, so only the lower-left card and lower-right actions need room.
 // Portrait: a top bar + roster strip and a bottom dock. Keep in sync with style.css.
+// Short landscape (phone on its side): the card is a left column and the actions an icon
+// column on the right, so the map takes the full height between them.
 export const isPortrait = () => innerWidth <= 820 && innerHeight >= innerWidth || innerWidth <= 560;
+const isShort = () => !isPortrait() && innerHeight <= 500;
 function insets() {
-  return isPortrait() ? { top: 118, bottom: 190, left: 8, right: 8 } : { top: 24, bottom: 118, left: 16, right: 16 };
+  if (isPortrait()) return { top: 118, bottom: 190, left: 8, right: 8 };
+  if (isShort()) return { top: 40, bottom: 10, left: 206, right: 60 };
+  return { top: 24, bottom: 118, left: 16, right: 16 };
 }
 
 export function createCamera(dom) {
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
   const target = new THREE.Vector3();
-  const offset = new THREE.Vector3(0, SIN * DIST, COS * DIST);
+  const offset = new THREE.Vector3();
   let base = new THREE.Vector3(); // framed map position; pans are clamped around it
 
   function place() {
@@ -44,8 +51,12 @@ export function createCamera(dom) {
     const w = innerWidth, h = innerHeight, ins = insets();
     const aw = w - ins.left - ins.right, ah = h - ins.top - ins.bottom;
     const portrait = isPortrait();
+    const tilt = portrait ? TILT_PORTRAIT : TILT_LANDSCAPE;
+    SIN = Math.sin(tilt);
+    COS = Math.cos(tilt);
+    offset.set(0, SIN * DIST, COS * DIST);
     const spanU = portrait ? 7.6 : MAP_U;
-    const px = Math.min(aw / spanU, ah / MAP_V); // screen px per world unit at zoom 1
+    const px = Math.min(aw / spanU, ah / mapV()); // screen px per world unit at zoom 1
     const viewH = h / px;
     const aspect = w / h;
     camera.left = (-viewH * aspect) / 2;
@@ -56,7 +67,7 @@ export function createCamera(dom) {
     // Put the map centre (or, in portrait, column ~5.5) in the middle of the free area.
     const uc = portrait ? 5.2 - (W - 1) / 2 : 0;
     const u = uc - (ins.left - ins.right) / (2 * px);
-    const v = MAP_VC - (ins.bottom - ins.top) / (2 * px);
+    const v = mapVC() - (ins.bottom - ins.top) / (2 * px);
     base = new THREE.Vector3(u, 0, -v / SIN);
     target.copy(base);
     place();

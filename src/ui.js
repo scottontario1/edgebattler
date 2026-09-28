@@ -252,6 +252,16 @@ function reticles(scene) {
   };
 }
 
+// Each inserted copy of a portrait SVG needs its own ids: duplicate gradient/clip ids resolve
+// to the first copy in the document, which breaks when that copy is hidden (display:none).
+let svgSeq = 0;
+function uniqueIds(svg) {
+  const n = ++svgSeq;
+  return svg.replace(/id="([^"]+)"/g, `id="$1_${n}"`)
+    .replace(/url\(#([^)]+)\)/g, `url(#$1_${n})`)
+    .replace(/href="#([^"]+)"/g, `href="#$1_${n}"`);
+}
+
 const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
 
 export function createUI({ renderer, camera, scene, units, view }) {
@@ -294,7 +304,7 @@ export function createUI({ renderer, camera, scene, units, view }) {
   function unitCard(u) {
     const side = u.faction === 'blue' ? 'Ally' : 'Enemy';
     return `
-      <div class="face">${portraits.get(u.id)}</div>
+      <div class="face">${uniqueIds(portraits.get(u.id))}</div>
       <div class="info">
         <div class="name-row"><span class="name">${esc(u.name)}</span>${u.boss ? '<span class="tag boss">BOSS</span>' : ''}<span class="tag side">${side}</span></div>
         <div class="cls">${esc(u.title)} · Lv ${u.lv}</div>
@@ -359,7 +369,7 @@ export function createUI({ renderer, camera, scene, units, view }) {
     sheet.innerHTML = `
       <button class="btn close" data-act="close" aria-label="Close">×</button>
       <div class="top">
-        <div class="face">${portraitSVG(u)}</div>
+        <div class="face">${uniqueIds(portraitSVG(u))}</div>
         <div class="info">
           <div class="eyebrow">${u.faction === 'blue' ? 'Ally' : 'Enemy'}${u.boss ? ' · Boss' : ''}</div>
           <div class="name">${esc(u.name)}</div>
@@ -377,7 +387,7 @@ export function createUI({ renderer, camera, scene, units, view }) {
 
   function renderActions() {
     const btn = (act, label, ico, k, extra = '', disabled = false) =>
-      `<button class="btn ${extra}" data-act="${act}"${disabled ? ' disabled' : ''}><span class="ico">${ico}</span>${label}<span class="key">${k}</span></button>`;
+      `<button class="btn ${extra}" data-act="${act}" title="${label}" aria-label="${label}"${disabled ? ' disabled' : ''}><span class="ico">${ico}</span><span class="lbl">${label}</span><span class="key">${k}</span></button>`;
     const u = selected();
     let html = '';
     if (state.sheet) html = btn('close', 'Back', '‹', 'Esc');
@@ -508,7 +518,7 @@ export function createUI({ renderer, camera, scene, units, view }) {
     b.dataset.id = u.data.id;
     b.title = `${u.data.name}, ${u.data.title}`;
     b.setAttribute('aria-label', b.title);
-    b.innerHTML = portraits.get(u.data.id);
+    b.innerHTML = uniqueIds(portraits.get(u.data.id));
     b.addEventListener('mouseenter', () => { state.hoverId = u.data.id; setCursor(u.data.c, u.data.r); refresh(); });
     b.addEventListener('mouseleave', () => { state.hoverId = null; refresh(); });
     b.addEventListener('click', () => {

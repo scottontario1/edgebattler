@@ -376,6 +376,29 @@ html, body {
 /* Narrow landscape: drop the hint first, then tighten. */
 @media (max-width: 1100px) { .hint { display: none; } }
 
+/* ---------- Short landscape (phone on its side): side columns, icon actions ---------- */
+@media (max-height: 500px) and (min-aspect-ratio: 1/1) and (min-width: 561px) {
+  :root { --edge: 8px; }
+  .objective { padding: 5px 9px; }
+  .objective .sub, .roster { display: none; }
+  .goal { font-size: 13px; }
+  .turn { padding: 5px 8px; }
+  .card, .forecast { width: 190px; }
+  .card { flex-direction: column; gap: 6px; }
+  .card .face { width: 52px; height: 60px; position: absolute; top: var(--pad); right: var(--pad); }
+  .name-row { padding-right: 58px; flex-wrap: wrap; }
+  .name { font-size: 15px; }
+  .tag.side { display: none; }
+  .facts { flex-direction: column; gap: 1px; }
+  .fc-grid .v { font-size: 13px; }
+  .actions { min-width: 0; }
+  .actions .btn { width: var(--touch); padding: 0; justify-content: center; }
+  .actions .btn .lbl, .actions .btn .key { display: none; }
+  .actions .btn .ico { width: auto; font-size: 16px; }
+  .sheet { max-height: calc(100% - 2 * var(--edge)); width: 320px; }
+  .sheet .face { width: 96px; height: 112px; }
+}
+
 /* ---------- Portrait / phone: top bar + bottom dock, reflowed (not scaled) ---------- */
 @media (max-aspect-ratio: 1/1) and (max-width: 820px), (max-width: 560px) {
   :root { --edge: 8px; }
