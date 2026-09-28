@@ -326,15 +326,15 @@ function mace(c) {
     <path d="M85.2 23.6 L85.2 13 M81.6 17 L88.8 17" stroke="url(#${id}gold)" stroke-width="2" stroke-linecap="round"/>`;
 }
 
-// Dreg's bearded war axe (Blender kit barbarian_axe), haft over the far shoulder, rusted blade.
+// Dreg's double-bitted battleaxe (tools/blender/build_heroes.py), haft over the far shoulder.
 function beardedAxe(c) {
   const { id } = c;
   return `<path d="M64 124 L86 34" stroke="#3a2414" stroke-width="3.2" stroke-linecap="round"/>
     <path d="M65.2 118 L85.4 37" stroke="#7a5534" stroke-width="0.7"/>
     <path d="M70 104 l4 1 M73.6 90 l4 1 M77.2 76 l4 1" stroke="#5a3a22" stroke-width="2.6"/>
-    <path d="M84 40 C88 36 96 33 104 34 C102 42 102 52 105 62 C98 60 93 56 90 50 C88 47 86 46 83.5 46 Z" fill="url(#${id}steel)" stroke="#111" stroke-width="0.6"/>
-    <path d="M103.5 35 C101.8 43 101.8 52 104.4 61" stroke="#fff" stroke-opacity="0.8" stroke-width="0.9" fill="none"/>
-    <path d="M90 42 C93 41 96 42 98 44 M92 48 C94 47 97 48 99 50" stroke="#6a4a2a" stroke-width="0.7" fill="none" opacity="0.7"/>
+    <path d="M86 40 C90 34 97 30 104 30 C102 38 102 48 105 56 C98 55 92 52 87 47 Z" fill="url(#${id}steel)" stroke="#111" stroke-width="0.6"/>
+    <path d="M83 38 C79 32 72 28 66 29 C68 37 68 46 65 54 C72 53 78 50 82 45 Z" fill="url(#${id}steel)" stroke="#111" stroke-width="0.6"/>
+    <path d="M103.5 31 C101.8 39 101.8 47 104.4 55 M66.6 30 C68.2 38 68.2 45 65.8 53" stroke="#fff" stroke-opacity="0.8" stroke-width="0.9" fill="none"/>
     <rect x="81" y="38" width="6" height="9" rx="1" transform="rotate(14 84 42)" fill="url(#${id}gold)"/>`;
 }
 
@@ -710,8 +710,8 @@ function beard(c) {
     <path d="M47.6 69.4 C49.5 68.6 51 68.9 52.4 69.4" stroke="${hl}" stroke-width="0.4" fill="none"/>`;
   if (u.cls === 'warlord') s += `<rect x="49" y="92" width="5" height="3.2" rx="1" fill="url(#${id}gold)"/><path d="M49 93.2 L54 93.2" stroke="#6a4a10" stroke-width="0.4"/>`;
   if (u.cls === 'barbarian') {
-    // two plaited beard braids ending in bone beads (the design sheet's braided beard)
-    for (const x of [46, 57]) {
+    // three chunky beard braids ending in bone beads, matching the battlefield model
+    for (const x of [45, 51.5, 58]) {
       let plait = '';
       for (let k = 0; k < 5; k++) plait += `<ellipse cx="${x + (k % 2 ? 0.6 : -0.6)}" cy="${86 + k * 3.2}" rx="2.4" ry="2" fill="url(#${id}hair)" stroke="${dk}" stroke-width="0.4"/>`;
       s += `${plait}<rect x="${x - 2}" y="101.5" width="4" height="3.4" rx="1.2" fill="url(#${id}bone)"/>

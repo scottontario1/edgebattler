@@ -18,9 +18,7 @@ import { UNITS } from './units.js';
 // pointed hats + staff/wand = casters, horse = cavalry, oversized horned barbarian = boss.
 const BASE = 'models/kaykit/';
 const HORSE = 'models/env/horse.glb';
-// Blender-built character kits (tools/blender/build_gear.py): armour, hair, cloth and weapons
-// fitted around the KayKit bodies. Each piece names its kit and the bone it follows.
-const GEAR_KITS = 'models/env/gear.glb';
+
 
 // KayKit's idle holds the staff point-down at the feet; this leans it ~35° out from the body
 // so the crystal clears the mage's wide hat brim (solved against the idle pose).
@@ -28,14 +26,15 @@ const STAFF_OUT = { q: [-0.302, 0.699, 0.553, 0.338], scale: 1.35 };
 
 export const MODEL_SPECS = {
   aldric:  { file: 'Knight.glb', show: ['1H_Sword', 'Badge_Shield'], hide: ['Knight_Helmet'] },
-  // Brenna and Dreg follow the character sheets in design_assets/ via their Blender kits.
-  brenna:  { file: 'Knight.glb', show: ['1H_Sword'], hide: ['Knight_Helmet'], kit: 'paladin' },
+  // Brenna and Dreg are built from scratch (tools/blender/build_heroes.py) to the design
+  // sheets in design_assets/ and the tactics-miniature style rules; see buildHero().
+  brenna:  { hero: 'models/env/brenna.glb' },
   wren:    { file: 'Rogue_Hooded.glb', show: [], gear: ['bow', 'quiver'] },
   elowen:  { file: 'Mage.glb', show: ['2H_Staff'], pose: { '2H_Staff': STAFF_OUT } },
   garrick: { file: 'Knight.glb', show: ['Round_Shield'], gear: ['lance', 'plume'], mount: true },
 
   morvath: { file: 'Barbarian.glb', show: ['2H_Axe'], scale: 1.32 },
-  dreg:    { file: 'Barbarian.glb', show: [], hide: ['Barbarian_Hat'], kit: 'barbarian', scale: 1.08 },
+  dreg:    { hero: 'models/env/dreg.glb' },
   sable:   { file: 'Rogue_Hooded.glb', show: [], gear: ['bow', 'quiver'] },
   vex:     { file: 'Mage.glb', show: ['1H_Wand', 'Spellbook_open'] },
   grisk:   { file: 'Barbarian.glb', show: ['1H_Axe'], hide: ['Barbarian_Hat', 'Barbarian_Cape'], gear: ['bandana'] },
@@ -175,9 +174,9 @@ function gearMaterial(kind, faction) {
       cloth: { color: fc, roughness: 0.7 },
       feather: { color: 0xf2ead8, roughness: 0.8 },
       white: { color: 0xf1ece0, roughness: 0.65 },
-      fur: { color: 0xd6c3a0, roughness: 0.95 },
-      furdark: { color: 0x7a5a3c, roughness: 0.95 },
-      rust: { color: 0x6f6a66, roughness: 0.55, metalness: 0.6 },
+      fur: { color: 0xa87a4c, roughness: 0.95 },
+      furdark: { color: 0x6a4428, roughness: 0.95 },
+      iron: { color: 0x4a484e, roughness: 0.45, metalness: 0.7 },
       brass: { color: 0xb8893e, roughness: 0.35, metalness: 0.75 },
       bone: { color: 0xeae0c8, roughness: 0.6 },
       gem: { color: 0x3aa8ff, roughness: 0.15, emissive: 0x1a6cff, emissiveIntensity: 0.9 },
@@ -306,7 +305,7 @@ function outlineMaterial(faction, width) {
 
 function addOutlines(root, faction, width) {
   const meshes = [];
-  root.traverse((o) => { if (o.isMesh && o.visible && !o.userData.outline) meshes.push(o); });
+  root.traverse((o) => { if (o.isMesh && o.visible && !o.userData.outline && !o.userData.noOutline) meshes.push(o); });
   for (const o of meshes) {
     const mat = outlineMaterial(faction, width);
     let hull;
@@ -322,34 +321,6 @@ function addOutlines(root, faction, width) {
     hull.frustumCulled = o.frustumCulled;
     hull.raycast = () => {}; // picking uses the real mesh; skip re-skinning the hull
     o.add(hull); // identity transform: follows the mesh, its bones and its visibility
-  }
-}
-
-// Add a Blender kit: each piece is exported in the character's default-pose space, so it is
-// placed at that position and then re-parented to its bone (attach keeps the world transform)
-// to follow the animations. Hair pieces take the unit's hair colour.
-const hairMats = new Map();
-function hairMaterial(hair, faction) {
-  const key = `${hair}|${faction}`;
-  if (!hairMats.has(key)) hairMats.set(key, addRim(new THREE.MeshStandardMaterial({ color: hair ?? 0x6b4226, roughness: 0.6 }), faction));
-  return hairMats.get(key);
-}
-function addKit(character, kitScene, kit, faction, hair) {
-  character.updateMatrixWorld(true);
-  for (const src of kitScene.children) {
-    if (src.userData.kit !== kit) continue;
-    const piece = src.clone();
-    piece.traverse((o) => {
-      if (!o.isMesh) return;
-      o.castShadow = true;
-      o.receiveShadow = true;
-      const name = o.material.name;
-      o.material = name === 'hair' ? hairMaterial(hair, faction) : gearMaterial(name, faction);
-    });
-    character.add(piece);
-    const bone = character.getObjectByName(src.userData.bone);
-    if (bone) bone.attach(piece);
-    else console.warn('kit bone missing', src.userData.bone);
   }
 }
 
@@ -370,7 +341,6 @@ function prepareCharacter(gltf, spec, faction, hair, { hideLegs = false } = {}) 
     o.scale.setScalar(p.scale ?? 1);
   }
   for (const g of spec.gear ?? []) GEAR[g]?.(root, faction);
-  if (spec.kit && spec.kitScene) addKit(root, spec.kitScene, spec.kit, faction, hair);
   return root;
 }
 
@@ -407,12 +377,69 @@ async function buildHorse(faction) {
   return { root: horse, neck: horse.getObjectByName('neck'), tail: horse.getObjectByName('tail') };
 }
 
+// Heroes built from scratch in Blender as rigid parts: hero -> torso -> head, arm_l, arm_r,
+// cape. No skeleton or clips; the idle (breathing, head sway, cape flutter) and the
+// weapon-raised ready pose are driven here. Skin, hair and iris take the unit's look.
+const FACE_MATS = new Set(['eye', 'pupil', 'shine', 'blush']);
+const heroMats = new Map();
+function heroMaterial(name, faction, look) {
+  const custom = { skin: look.skin, hair: look.hair, eye: look.eyes, pupil: 0x1a1016, shine: 0xffffff, blush: 0xf29a96 };
+  if (!(name in custom)) return gearMaterial(name, faction);
+  const key = `${name}|${faction}|${custom[name]}`;
+  if (!heroMats.has(key)) {
+    const m = new THREE.MeshStandardMaterial({ color: custom[name] ?? 0x888888, roughness: name === 'shine' ? 0.2 : 0.6 });
+    if (name === 'shine') { m.emissive = new THREE.Color(0xffffff); m.emissiveIntensity = 0.6; }
+    heroMats.set(key, FACE_MATS.has(name) ? m : addRim(m, faction));
+  }
+  return heroMats.get(key);
+}
+
+async function buildHero(spec, id, faction) {
+  const gltf = await load(spec.hero);
+  const root = gltf.scene.clone(true);
+  const look = UNITS.find((u) => u.id === id)?.look ?? {};
+  root.traverse((o) => {
+    if (!o.isMesh) return;
+    const name = o.material.name;
+    o.material = heroMaterial(name, faction, look);
+    o.castShadow = !FACE_MATS.has(name);
+    o.receiveShadow = true;
+    if (FACE_MATS.has(name)) o.userData.noOutline = true;
+  });
+  addOutlines(root, faction, 0.008);
+  const part = (n) => root.getObjectByName(n);
+  const torso = part('torso'), head = part('head'), armL = part('arm_l'), armR = part('arm_r'), cape = part('cape');
+  const rest = new Map([torso, head, armL, armR, cape].filter(Boolean).map((o) => [o, o.quaternion.clone()]));
+  const e = new THREE.Euler(), q = new THREE.Quaternion();
+  const pose = (o, x, y, z) => {
+    if (!o) return;
+    o.quaternion.copy(rest.get(o)).multiply(q.setFromEuler(e.set(x, y, z)));
+  };
+  const phase = Math.random() * 10;
+  let ready = 0, target = 0;
+  return {
+    root,
+    setActive(active) { target = active ? 1 : 0; },
+    update(dt, t) {
+      ready += (target - ready) * Math.min(1, dt * 8);
+      const breath = Math.sin(t * 2 + phase);
+      if (torso) torso.scale.set(1 + breath * 0.008, 1 + breath * 0.014, 1 + breath * 0.008);
+      // heads tilt up ~7 degrees so faces read from the overhead tactics camera
+      pose(head, -0.12 + Math.sin(t * 0.9 + phase) * 0.03 - ready * 0.06, Math.sin(t * 0.55 + phase) * 0.07, 0);
+      // weapon arm swings forward and up when selected; the off hand follows a little
+      pose(armR, breath * 0.03 - ready * 0.55, 0, -ready * 0.12);
+      pose(armL, -breath * 0.03 - ready * 0.2, 0, ready * 0.08);
+      pose(cape, 0.03 + Math.max(0, Math.sin(t * 1.3 + phase)) * 0.06 + ready * 0.05, 0, Math.sin(t * 0.8 + phase) * 0.03);
+    },
+  };
+}
+
 export async function buildModel(id, faction) {
   const spec = MODEL_SPECS[id];
+  if (spec.hero) return buildHero(spec, id, faction);
   const hair = UNITS.find((u) => u.id === id)?.look?.hair ?? null;
   const gltf = await load(BASE + spec.file);
-  const kitScene = spec.kit ? (await load(GEAR_KITS)).scene : null;
-  const character = prepareCharacter(gltf, { ...spec, kitScene }, faction, hair, { hideLegs: !!spec.mount });
+  const character = prepareCharacter(gltf, spec, faction, hair, { hideLegs: !!spec.mount });
   addOutlines(character, faction, OUTLINE_W / (spec.scale ?? 1));
   const root = new THREE.Group();
 

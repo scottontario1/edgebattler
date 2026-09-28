@@ -162,7 +162,7 @@ def finish(objects, uv_scale=2.0, bevel_width=0.006):
         box_uv(o, uv_scale)
 
 
-# ---- modelling helpers shared by build_units.py and build_gear.py ----
+# ---- modelling helpers shared by build_units.py and build_heroes.py ----
 
 def activate(o):
     bpy.ops.object.select_all(action='DESELECT')
@@ -267,3 +267,62 @@ def join(name, objects, pivot):
     bpy.context.scene.cursor.location = pivot
     bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
     return o
+
+
+def auto_smooth(o, degrees=30):
+    """Smooth shading with hard edges above `degrees` (faceted creases stay crisp)."""
+    activate(o)
+    try:
+        bpy.ops.object.shade_smooth_by_angle(angle=math.radians(degrees))
+    except (AttributeError, RuntimeError):
+        bpy.ops.object.shade_smooth()
+    return o
+
+
+def wedge(name, pts, widths, thick, mat, centre=None, facing=None):
+    """Chunky stylised lock/ribbon: a diamond cross-section swept along `pts`, `widths` wide
+    and `thick` deep (scalar or per point), ending in a point when the last width is 0.
+    The flat side faces away from `centre` (hair around a head) or along `facing`
+    (a beard facing the viewer). Sharp creases down the middle read as anime hair clumps."""
+    from mathutils import Vector
+    P = [Vector(p) for p in pts]
+    T = thick if isinstance(thick, (list, tuple)) else [thick] * len(P)
+    verts, faces = [], []
+    n_prev = None
+    for i, p in enumerate(P):
+        t = (P[min(i + 1, len(P) - 1)] - P[max(i - 1, 0)]).normalized()
+        if facing is not None:
+            n = Vector(facing).normalized()
+        else:
+            n = p - Vector(centre)
+            n.z = 0 if abs(t.z) > 0.5 else n.z
+            n = n.normalized() if n.length > 1e-6 else (n_prev or Vector((0, 1, 0)))
+        s = t.cross(n)
+        s = s.normalized() if s.length > 1e-6 else Vector((1, 0, 0))
+        n = s.cross(t).normalized()
+        n_prev = n
+        w, th = widths[i] / 2, T[i] / 2
+        if widths[i] <= 0:
+            verts.append(tuple(p))
+        else:
+            verts += [tuple(p + s * w), tuple(p + n * th), tuple(p - s * w), tuple(p - n * th)]
+    rings = [4 if widths[i] > 0 else 1 for i in range(len(P))]
+    starts = [sum(rings[:i]) for i in range(len(P))]
+    faces.append(tuple(reversed(range(4))))  # root cap
+    for i in range(len(P) - 1):
+        a, b = starts[i], starts[i + 1]
+        if rings[i + 1] == 1:
+            for k in range(4):
+                faces.append((a + k, a + (k + 1) % 4, b))
+        else:
+            for k in range(4):
+                faces.append((a + k, a + (k + 1) % 4, b + (k + 1) % 4, b + k))
+    if rings[-1] == 4:
+        faces.append(tuple(range(starts[-1], starts[-1] + 4)))
+    o = mesh_from(name, verts, faces, mat)
+    activate(o)
+    bpy.ops.object.mode_set(mode='EDIT')
+    bpy.ops.mesh.select_all(action='SELECT')
+    bpy.ops.mesh.normals_make_consistent(inside=False)
+    bpy.ops.object.mode_set(mode='OBJECT')
+    return auto_smooth(o, 30)
