@@ -560,7 +560,7 @@ export function terrainAtlas({ cols, rows, px = 128, cellClass, roads = [], fiel
  *  water (the river enters and leaves there).
  *  rocks / spots: { x, y, r } in tile units.
  */
-export function riverTextures({ cols, rows, px = 64, isWater, rocks = [], spots = [], seed = 3 }) {
+export function riverTextures({ cols, rows, px = 64, isWater, rocks = [], spots = [], seed = 3, share = null }) {
   const w = cols * px, h = rows * px;
   const water = (c, r) => (c < 0 || c >= cols ? false : r < 0 || r >= rows ? true : isWater(c, r));
   const colorC = makeCanvas(w, h), foamC = makeCanvas(w, h);
@@ -579,12 +579,18 @@ export function riverTextures({ cols, rows, px = 64, isWater, rocks = [], spots 
     for (let x = 0; x < w; x++) {
       const i = (y * w + x) * 4;
       const tx = (x + 0.5) / px, ty = (y + 0.5) / px, c = Math.floor(tx), r = Math.floor(ty);
-      if (!water(c, r)) { ci.data[i] = 40; ci.data[i + 1] = 80; ci.data[i + 2] = 90; ci.data[i + 3] = 255; continue; }
       let d = 9;
       for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
         if (water(c + dc, r + dr)) continue;
         const dx = Math.max(c + dc - tx, 0, tx - (c + dc + 1)), dy = Math.max(r + dr - ty, 0, ty - (r + dr + 1));
         d = Math.min(d, Math.hypot(dx, dy));
+      }
+      if (!water(c, r)) d = 0;
+      // Rounded banks: distance from the bank contour (share = 0.5), which is where the land ends.
+      if (share && d < 0.7) {
+        const sh = share(tx, ty);
+        const ds = (sh - 0.5) / 1.25;
+        d = sh > 0.97 ? Math.max(d, ds) : Math.max(0, ds);
       }
       const n = fbm(tx * 2.5, ty * 2.5, seed), n2 = fbm(tx * 9, ty * 9, seed + 7);
       const depth = smooth(0.02, 0.5, d + (n - 0.5) * 0.2);

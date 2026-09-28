@@ -712,6 +712,67 @@ function landHeight(x, z) {
   return h;
 }
 
+// River banks follow a rounded, wandering line instead of the tile edges. S(x, z) is the share of
+// river inside a 0.8-tile window around the point (plus a little noise); the bank is its 0.5
+// contour, which matches straight tile edges but rounds every corner. Points on the tile-edge bank
+// are projected onto that contour and nearby land is dragged along, so the top surface and the
+// gorge walls (which use the same displacement) stay stitched. Tile centres never move.
+const BANK_R = 0.4;
+const waterish = (c, r) => isWaterCell(Math.min(W - 1, Math.max(0, c)), Math.min(H - 1, Math.max(0, r)));
+function riverShare(x, z) {
+  let s = 0;
+  for (let r = Math.floor(z - BANK_R); r <= Math.floor(z + BANK_R); r++) {
+    for (let c = Math.floor(x - BANK_R); c <= Math.floor(x + BANK_R); c++) {
+      if (!waterish(c, r)) continue;
+      const ox = Math.min(c + 1, x + BANK_R) - Math.max(c, x - BANK_R);
+      const oz = Math.min(r + 1, z + BANK_R) - Math.max(r, z - BANK_R);
+      if (ox > 0 && oz > 0) s += ox * oz;
+    }
+  }
+  return s / (4 * BANK_R * BANK_R) + (vnoise(x * 2.3, z * 2.3, 0, 61) - 0.5) * 0.22;
+}
+
+function bankProjection(x, z) {
+  let px = x, pz = z;
+  const e = 0.01;
+  for (let i = 0; i < 5; i++) {
+    const f = riverShare(px, pz) - 0.5;
+    const gx = (riverShare(px + e, pz) - riverShare(px - e, pz)) / (2 * e);
+    const gz = (riverShare(px, pz + e) - riverShare(px, pz - e)) / (2 * e);
+    const g2 = gx * gx + gz * gz;
+    if (g2 < 1e-6) break;
+    px -= (f * gx) / g2; pz -= (f * gz) / g2;
+  }
+  let dx = px - x, dz = pz - z;
+  const len = Math.hypot(dx, dz);
+  if (len > 0.3) { dx *= 0.3 / len; dz *= 0.3 / len; }
+  return [dx, dz];
+}
+
+const bankCache = new Map();
+// Horizontal offset (tile units) for a land vertex at (x, z) in tile units.
+function bankOffset(x, z) {
+  const key = `${Math.round(x * 64)},${Math.round(z * 64)}`;
+  if (bankCache.has(key)) return bankCache.get(key);
+  let best = Infinity, qx = 0, qz = 0;
+  for (let r = Math.floor(z) - 1; r <= Math.floor(z) + 1; r++) {
+    for (let c = Math.floor(x) - 1; c <= Math.floor(x) + 1; c++) {
+      if (!inBounds(c, r) || !isWaterCell(c, r)) continue;
+      const cx = Math.min(c + 1, Math.max(c, x)), cz = Math.min(r + 1, Math.max(r, z));
+      const d = Math.hypot(cx - x, cz - z);
+      if (d < best) { best = d; qx = cx; qz = cz; }
+    }
+  }
+  let out = [0, 0];
+  const w = smoothstep(0.4, 0, best) * smoothstep(0, 0.35, Math.min(x, z, W - x, H - z));
+  if (w > 0) {
+    const [dx, dz] = bankProjection(qx, qz);
+    out = [dx * w, dz * w];
+  }
+  bankCache.set(key, out);
+  return out;
+}
+
 // Ground height under a world-space point (props sit on slopes instead of floating).
 const groundY = (x, z) => landHeight(x + W / 2, z + H / 2);
 
@@ -753,7 +814,8 @@ function pushWall(out, c, r, dir) {
       const fade = Math.min(runA ? 1 : smoothstep(0, 0.3, t), runB ? 1 : smoothstep(1, 0.7, t));
       const k = Math.pow(4 * s * (1 - s), 0.5) * fade;
       const d = ((vnoise(x * 4.5, y * 6, z * 4.5, 11) - 0.3) * 0.08 + (vnoise(x * 13, y * 13, z * 13, 12) - 0.5) * 0.025) * k;
-      grid.push({ p: [x + dc * d, y, z + dr * d], uv: [alongX ? x : z, 1 - (yTop - y)] });
+      const [ox, oz] = isWaterCell(c, r) ? [0, 0] : bankOffset(x + W / 2, z + H / 2);
+      grid.push({ p: [x + dc * d + ox, y, z + dr * d + oz], uv: [alongX ? x : z, 1 - (yTop - y)] });
     }
   }
   const target = isWaterCell(c, r) || !inBounds(c + dc, r + dr) || !isWaterCell(c + dc, r + dr) ? out.cliff : out.moss;
@@ -933,7 +995,8 @@ function buildGround(scene, rand) {
     for (let i = 0; i < n; i++) {
       const x = i / SUB, z = j / SUB, k = j * n + i;
       const h = landHeight(x, z);
-      pos.set([x - W / 2, Number.isFinite(h) ? h : 0, z - H / 2], k * 3);
+      const [ox, oz] = bankOffset(x, z);
+      pos.set([x - W / 2 + ox, Number.isFinite(h) ? h : 0, z - H / 2 + oz], k * 3);
       uv.set([x / W, 1 - z / H], k * 2);
     }
   }
@@ -951,23 +1014,15 @@ function buildGround(scene, rand) {
   land.setIndex(index);
   land.computeVertexNormals();
 
-  // River bed: one flat quad per water cell.
-  const bed = { pos: [], uv: [] }, walls = { cliff: { pos: [], uv: [] }, moss: { pos: [], uv: [] } };
-  for (let r = 0; r < H; r++) {
-    for (let c = 0; c < W; c++) {
-      for (const dir of DIRS) pushWall(walls, c, r, dir);
-      if (!isWaterCell(c, r)) continue;
-      const y = groundTop(c, r), x0 = c - W / 2, z0 = r - H / 2;
-      const u0 = c / W, u1 = (c + 1) / W, v0 = 1 - r / H, v1 = 1 - (r + 1) / H;
-      bed.pos.push(x0, y, z0, x0, y, z0 + 1, x0 + 1, y, z0 + 1, x0, y, z0, x0 + 1, y, z0 + 1, x0 + 1, y, z0);
-      bed.uv.push(u0, v0, u0, v1, u1, v1, u0, v0, u1, v1, u1, v0);
-    }
-  }
+  const walls = { cliff: { pos: [], uv: [] }, moss: { pos: [], uv: [] } };
+  for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) for (const dir of DIRS) pushWall(walls, c, r, dir);
+  // River bed: one plane under the whole map (land hides it outside the gorge).
+  const bed = new THREE.PlaneGeometry(W, H).rotateX(-Math.PI / 2).translate(0, TERRAIN.W.h, 0);
   const group = new THREE.Group();
   const topMat = groundMaterial(atlas);
   const meshes = [
     new THREE.Mesh(land, topMat),
-    new THREE.Mesh(toGeometry(bed), topMat),
+    new THREE.Mesh(bed, topMat),
     new THREE.Mesh(toGeometry(walls.cliff), cliffMat),
     new THREE.Mesh(toGeometry(walls.moss), mossyCliffMat),
   ];
@@ -994,7 +1049,6 @@ export function buildMap(scene) {
   const bridgeTiles = [];
   const villages = [];
   const castles = [];
-  const waterCells = [];
   let mountainSeed = 0;
 
   buildGround(scene, rand);
@@ -1008,7 +1062,6 @@ export function buildMap(scene) {
       const top = groundTop(c, r);
 
       if (t === 'G' || t === 'V' || t === 'F') grassTiles.push({ t, x: p.x, z: p.z, h: top });
-      if (t === 'W' || t === 'B') waterCells.push([c, r]);
       if (t === 'F') forestMass(statics, c, r, rand);
       if (t === 'M') mountain(statics, p.x, p.z, top, rand, mountainSeed++, c, r);
       if (t === 'V') villages.push({ x: p.x, z: p.z, y: top, turn: (rand() - 0.5) * 0.3 });
@@ -1059,27 +1112,24 @@ export function buildMap(scene) {
   // River: painted colour (turquoise shallows, deep blue channel), rippling normals, and a foam
   // layer along the banks, around rocks and below the waterfall.
   const river = riverTextures({
-    cols: W, rows: H, px: 64, isWater: isWaterCell, rocks,
+    cols: W, rows: H, px: 64, isWater: isWaterCell, rocks, share: riverShare,
     spots: [{ x: 7.5, y: 0, r: 0.35 }, { ...ISLAND, r: ISLAND.r + 0.02 }], seed: 5,
   });
-  const cellPlane = ([c, r], y) => {
-    const g = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2).translate(c - W / 2 + 0.5, y, r - H / 2 + 0.5);
-    const uv = g.attributes.uv;
-    for (let i = 0; i < uv.count; i++) uv.setXY(i, (c + uv.getX(i)) / W, 1 - (r + 1 - uv.getY(i)) / H);
-    return g;
-  };
+  // The water, foam and bed are single planes over the whole map: land covers them everywhere
+  // except the gorge, so the rounded banks never open a gap.
+  const mapPlane = (y) => new THREE.PlaneGeometry(W, H).rotateX(-Math.PI / 2).translate(0, y, 0);
   const waterNormal = waterNormalTexture();
   const waterMat = new THREE.MeshPhysicalMaterial({
     color: 0xffffff, map: river.color, roughness: 0.08, metalness: 0, transparent: true, opacity: 0.93, envMapIntensity: 0.5,
     normalMap: waterNormal, normalScale: new THREE.Vector2(0.18, 0.18), clearcoat: 0.6, clearcoatRoughness: 0.1,
   });
   waterNormal.repeat.set(20, 15);
-  const water = new THREE.Mesh(mergeGeometries(waterCells.map((cell) => cellPlane(cell, WATER_Y))), waterMat);
+  const water = new THREE.Mesh(mapPlane(WATER_Y), waterMat);
   water.receiveShadow = true;
   scene.add(water);
   const foamNoise = foamNoiseTexture();
   const foam = new THREE.Mesh(
-    mergeGeometries(waterCells.map((cell) => cellPlane(cell, WATER_Y + 0.004))),
+    mapPlane(WATER_Y + 0.004),
     new THREE.MeshStandardMaterial({ map: river.foam, alphaMap: foamNoise, transparent: true, depthWrite: false, roughness: 0.6 }),
   );
   foam.receiveShadow = true;
