@@ -9,10 +9,12 @@
 
 const FACTION = {
   blue: {
+    ink: '#0a1224',
     bg1: '#5c8fe0', bg2: '#0a1733', cloth: '#2f62c4', clothDark: '#183a80', trim: '#e0b85a',
     rim: '#a9d0ff', gem: '#49c6ff', steel: ['#fbfdff', '#c8d2e0', '#7b8799', '#e4ebf4'], edge: '#56617a',
   },
   red: {
+    ink: '#1e0808',
     bg1: '#c9503c', bg2: '#1c0707', cloth: '#c0392b', clothDark: '#6a1812', trim: '#d0a64e',
     rim: '#ffb592', gem: '#ff5a3c', steel: ['#d6d4d8', '#8e8b93', '#34313a', '#a9a6ae'], edge: '#2b2830',
   },
@@ -106,6 +108,7 @@ function strand(rx, ry, tx, ty, b1, b2 = b1, off = 0, a = 0.1, b = 0.75) {
   return `M${F(p0[0])} ${F(p0[1])} Q${F(q[0])} ${F(q[1])} ${F(p2[0])} ${F(p2[1])}`;
 }
 
+// What covers the crown of the head; mirrors each class's battlefield model.
 const HEADWEAR_COVERS = { knight: 'helm', cavalier: 'helm', warlord: 'helm', brigand: 'band', archer: 'hood', mage: 'hat', lord: 'none' };
 
 function faceD(P) {
@@ -136,11 +139,12 @@ function defs(c) {
     <linearGradient id="${id}hairD" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="${shade(L.hair, -0.18)}"/><stop offset="1" stop-color="${shade(L.hair, -0.5)}"/>
     </linearGradient>
-    <linearGradient id="${id}steel" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="${st[0]}"/><stop offset="0.3" stop-color="${st[1]}"/><stop offset="0.62" stop-color="${st[2]}"/><stop offset="1" stop-color="${st[3]}"/>
+    <linearGradient id="${id}steel" x1="0" y1="0" x2="0.55" y2="1">
+      <stop offset="0" stop-color="${st[0]}"/><stop offset="0.34" stop-color="${st[1]}"/><stop offset="0.5" stop-color="${st[2]}"/>
+      <stop offset="0.53" stop-color="${mix(st[2], '#b08a5a', 0.45)}"/><stop offset="0.78" stop-color="${mix(st[1], '#c89a6a', 0.25)}"/><stop offset="1" stop-color="${mix(st[3], f.rim, 0.35)}"/>
     </linearGradient>
     <linearGradient id="${id}steelV" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="${st[0]}"/><stop offset="0.45" stop-color="${st[1]}"/><stop offset="1" stop-color="${st[2]}"/>
+      <stop offset="0" stop-color="${st[0]}"/><stop offset="0.4" stop-color="${st[1]}"/><stop offset="0.56" stop-color="${st[2]}"/><stop offset="0.6" stop-color="${mix(st[2], '#b08a5a', 0.4)}"/><stop offset="1" stop-color="${mix(st[1], f.rim, 0.3)}"/>
     </linearGradient>
     <linearGradient id="${id}gold" x1="0" y1="0" x2="0.3" y2="1">
       <stop offset="0" stop-color="#fff2b8"/><stop offset="0.45" stop-color="${f.trim}"/><stop offset="1" stop-color="#7a5418"/>
@@ -156,6 +160,9 @@ function defs(c) {
     </linearGradient>
     <linearGradient id="${id}fur" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#9a8672"/><stop offset="0.5" stop-color="#5e4c3c"/><stop offset="1" stop-color="#2e241c"/>
+    </linearGradient>
+    <linearGradient id="${id}bear" x1="0.2" y1="0" x2="0.6" y2="1">
+      <stop offset="0" stop-color="#9a7a62"/><stop offset="0.45" stop-color="#6a5040"/><stop offset="1" stop-color="#2e2018"/>
     </linearGradient>
     <linearGradient id="${id}bone" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#fff8e6"/><stop offset="0.6" stop-color="#d8c8a2"/><stop offset="1" stop-color="#8a7650"/>
@@ -175,6 +182,20 @@ function defs(c) {
       <circle cx="1.2" cy="1" r="0.95" fill="none" stroke="#e8edf4" stroke-opacity="0.55" stroke-width="0.4"/>
       <circle cx="0" cy="0" r="0.95" fill="none" stroke="#39404c" stroke-opacity="0.6" stroke-width="0.4"/>
     </pattern>
+    <filter id="${id}ink" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+      <feMorphology in="SourceAlpha" operator="dilate" radius="0.75" result="fat"/>
+      <feFlood flood-color="${f.ink}"/><feComposite in2="fat" operator="in" result="line"/>
+      <feOffset in="SourceAlpha" dx="-1.1" dy="0.7" result="shift"/>
+      <feComposite in="SourceAlpha" in2="shift" operator="out" result="edge"/>
+      <feGaussianBlur in="edge" stdDeviation="0.35" result="edgeS"/>
+      <feFlood flood-color="${f.rim}" flood-opacity="0.7"/><feComposite in2="edgeS" operator="in" result="rimL"/>
+      <feComposite in="rimL" in2="SourceAlpha" operator="in" result="rim"/>
+      <feMerge><feMergeNode in="line"/><feMergeNode in="SourceGraphic"/><feMergeNode in="rim"/></feMerge>
+    </filter>
+    <linearGradient id="${id}key" x1="0.1" y1="0" x2="0.9" y2="1">
+      <stop offset="0" stop-color="#ffd9a0" stop-opacity="0.32"/><stop offset="0.45" stop-color="#ffd9a0" stop-opacity="0"/>
+      <stop offset="0.7" stop-color="#1a1030" stop-opacity="0"/><stop offset="1" stop-color="#1a1030" stop-opacity="0.35"/>
+    </linearGradient>
     <clipPath id="${id}face"><path d="${faceD(c.P)}"/></clipPath>
     <filter id="${id}grain" x="0" y="0" width="100%" height="100%">
       <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="7"/>
@@ -204,11 +225,7 @@ function behind(c) {
   const { id, u, f } = c;
   let s = '';
   if (u.cls === 'archer') {
-    // bow over the near shoulder, arrows over the far shoulder
-    s += `<path d="M18 40 Q-6 84 16 124" stroke="#5a3a1e" stroke-width="3" fill="none" stroke-linecap="round"/>
-      <path d="M18 40 Q-6 84 16 124" stroke="#b8894e" stroke-width="1" fill="none" transform="translate(0.8 0)"/>
-      <path d="M18 40 L16 124" stroke="#e8e0d0" stroke-width="0.4"/>
-      <path d="M17 60 l-2 6" stroke="url(#${id}gold)" stroke-width="2.2"/>`;
+    // arrows over the far shoulder; the longbow is held in front (see front())
     const feather = shade(f.cloth, 0.35);
     for (const [x, y, a] of [[80, 66, 22], [86, 70, 30], [74, 70, 14]]) {
       s += `<g transform="translate(${x} ${y}) rotate(${a})">
@@ -217,12 +234,71 @@ function behind(c) {
       </g>`;
     }
   }
-  if (HEADWEAR_COVERS[u.cls] === 'hood' || (u.cls === 'mage' && u.faction === 'red')) {
+  // Weapons match the unit's battlefield model: lances for knights and the cavalier, the
+  // boss's great axe, the brigand's hand axe, the mage's crystal staff.
+  if (u.cls === 'knight' || u.cls === 'cavalier') s += lance(c, 73, 124, 80, 30);
+  if (u.cls === 'warlord') s += greatAxe(c);
+  if (u.cls === 'brigand') s += handAxe(c);
+  if (u.cls === 'mage' && u.faction !== 'red') s += staff(c);
+  if (u.cls === 'warlord') {
+    // inside of the bear-pelt hood, visible around the bald head
+    s += `<path d="M26 96 C20 66 26 26 50.5 22 C75 26 81 66 75 96 Z" fill="#1e140e"/>`;
+  }
+  if (HEADWEAR_COVERS[u.cls] === 'hood') {
     // hood shell seen from the inside around the head
     s += `<path d="M22 100 C14 62 24 18 50 14 C76 18 86 62 78 100 Z" fill="${c.hoodIn}"/>`;
   }
   if (u.cls === 'cavalier') s += plume(c);
   return s;
+}
+
+// Lance from (x0, y0) to the base of its steel point at (x1, y1), faction pennant below the tip.
+function lance(c, x0, y0, x1, y1) {
+  const { id, f } = c;
+  const L = Math.hypot(x1 - x0, y1 - y0);
+  const ang = (Math.atan2(y1 - y0, x1 - x0) * 180) / Math.PI;
+  const pen = f.cloth;
+  return `<g transform="translate(${x0} ${y0}) rotate(${F(ang)})">
+      <path d="M0 -1.5 L${F(L)} -1 L${F(L)} 1 L0 1.5 Z" fill="#5e3c22"/>
+      <path d="M0 -0.8 L${F(L)} -0.5" stroke="#a87a4e" stroke-width="0.6"/>
+      <path d="M${F(L - 12)} 0 L${F(L - 26)} 0 L${F(L - 23)} 12 L${F(L - 18.5)} 7.5 L${F(L - 14)} 12.5 Z" fill="${pen}" stroke="url(#${id}gold)" stroke-width="0.6"/>
+      <path d="M${F(L - 14)} 1.5 L${F(L - 24)} 1.5" stroke="#fff" stroke-opacity="0.35" stroke-width="0.8"/>
+      <rect x="${F(L - 2.5)}" y="-2" width="3" height="4" fill="url(#${id}gold)"/>
+      <path d="M${F(L)} -2.6 L${F(L + 14)} 0 L${F(L)} 2.6 Z" fill="url(#${id}steelV)"/>
+      <path d="M${F(L + 1)} -0.8 L${F(L + 12)} -0.1" stroke="#fff" stroke-width="0.6" stroke-opacity="0.9"/>
+    </g>`;
+}
+
+// Morvath's two-handed axe (KayKit 2H_Axe), haft behind the far shoulder, blades up top.
+function greatAxe(c) {
+  const { id } = c;
+  return `<path d="M66 124 L84 36" stroke="#4a2e1a" stroke-width="3.2" stroke-linecap="round"/>
+    <path d="M67 118 L83.5 40" stroke="#8a5a36" stroke-width="0.8"/>
+    <path d="M83 40 C74 36 70 28 71 18 C76 24 82 26 86 25 Z" fill="url(#${id}steel)" stroke="#111" stroke-width="0.6"/>
+    <path d="M86 40 C96 42 101 50 101 60 C95 54 89 52 85 53 Z" fill="url(#${id}steelV)" stroke="#111" stroke-width="0.6"/>
+    <path d="M72 20 C73 28 77 33 83 37" stroke="#fff" stroke-opacity="0.8" stroke-width="0.9" fill="none"/>
+    <rect x="81" y="33" width="6" height="8" rx="1" transform="rotate(12 84 37)" fill="url(#${id}gold)"/>`;
+}
+
+// Grisk's hand axe (KayKit 1H_Axe) resting on the far shoulder.
+function handAxe(c) {
+  const { id } = c;
+  return `<path d="M70 124 L82 58" stroke="#4a2e1a" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M71 118 L81.5 61" stroke="#8a5a36" stroke-width="0.7"/>
+    <path d="M80 60 C84 52 90 48 96 48 C95 56 95 64 97 70 C91 68 85 66 80 67 Z" fill="url(#${id}steel)" stroke="#111" stroke-width="0.6"/>
+    <path d="M95 50 C94.5 57 94.5 63 96 68" stroke="#fff" stroke-opacity="0.85" stroke-width="0.8" fill="none"/>`;
+}
+
+// Elowen's crystal staff (KayKit 2H_Staff), behind the far shoulder, crystal above the hat brim.
+function staff(c) {
+  const { id, f } = c;
+  const glow = '#7fd6ff';
+  return `<path d="M78 124 L85.5 30" stroke="#5a3a1e" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M78.8 120 L85.8 33" stroke="#a87a4e" stroke-width="0.6"/>
+    <circle cx="86" cy="22" r="9" fill="${glow}" opacity="0.35" filter="url(#${id}soft2)"/>
+    <path d="M82 31 C80 26 82 21 84 19 M90 31 C92 26 90 21 88 19" stroke="url(#${id}gold)" stroke-width="1.3" fill="none"/>
+    <path d="M86 12 L90 21 L86 30 L82 21 Z" fill="${glow}" stroke="${shade(f.cloth, -0.3)}" stroke-width="0.5"/>
+    <path d="M86 12 L90 21 L86 21 Z" fill="#fff" opacity="0.7"/>`;
 }
 
 function plume(c) {
@@ -271,7 +347,8 @@ function body(c) {
   const capeBack = `<path d="M-4 124 L-2 100 C8 91 26 85 44 83 L60 83 C78 85 94 91 102 100 L104 124 Z" fill="url(#${id}clothD)"/>`;
 
   switch (u.cls) {
-    case 'knight': {
+    case 'knight':
+    case 'cavalier': {
       const emblem = u.faction === 'blue'
         ? `<path d="M52 106 l2.2 4.6 5 .5 -3.8 3.4 1.1 5 -4.5 -2.6 -4.5 2.6 1.1 -5 -3.8 -3.4 5 -.5 Z" fill="${gold}"/>`
         : `<path d="M47 108 L57 108 L52 120 Z" fill="${f.cloth}" stroke="${gold}" stroke-width="0.8"/>`;
@@ -293,20 +370,6 @@ function body(c) {
         <path d="M65 100 C75 97 90 100 106 112" stroke="${gold}" stroke-width="1.3" fill="none"/>
         ${hl('M72 92 C79 90 87 91 94 94', 0.5, 1)}`;
     }
-    case 'cavalier':
-      return `${capeBack}
-        <path d="M34 83 C38 92 66 92 70 83 L73 100 C62 106 42 106 31 100 Z" fill="#8c95a3"/>
-        <path d="M34 83 C38 92 66 92 70 83 L73 100 C62 106 42 106 31 100 Z" fill="url(#${id}mail)"/>
-        <path d="M20 124 C22 107 34 99 52 99 C70 99 82 107 84 124 Z" fill="url(#${id}cloth)"/>
-        <path d="M20 124 C22 107 34 99 52 99 C70 99 82 107 84 124" stroke="${gold}" stroke-width="1.6" fill="none"/>
-        <path d="M24 122 C26 109 36 102 52 102 C68 102 78 109 80 122" stroke="${gold}" stroke-width="0.6" stroke-dasharray="1.5 1.2" fill="none"/>
-        <path d="M46 108 C46 104 50 102 54 103 C58 104 59 108 57 110 L58 118 L52 118 L51 112 C49 113 47 112 46 108 Z" fill="${gold}" opacity="0.95"/>
-        <path d="M-6 112 C-6 96 7 87 22 87 C32 87 38 93 39 100 C28 97 11 101 -6 116 Z" fill="${steel}" stroke="${edge}" stroke-width="0.6"/>
-        <path d="M-6 120 C-4 108 8 102 20 102 C29 102 35 105 37 110 C26 108 10 112 -6 124 Z" fill="${steel}" stroke="${edge}" stroke-width="0.6"/>
-        <path d="M-6 116 C11 101 28 97 39 100" stroke="${gold}" stroke-width="1.4" fill="none"/>
-        ${hl('M1 97 C7 91 15 89 23 89.5', 0.85, 1.3)}
-        <path d="M106 110 C105 97 95 90 83 90 C74 90 69 94 68 99 C78 97 92 100 106 114 Z" fill="${steel}" stroke="${edge}" stroke-width="0.6"/>
-        <path d="M68 99 C78 97 92 100 106 114" stroke="${gold}" stroke-width="1.2" fill="none"/>`;
     case 'archer': {
       const hood = `url(#${id}hood)`;
       return `<path d="M4 124 C6 104 22 94 40 89 L64 89 C82 94 96 104 98 124 Z" fill="url(#${id}leather)"/>
@@ -331,11 +394,9 @@ function body(c) {
             ? `<path d="M${F(x)} ${F(y - 1)} l1.2 4 -2.4 0 Z" fill="url(#${id}bone)"/>`
             : `<circle cx="${F(x)}" cy="${F(y)}" r="1.25" fill="${i % 2 ? '#7a2a8a' : 'url(#' + id + 'bone)'}"/>`;
         }
-        return `<path d="M2 124 C4 104 20 94 40 88 L64 88 C84 94 98 104 100 124 Z" fill="url(#${id}clothD)"/>
-          <path d="M46 90 L52 124 L58 90 Z" fill="#241016"/>
-          <path d="M-2 124 C-2 104 14 92 34 86 L43 84 C43 91 47 97 52 99 C57 97 61 91 61 84 L70 86 C88 92 102 104 102 124 L90 124 C88 112 80 104 68 102 L52 110 L36 102 C24 104 16 112 14 124 Z" fill="url(#${id}hood)"/>
-          <path d="M14 124 C16 112 24 104 36 102 L52 110 L68 102 C80 104 88 112 90 124" stroke="${gold}" stroke-width="0.9" fill="none"/>
-          <path d="M20 118 l2 -3 2 3 -2 3 Z M84 118 l2 -3 2 3 -2 3 Z" fill="${gold}"/>
+        return `<path d="M2 124 C4 104 20 94 40 88 L64 88 C84 94 98 104 100 124 Z" fill="url(#${id}cloth)"/>
+          <path d="M-4 112 C2 98 20 90 40 86 L64 86 C84 90 100 98 104 110 C92 115 76 109 66 105 L52 114 L38 105 C28 109 10 115 -4 112 Z" fill="url(#${id}clothD)"/>
+          <path d="M-4 112 C10 115 28 109 38 105 L52 114 L66 105 C76 109 92 115 104 110" stroke="${gold}" stroke-width="1.3" fill="none"/>
           ${beads}
           <circle cx="52" cy="106" r="3.2" fill="${gold}"/><circle cx="52" cy="106" r="1.9" fill="#b04aff"/>
           <circle cx="52" cy="106" r="6" fill="#c46aff" opacity="0.25" filter="url(#${id}soft)"/>`;
@@ -352,29 +413,27 @@ function body(c) {
         <path d="M52 95.3 L54 98 L52 101 L50 98 Z" fill="#ff8a2a"/>
         <circle cx="51.3" cy="97" r="0.6" fill="#fff"/>`;
     }
-    case 'warlord': {
-      const dsteel = steel;
-      return `${capeBack}
-        <path d="M20 124 C22 106 34 98 52 98 C70 98 82 106 84 124 Z" fill="${dsteel}" stroke="#111" stroke-width="0.6"/>
-        <path d="M30 124 L64 98 L74 102 L42 124 Z" fill="url(#${id}cloth)"/>
-        <circle cx="52" cy="113" r="4.2" fill="${gold}" stroke="#5a3a10" stroke-width="0.5"/>
-        <path d="M50 112 a1 1 0 1 0 0.1 0 M54 112 a1 1 0 1 0 0.1 0" stroke="#3a2008" stroke-width="1.2"/>
-        <path d="M-6 110 L-2 98 L3 102 L7 91 L12 97 L17 87 L23 94 L28 85 L33 92 L38 83 L44 89 L52 86 L60 89 L66 83 L71 92 L76 85 L81 94 L87 87 L92 97 L97 91 L101 102 L106 98 L106 112 C90 106 72 104 52 107 C32 104 14 106 -6 112 Z" fill="url(#${id}fur)"/>
-        <path d="M6 99 l3 6 M16 92 l2 7 M27 89 l2 6 M40 88 l1 6 M64 88 l-1 6 M76 89 l-2 6 M88 92 l-2 7 M97 99 l-3 6" stroke="#b8a48c" stroke-width="0.6" opacity="0.7"/>
-        <path d="M-8 118 C-6 103 7 96 21 96 C31 96 36 102 36 108 C26 106 9 110 -8 122 Z" fill="${dsteel}" stroke="#111" stroke-width="0.6"/>
-        <path d="M5 99 L0 82 L12 96 Z M16 96 L17 79 L23 95 Z" fill="${steelV}" stroke="#111" stroke-width="0.5"/>
-        <path d="M-8 118 C9 106 26 104 36 108" stroke="${gold}" stroke-width="1.2" fill="none"/>
-        <path d="M108 116 C106 103 95 96 82 96 C74 96 69 101 69 107 C79 105 94 108 108 120 Z" fill="${dsteel}" stroke="#111" stroke-width="0.6"/>
-        <path d="M87 97 L90 80 L94 99 Z M96 100 L103 86 L101 104 Z" fill="${steelV}" stroke="#111" stroke-width="0.5"/>
-        <path d="M69 107 C79 105 94 108 108 120" stroke="${gold}" stroke-width="1.1" fill="none"/>
-        ${hl('M0 102 C6 98 14 97 22 98', 0.35, 1)}`;
-    }
+    case 'warlord':
+      return `<path d="M-10 124 L-8 100 C4 90 22 86 36 86 L66 86 C80 86 98 90 110 100 L112 124 Z" fill="url(#${id}bear)"/>
+        <path d="M-6 124 C-6 108 3 99 17 97 C27 96 34 99 38 104 L38 124 Z" fill="url(#${id}skinB)"/>
+        <path d="M108 124 C108 108 99 100 86 98 C76 97 70 100 66 105 L66 124 Z" fill="url(#${id}skinB)"/>
+        <path d="M6 110 C10 106 16 105 22 106 M82 107 C88 106 94 107 98 111" stroke="${c.skinSh}" stroke-width="1" fill="none" opacity="0.7"/>
+        <path d="M22 124 C24 108 32 99 43 95 L61 95 C72 99 80 108 82 124 Z" fill="url(#${id}cloth)"/>
+        <path d="M43 95 l3 4 3 -4 3 4 3 -4 3 4 3 -4 M24 116 l4 3 4 -3 4 3 4 -3 4 3 4 -3 4 3 4 -3 4 3 4 -3 4 3 4 -3 4 3" stroke="#f2ead8" stroke-width="1.1" fill="none" stroke-linejoin="round"/>
+        <path d="M30 124 L64 96 L72 100 L40 124 Z" fill="url(#${id}leather)"/>
+        <g fill="#c9ccd2"><circle cx="62" cy="99.5" r="0.9"/><circle cx="55" cy="105" r="0.9"/><circle cx="48" cy="111" r="0.9"/><circle cx="41" cy="117" r="0.9"/></g>
+        <circle cx="52" cy="108" r="4.2" fill="${gold}" stroke="#5a3a10" stroke-width="0.5"/>
+        <path d="M50 107 a1 1 0 1 0 0.1 0 M54 107 a1 1 0 1 0 0.1 0" stroke="#3a2008" stroke-width="1.2"/>
+        <path d="M-6 108 L-2 97 L3 101 L7 91 L12 97 L17 88 L23 94 L28 86 L33 92 L38 85 L44 90 L52 87 L60 90 L66 85 L71 92 L76 86 L81 94 L87 88 L92 97 L97 91 L101 101 L106 97 L106 110 C90 104 72 101 52 104 C32 101 14 104 -6 110 Z" fill="url(#${id}bear)"/>
+        <path d="M6 99 l3 6 M16 92 l2 7 M27 89 l2 6 M40 88 l1 6 M64 88 l-1 6 M76 89 l-2 6 M88 92 l-2 7 M97 99 l-3 6" stroke="#c4a488" stroke-width="0.6" opacity="0.7"/>
+        <path d="M2 116 l3 -3 M8 118 l3 -3 M94 117 l3 3 M100 115 l3 3" stroke="#6a2a1a" stroke-width="2.2" stroke-linecap="round"/>`;
     case 'brigand':
       return `<path d="M-6 124 L-6 108 C2 97 20 91 40 87 L64 87 C84 91 102 97 106 108 L106 124 Z" fill="url(#${id}skinB)"/>
         <path d="M76 98 C86 99 96 104 102 112" stroke="${c.skinSh}" stroke-width="1" fill="none" opacity="0.6"/>
         <path d="M82 104 l4 2 -1 4 4 1 M90 106 l3 4" stroke="#3a2a3a" stroke-width="0.9" fill="none" opacity="0.55"/>
-        <path d="M16 124 C18 108 28 98 41 91 L52 110 L63 91 C76 98 86 108 88 124 Z" fill="url(#${id}leather)"/>
-        <path d="M41 91 L52 110 L63 91" stroke="#2a1a0e" stroke-width="0.8" fill="none"/>
+        <path d="M16 124 C18 108 28 98 41 91 L52 110 L63 91 C76 98 86 108 88 124 Z" fill="url(#${id}cloth)"/>
+        <path d="M41 91 L52 110 L63 91" stroke="#f2ead8" stroke-width="1.3" fill="none"/>
+        <path d="M18 118 l4 3 4 -3 4 3 4 -3 4 3 4 -3 4 3 4 -3 4 3 4 -3 4 3 4 -3 4 3 4 -3 4 3" stroke="#f2ead8" stroke-width="1" fill="none"/>
         <path d="M46 102 l1.6 1 M48.5 106 l1.6 1 M58 102 l-1.6 1 M55.5 106 l-1.6 1" stroke="#c9b48a" stroke-width="0.6"/>
         <path d="M-8 114 C-6 99 5 90 19 90 C29 90 35 94 38 98 L34 99.5 L36 103 L30 102 L31 107 L25 104 L23.5 109 L18 105 L14.5 110 L11 105 L6 111 L2.5 106 L-8 118 Z" fill="url(#${id}fur)"/>
         <path d="M4 96 l2 5 M12 93 l1 6 M22 92 l0 5 M30 94 l-1 4" stroke="#c4b098" stroke-width="0.6" opacity="0.7"/>
@@ -435,7 +494,7 @@ function eye(c, cx, cy, w, h, side, key) {
   const scl = `M${X(-0.5)} ${Y(0.1)} C${X(-0.36)} ${Y(top * 0.85)} ${X(0.16)} ${Y(top)} ${X(0.5)} ${Y(-0.06)} C${X(0.42)} ${Y(0.42)} ${X(-0.12)} ${Y(0.58)} ${X(-0.5)} ${Y(0.1)} Z`;
   const upper = `M${X(-0.54)} ${Y(0.12)} C${X(-0.38)} ${Y(top * 0.85 - 0.05)} ${X(0.16)} ${Y(top - 0.05)} ${X(0.52)} ${Y(-0.08)}`;
   const lower = `M${X(0.5)} ${Y(-0.02)} C${X(0.42)} ${Y(0.44)} ${X(0.05)} ${Y(0.56)} ${X(-0.2)} ${Y(0.46)}`;
-  const lw = P.fem ? 1.45 : 1.15;
+  const lw = P.fem ? 1.75 : 1.45; // heavy upper lash line reads at 40 px
   const ix = cx + side * 0.04 * w, iy = cy + 0.14 * h;
   const irx = 0.27 * w, iry = 0.52 * h;
   let s = `<clipPath id="${id}e${key}"><path d="${scl}"/></clipPath>
@@ -555,14 +614,14 @@ function beard(c) {
   } else {
     outer = 'M34 57 C35 72 42 84.5 51.5 86.5 C61 84.5 67 72 66.5 57 C65 65 61.5 70 57.5 72 C55.5 74.2 53.5 75.3 51.5 75.3 C49.5 75.3 47.5 74.2 45.5 72 C41 70 35.5 65 34 57 Z';
   }
-  s += `<path d="${outer}" fill="url(#${id}hair)"/>`;
+  s += `<clipPath id="${id}beard"><path d="${outer}"/></clipPath><path d="${outer}" fill="url(#${id}hair)"/>`;
   let st = '';
   for (let i = 0; i < 9; i++) {
     const x = 38 + i * 3.4 + r();
     const y0 = 70 + Math.abs(i - 4) * -0.8 + 4;
     st += `M${F(x)} ${F(y0)} q${F((x - 51.5) * 0.08)} 5 ${F((x - 51.5) * 0.12)} ${F(8 + r() * 4)} `;
   }
-  s += `<path d="${st}" stroke="${hl}" stroke-width="0.5" fill="none" opacity="0.7"/>`;
+  s += `<path d="${st}" stroke="${hl}" stroke-width="0.5" fill="none" opacity="0.7" clip-path="url(#${id}beard)"/>`;
   s += `<path d="M46.5 69.6 C49 68 51.5 68.8 52.6 69.4 C53.7 68.8 56.2 68 58.8 69.6 C57.4 71.2 55 70.8 52.6 70.6 C50.2 70.8 48 71.2 46.5 69.6 Z" fill="${dk}"/>
     <path d="M47.6 69.4 C49.5 68.6 51 68.9 52.4 69.4" stroke="${hl}" stroke-width="0.4" fill="none"/>`;
   if (u.cls === 'warlord') s += `<rect x="49" y="92" width="5" height="3.2" rx="1" fill="url(#${id}gold)"/><path d="M49 93.2 L54 93.2" stroke="#6a4a10" stroke-width="0.4"/>`;
@@ -671,10 +730,10 @@ function headwear(c) {
         <path d="M50.5 36 L53 39.6 L50.5 43 L48 39.6 Z" fill="${f.gem}" stroke="#7a5418" stroke-width="0.4"/>
         <path d="M49.8 37.8 L50.6 36.8" stroke="#fff" stroke-width="0.6"/>
         <path d="M36 43.5 Q50 37 65 42.5" stroke="#fff5c8" stroke-width="0.4" fill="none" opacity="0.8"/>`;
-    case 'knight': {
-      const top = u.faction === 'red'
-        ? `<path d="M48.5 22 L50.5 10 L52.5 22 Z" fill="${steelV}" stroke="${edge}" stroke-width="0.4"/>`
-        : `<path d="M50.5 22 C46 15 40 13 35 14 C39 16 42 19 44 23 Z M50.5 22 C55 15 61 13 66 14 C62 16 59 19 57 23 Z" fill="${gold}"/>`;
+    case 'knight':
+    case 'cavalier': {
+      // low crest ridge like the model's helmet; the cavalier's plume is drawn behind the head
+      const top = `<path d="M47.5 23 C48 17 49.5 14.5 50.5 14 C51.5 14.5 53 17 53.5 23 Z" fill="${steelV}" stroke="${edge}" stroke-width="0.5"/>`;
       return `${top}
         <path d="M29.5 53 C28 30 39 21 50.5 21 C62 21 73 30 71.5 53 C68 46.5 61 43 50.5 43 C40 43 33 46.5 29.5 53 Z" fill="${steel}" stroke="${edge}" stroke-width="0.7"/>
         <path d="M50.5 21.5 L50.5 43" stroke="${edge}" stroke-width="1"/>
@@ -684,25 +743,23 @@ function headwear(c) {
         <path d="M29.8 51 L29.2 70 C30.6 74.5 35 75.5 38.6 72.5 L37.5 57 C36 53 33 51 29.8 51 Z" fill="${steelV}" stroke="${edge}" stroke-width="0.6"/>
         <path d="M71.2 51 L71.5 68.5 C70 72.5 66 74 63 71.5 L64.8 57 C66 53 68.5 51 71.2 51 Z" fill="${steelV}" stroke="${edge}" stroke-width="0.6"/>
         <path d="M29.2 70 C30.6 74.5 35 75.5 38.6 72.5" stroke="${gold}" stroke-width="1" fill="none"/>
-        <g fill="${gold}"><circle cx="33" cy="58" r="0.8"/><circle cx="33" cy="66" r="0.8"/><circle cx="68" cy="58" r="0.7"/><circle cx="68" cy="65" r="0.7"/></g>`;
+        <g fill="${gold}"><circle cx="33" cy="58" r="0.8"/><circle cx="33" cy="66" r="0.8"/><circle cx="68" cy="58" r="0.7"/><circle cx="68" cy="65" r="0.7"/></g>
+        <path d="M33 45.5 C38 41 44 39.5 50.5 39.5 C57 39.5 63 41 68.5 45.5 L68 49 C63 46 57 44.5 50.5 44.5 C44 44.5 38 46 33.5 49 Z" fill="${steelV}" stroke="${edge}" stroke-width="0.6"/>
+        <path d="M37 45 L42 43.3 M45 42.5 L49 42.2 M52.5 42.2 L56.5 42.5 M59.5 43.3 L64.5 45" stroke="${f.ink}" stroke-width="1.1" stroke-linecap="round"/>
+        <path d="M35 44 C41 40.5 47 40.2 52 40.3" stroke="#fff" stroke-opacity="0.7" stroke-width="0.7" fill="none"/>`;
     }
-    case 'cavalier':
-      return `<path d="M33.5 46 C33 31 41 25 50.5 25 C60 25 68 31 67.5 46 Z" fill="${steel}" stroke="${edge}" stroke-width="0.6"/>
-        <path d="M40 30 C41 17 60 15 62 30 C58 26 46 25 40 30 Z" fill="${steelV}" stroke="${edge}" stroke-width="0.6"/>
-        <path d="M42 28 C44 20 54 18 58 24" stroke="${gold}" stroke-width="0.9" fill="none"/>
-        <path d="M37 33 C40 29 44 27 48 27" stroke="#fff" stroke-opacity="0.8" stroke-width="1.4" fill="none" stroke-linecap="round"/>
-        <path d="M18 39 C24 46 37 45.5 50.5 45.5 C64 45.5 77 46 83 39 C81 47.5 70 50 50.5 50 C31 50 20 47.5 18 39 Z" fill="${steel}" stroke="${edge}" stroke-width="0.6"/>
-        <path d="M20 42 C28 47.5 40 47.5 50.5 47.5 C61 47.5 73 47.5 81 42" stroke="${gold}" stroke-width="1.1" fill="none"/>`;
     case 'archer':
     case 'mage': {
-      if (u.cls === 'mage' && u.faction !== 'red') {
+      if (u.cls === 'mage') {
         const hat = `url(#${id}hat)`;
+        const band = '#c9772e';
         return `<ellipse cx="50" cy="42" rx="36" ry="8.5" fill="${hat}" transform="rotate(-5 50 42)"/>
           <ellipse cx="50" cy="43.5" rx="30" ry="5" fill="#000" opacity="0.25" transform="rotate(-5 50 42)"/>
           <path d="M35 41 C38 30 44 18 52 10 C58 5 66 2 74 4 C68 6 64 10 62 16 C60 24 64 32 66 40 C56 43 44 43 35 41 Z" fill="${hat}"/>
-          <path d="M34.8 38 C44 41 56 41 66 37.5 L66.8 41 C56 44.5 44 44.5 35 41.5 Z" fill="${gold}"/>
-          <path d="M44 28 C47 20 51 13 57 8" stroke="#fff" stroke-opacity="0.22" stroke-width="1.4" fill="none"/>
-          <path d="M57 26 l1.3 2.8 3 .3 -2.3 2 .7 3 -2.7 -1.6 -2.7 1.6 .7 -3 -2.3 -2 3 -.3 Z" fill="${gold}"/>
+          <path d="M34.8 36 C44 39.5 56 39.5 66 35.5 L66.8 41 C56 44.5 44 44.5 35 41.5 Z" fill="${band}"/>
+          <path d="M34.8 36 C44 39.5 56 39.5 66 35.5" stroke="${shade(band, 0.35)}" stroke-width="0.6" fill="none"/>
+          <rect x="47" y="36.2" width="7" height="6" rx="0.8" fill="none" stroke="${gold}" stroke-width="1.4"/>
+          <path d="M44 28 C47 20 51 13 57 8" stroke="#fff" stroke-opacity="0.3" stroke-width="1.6" fill="none"/>
           <path d="M16 44 C30 50 70 48 84 38" stroke="#fff" stroke-opacity="0.18" stroke-width="0.8" fill="none"/>`;
       }
       const hood = `url(#${id}hood)`;
@@ -717,15 +774,26 @@ function headwear(c) {
         <path d="M27 50 C28 34 38 20 50 17" stroke="#fff" stroke-opacity="0.25" stroke-width="1.4" fill="none"/>
         ${circlet}`;
     }
-    case 'warlord':
-      return `<path d="M35 42 C24 40 13 31 10 12 C8 24 10 36 17 42 C22 46 29 48 35 47 Z" fill="url(#${id}bone)" stroke="#6a5a3a" stroke-width="0.5"/>
-        <path d="M66 42 C77 40 88 31 91 12 C93 24 91 36 84 42 C79 46 72 48 66 47 Z" fill="url(#${id}bone)" stroke="#6a5a3a" stroke-width="0.5"/>
-        <path d="M14 24 l3.5 1 M15 31 l4 0 M19 37 l3 -1.5 M87 24 l-3.5 1 M86 31 l-4 0 M82 37 l-3 -1.5" stroke="#6a5a3a" stroke-width="0.7"/>
-        <path d="M30 54 C28.5 31 39 22.5 50.5 22.5 C62 22.5 72.5 31 71 54 C68 48 62 45 50.5 45 C39 45 33 48 30 54 Z" fill="${steel}" stroke="#111" stroke-width="0.7"/>
-        <path d="M34 34 C37 28 42 25 47 24.5" stroke="#fff" stroke-opacity="0.45" stroke-width="1.3" fill="none"/>
-        <path d="M30.5 50 C34 45 41 42.5 50.5 42.5 C60 42.5 67 45 70.5 50" stroke="${gold}" stroke-width="1.5" fill="none"/>
-        <path d="M48.8 43 L49.6 62 L51.4 63.5 L53.2 62 L54 43 Z" fill="${steelV}" stroke="#111" stroke-width="0.6"/>
-        <g fill="${gold}"><circle cx="36" cy="44" r="0.9"/><circle cx="43" cy="42" r="0.9"/><circle cx="59" cy="42" r="0.9"/><circle cx="65.5" cy="44" r="0.9"/></g>`;
+    case 'warlord': {
+      const bear = `url(#${id}bear)`;
+      let fur = '';
+      for (let i = 0; i < 14; i++) {
+        const t = i / 13, a = Math.PI * (1.05 + t * 0.9);
+        const x = 50.5 + Math.cos(a) * 25, y = 36 + Math.sin(a) * 22;
+        fur += `M${F(x)} ${F(y)} l${F(Math.cos(a) * 3)} ${F(Math.sin(a) * 3 - 0.5)} `;
+      }
+      return `<path d="M22 96 C16 74 18 46 26 32 C32 20 41 13 50.5 13 C60 13 69 20 75 32 C83 46 85 74 79 96 L71 94 C72 78 71 64 69 55 C67 49 61 46.5 50.5 46.5 C40 46.5 34 49 32 55 C30 64 29 78 30 94 Z" fill="${bear}"/>
+        <circle cx="30" cy="22" r="7.5" fill="${bear}"/><circle cx="30.5" cy="22.5" r="4" fill="#3a2418"/>
+        <circle cx="71" cy="22" r="7" fill="${bear}"/><circle cx="70.5" cy="22.5" r="3.6" fill="#3a2418"/>
+        <path d="${fur}" stroke="#c4a488" stroke-width="0.7" opacity="0.6" fill="none"/>
+        <path d="M31 30 C37 20 44 17 50 16.5" stroke="#d8bea0" stroke-opacity="0.55" stroke-width="1.4" fill="none"/>
+        <ellipse cx="50.5" cy="38" rx="9" ry="6.5" fill="#a07e62"/>
+        <ellipse cx="50.5" cy="35.2" rx="3.4" ry="2.3" fill="#1a1010"/><ellipse cx="49.6" cy="34.5" rx="1" ry="0.6" fill="#fff" opacity="0.6"/>
+        <ellipse cx="41.5" cy="30" rx="2" ry="2.3" fill="#1a1010"/><ellipse cx="59.5" cy="30" rx="2" ry="2.3" fill="#1a1010"/>
+        <circle cx="41" cy="29.3" r="0.6" fill="#fff"/><circle cx="59" cy="29.3" r="0.6" fill="#fff"/>
+        <path d="M34 47 l2 4.5 2 -4 2.4 5.5 2.2 -5 M58 47.5 l2.3 5 2.3 -5.4 2 4.3 2 -4.6" fill="#f2ead8" stroke="#6a5a3a" stroke-width="0.4"/>
+        <path d="M32 47.5 C38 44.5 44 43.8 50.5 43.8 C57 43.8 63 44.5 69 47.5" stroke="#2a1a10" stroke-width="1.2" fill="none"/>`;
+    }
     case 'brigand': {
       const band = `url(#${id}cloth)`;
       return `<path d="M31 52 C29 33 39 25.5 50.5 25.5 C62 25.5 72 33 70.5 52 C66 45.5 59 43 50.5 43 C42 43 35 45.5 31 52 Z" fill="${band}"/>
@@ -738,6 +806,26 @@ function headwear(c) {
     default:
       return '';
   }
+}
+
+// Props in front of the bust: archers' longbows, Vex's open spellbook (KayKit Spellbook_open) with a violet glow.
+function front(c) {
+  const { id, u } = c;
+  if (u.cls === 'archer') {
+    // longbow held upright across the near shoulder, like the battlefield model
+    return `<path d="M30 32 Q4 78 12 126" stroke="#3e2716" stroke-width="3.6" fill="none" stroke-linecap="round"/>
+      <path d="M29 34 Q5 78 12.5 124" stroke="#a8784a" stroke-width="1" fill="none"/>
+      <path d="M30 32 L12 126" stroke="#efe6d2" stroke-width="0.5"/>
+      <path d="M14.6 80 L11.6 90" stroke="url(#${id}gold)" stroke-width="3.4"/>
+      <circle cx="30" cy="32" r="1.6" fill="url(#${id}gold)"/>`;
+  }
+  if (u.cls !== 'mage' || u.faction !== 'red') return '';
+  return `<ellipse cx="27" cy="101" rx="15" ry="9" fill="#c46aff" opacity="0.45" filter="url(#${id}soft2)"/>
+    <path d="M11 105 L26 99 L42 102 L41 114 L27 111 L12 117 Z" fill="#5a1a20"/>
+    <path d="M13 104.5 L26 99.5 L27 110 L14 115 Z" fill="#f4ead6"/>
+    <path d="M26.5 99.5 L40 102 L39.5 112.5 L27 110 Z" fill="#e2d4bc"/>
+    <path d="M15.5 106 L24 102.6 M16 108.5 L24.5 105.2 M16.5 111 L22 108.8 M29 103 L37.5 104.6 M29.2 105.6 L37 107.1 M29.4 108.2 L35 109.2" stroke="#8a3ab0" stroke-width="0.7"/>
+    <path d="M26 90 l1 2.4 2.4 1 -2.4 1 -1 2.4 -1 -2.4 -2.4 -1 2.4 -1 Z M35 86 l0.7 1.7 1.7 0.7 -1.7 0.7 -0.7 1.7 -0.7 -1.7 -1.7 -0.7 1.7 -0.7 Z" fill="#e2b0ff"/>`;
 }
 
 let uid = 0;
@@ -753,10 +841,10 @@ export function portraitSVG(u, opts = {}) {
     r: rng(u.id || u.name || 'x'),
     skinSh: mix(skin, '#8a3a5a', 0.32),
     lash: mix(L.hair, '#140a10', 0.72),
-    hoodIn: shade(u.cls === 'mage' ? '#2a1030' : f.clothDark, -0.55),
+    hoodIn: shade(f.clothDark, -0.55),
   };
-  const hoodCol = u.cls === 'mage' ? '#3a1a3e' : u.faction === 'blue' ? '#1f4f8a' : '#8a2a20';
-  const hatCol = u.faction === 'blue' ? '#243a78' : '#2a1426';
+  const hoodCol = u.faction === 'blue' ? '#1f4f8a' : '#8a2a20';
+  const hatCol = u.faction === 'blue' ? '#2a55b4' : '#b0302a';
   const extraDefs = `
     <linearGradient id="${id}hood" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="${shade(hoodCol, 0.25)}"/><stop offset="0.5" stop-color="${hoodCol}"/><stop offset="1" stop-color="${shade(hoodCol, -0.45)}"/>
@@ -770,6 +858,7 @@ export function portraitSVG(u, opts = {}) {
   return `<svg viewBox="${vb}"xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${u.name} portrait" preserveAspectRatio="xMidYMax meet">
     <defs>${defs(c)}${extraDefs}</defs>
     ${full ? backdrop(c) : ''}
+    <g filter="url(#${id}ink)">
     ${behind(c)}
     ${backHair(c)}
     ${body(c)}
@@ -777,6 +866,8 @@ export function portraitSVG(u, opts = {}) {
     ${face(c)}
     ${frontHair(c)}
     ${headwear(c)}
-    ${full ? `<rect width="100" height="120" fill="url(#${id}vig)"/><rect width="100" height="120" filter="url(#${id}grain)" opacity="0.14"/>` : ''}
+    ${front(c)}
+    </g>
+    ${full ? `<rect width="100" height="120" fill="url(#${id}key)" style="mix-blend-mode:soft-light"/><rect width="100" height="120" fill="url(#${id}vig)"/><rect width="100" height="120" filter="url(#${id}grain)" opacity="0.14"/>` : ''}
   </svg>`;
 }
