@@ -16,9 +16,14 @@ NODES  (animated as rigid parts in src/models.js, rest pose = this pose)
   hero > hips > torso > head, arm_l > fore_l, arm_r > fore_r, cape
          hips > thigh_l > shin_l, thigh_r > shin_r
   Each node's origin is its joint, so rotating a node bends the limb there.
-FACE  The head is one smooth loft (no eye/pupil meshes). Its UVs are a planar front
-  projection over FACE_UV, and it carries the material `face`; src/faces.js paints the
-  anime face (lashes, iris, specular dot, brows) as a flat texture per unit.
+FACE  The head is one smooth loft in the `skin` material. The anime face (almond sclera, gradient
+  iris, pupil, two highlights, thick flicked upper lash, brows, mouth) is built by face_decals() as
+  flat polygons a millimetre above the surface, so it shows in any viewer and needs no texture. The
+  game tints the named decal materials per unit (iris <- look.eyes, brow <- hair).
+LIMBS  limb() makes capsules whose ends match the tube radius; the shin/forearm garment starts above
+  the knee/elbow so trousers, sleeves and greaves cover joints continuously (no ball joints).
+INK  add_ink() bakes an inverted-hull outline (flipped, pushed-out copy in the single-sided black
+  `ink` material) under every mesh; the game maps `ink` to an unlit dark colour.
 MATERIALS  see src/models.js: cloth/fur/skin are matte (roughness 0.9+), metals are cel
   shaded, and an inverted-hull outline is added at load.
 """
@@ -269,7 +274,7 @@ def boot(prefix, ankle, toe, mats, pointed=0.0, heel_h=0.026, cuff_r=0.05, shaft
     parts.append(hard(sole, 0.004))
     # shaft and bevelled cuff
     top = Vector(shaft_to) if shaft_to is not None else ankle + up * 0.14
-    parts.append(tube(prefix + '_shaft', ankle + up * 0.0, top, 0.037 * k, cuff_r * 0.86 * k, mats['boot'], sides=12))
+    parts.append(tube(prefix + '_shaft', ankle + up * 0.0, top, 0.042 * k, cuff_r * 0.9 * k, mats['boot'], sides=12))
     cuff = tube(prefix + '_cuff', top - (top - ankle).normalized() * 0.035, top + (top - ankle).normalized() * 0.01,
                 cuff_r * 0.9 * k, cuff_r * k, mats['trim'], sides=12)
     parts.append(hard(cuff, 0.004))
@@ -334,3 +339,145 @@ def assemble(parts, J):
 
 def all_nodes(root):
     return [root] + list(root.children_recursive)
+
+
+# ---- continuous limbs -------------------------------------------------------------
+
+def limb(name, a, b, r0, r1, mat, sides=12):
+    """A limb segment as a capsule: a tapered tube whose rounded ends match the tube radius, so
+    consecutive segments read as one continuous sleeve / trouser leg, never as a ball joint."""
+    a, b = Vector(a), Vector(b)
+    return [tube(name, a, b, r0, r1, mat, sides), ball(name + '_a', a, r0, mat, segs=sides, rings=8),
+            ball(name + '_b', b, r1, mat, segs=sides, rings=8)]
+
+
+# ---- ink outline ------------------------------------------------------------------
+
+DECAL_MATS = {'sclera', 'iris', 'pupil', 'shine', 'lash', 'brow', 'lip', 'blush', 'nose'}
+
+
+def add_ink(root, ink_mat, width=0.0055):
+    add_ink_to([c for c in root.children_recursive if c.type == 'MESH'], ink_mat, width)
+
+
+def add_ink_to(meshes, ink_mat, width=0.0055):
+    """Inverted-hull outline baked into the model: for every mesh under `root`, a child copy with
+    every vertex pushed out along its normal and the faces flipped, in the black `ink` material.
+    From the camera only the flipped shell's rim shows, as a hand-inked line. Face decals are
+    skipped. The game maps the `ink` material to unlit dark (src/models.js)."""
+    for o in list(meshes):
+        me = o.data
+        bm = bmesh.new()
+        bm.from_mesh(me)
+        kill = [f for f in bm.faces if me.materials[f.material_index] and me.materials[f.material_index].name in DECAL_MATS]
+        if kill:
+            bmesh.ops.delete(bm, geom=kill, context='FACES')
+        bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context='VERTS')
+        bm.normal_update()
+        for v in bm.verts:
+            v.co += v.normal * width
+        bmesh.ops.reverse_faces(bm, faces=list(bm.faces))
+        for f in bm.faces:
+            f.material_index = 0
+        hm = bpy.data.meshes.new(o.name + '_ink')
+        bm.to_mesh(hm)
+        bm.free()
+        hm.materials.append(ink_mat)
+        hull = bpy.data.objects.new(o.name + '_ink', hm)
+        bpy.context.collection.objects.link(hull)
+        hull.parent = o
+        hull.matrix_parent_inverse = Matrix.Identity(4)
+
+
+# ---- anime face as flat decals ----------------------------------------------------
+# The face is flat polygons laid a millimetre or two above the head surface (sclera, gradient iris,
+# pupil, highlights, thick upper lash with a flick, brows, mouth). They are 2D shapes, not eye
+# spheres, so they show in any viewer and in the game; materials are named so the game can tint
+# them per unit (iris <- look.eyes, brow <- hair). Coordinates are head space: x across, z up.
+
+GAZE = {
+    'noble': dict(eyeX=0.056, eyeZ=0.998, w=0.074, h=0.05, brow=0.014, browZ=1.055, browW=0.0075, mouth=True, blush=True),
+    'fierce': dict(eyeX=0.057, eyeZ=0.993, w=0.07, h=0.036, brow=-0.02, browZ=1.036, browW=0.016, mouth=False, blush=False),
+    'steady': dict(eyeX=0.056, eyeZ=0.996, w=0.07, h=0.045, brow=0.006, browZ=1.045, browW=0.011, mouth=True, blush=False),
+    'keen': dict(eyeX=0.056, eyeZ=0.997, w=0.074, h=0.05, brow=0.016, browZ=1.05, browW=0.0085, mouth=True, blush=False),
+}
+
+
+def _bez(p0, p1, p2, p3, n=9):
+    out = []
+    for i in range(n + 1):
+        t = i / n
+        u = 1 - t
+        out.append((u ** 3 * p0[0] + 3 * u * u * t * p1[0] + 3 * u * t * t * p2[0] + t ** 3 * p3[0],
+                    u ** 3 * p0[1] + 3 * u * u * t * p1[1] + 3 * u * t * t * p2[1] + t ** 3 * p3[1]))
+    return out
+
+
+def _qbez(p0, p1, p2, n=6):
+    return [((1 - i / n) ** 2 * p0[0] + 2 * (1 - i / n) * (i / n) * p1[0] + (i / n) ** 2 * p2[0],
+             (1 - i / n) ** 2 * p0[1] + 2 * (1 - i / n) * (i / n) * p1[1] + (i / n) ** 2 * p2[1]) for i in range(n + 1)]
+
+
+def _ellipse(cx, cz, rx, rz, n=16):
+    return [(cx + math.cos(2 * math.pi * i / n) * rx, cz + math.sin(2 * math.pi * i / n) * rz) for i in range(n)]
+
+
+def _surf(head, x, z, off):
+    hit, loc, nrm, _ = head.ray_cast(Vector((x, -0.6, z)), Vector((0, 1, 0)))
+    if not hit:
+        return Vector((x, -0.11, z))
+    return Vector(loc) + Vector(nrm) * off
+
+
+def _decal(head, name, pts, mat, off, grad=None):
+    verts = [_surf(head, x, z, off) for x, z in pts]
+    o = mesh_from(name, [tuple(v) for v in verts], [tuple(range(len(verts)))], mat)
+    o.data.update()
+    if o.data.polygons[0].normal.y > 0:  # make it face the camera side (-Y)
+        bm = bmesh.new()
+        bm.from_mesh(o.data)
+        bmesh.ops.reverse_faces(bm, faces=list(bm.faces))
+        bm.to_mesh(o.data)
+        bm.free()
+    if grad:
+        zs = [p[1] for p in pts]
+        lo, hi = min(zs), max(zs)
+        paint(o, grad[0], grad[1], [(hi - p[1]) / max(hi - lo, 1e-6) for p in pts])
+    return o
+
+
+def face_decals(head, M, gaze='steady'):
+    """Build the anime face for `head`. M needs sclera, iris, pupil, shine, lash, brow, lip, blush, nose."""
+    g = GAZE[gaze]
+    out = []
+    w, h = g['w'], g['h']
+    for s in (-1, 1):
+        cx, cz = s * g['eyeX'], g['eyeZ']
+        x0, x1 = cx - s * w / 2, cx + s * w / 2
+        top = _bez((x0, cz - h * .05), (x0 + w * .2 * s, cz + h * .62), (x1 - w * .25 * s, cz + h * .58), (x1, cz + h * .1))
+        bot = _bez((x1, cz + h * .1), (x1 - w * .22 * s, cz - h * .36), (x0 + w * .3 * s, cz - h * .5), (x0, cz - h * .05))
+        out.append(_decal(head, 'sclera', top + bot[1:-1], M['sclera'], 0.0012))
+        ix, iz = cx + s * w * .03, cz + h * .02
+        out.append(_decal(head, 'iris', _ellipse(ix, iz, w * .26, h * .36), M['iris'], 0.0022, grad=((0.42, 0.42, 0.42), (1.0, 1.0, 1.0))))
+        out.append(_decal(head, 'pupil', _ellipse(ix, iz - h * .02, w * .1, h * .2, 12), M['pupil'], 0.003))
+        out.append(_decal(head, 'shine', _ellipse(ix - s * w * .09, iz + h * .13, w * .05, h * .09, 10), M['shine'], 0.0038))
+        out.append(_decal(head, 'shine', _ellipse(ix + s * w * .08, iz - h * .14, w * .025, h * .045, 8), M['shine'], 0.0038))
+        curve = _bez((x0 - s * w * .02, cz - h * .02), (x0 + w * .2 * s, cz + h * .64), (x1 - w * .25 * s, cz + h * .62),
+                     (x1 + s * w * .02, cz + h * .14), 10)
+        upper = [(px, pz + h * (0.11 + 0.15 * i / 10)) for i, (px, pz) in enumerate(curve)]
+        flick = (curve[-1][0] + s * w * .2, curve[-1][1] + h * .3)
+        out.append(_decal(head, 'lash', curve + [flick] + upper[::-1], M['lash'], 0.0044))
+        inner, outer = (cx - s * w * .5, g['browZ'] - g['brow'] * .5), (cx + s * w * .66, g['browZ'] + g['brow'] * .5)
+        mid = ((inner[0] + outer[0]) / 2, max(inner[1], outer[1]) + abs(g['brow']) * .4 + .004)
+        bw = g['browW']
+        brow = _qbez((inner[0], inner[1] - bw * .5), (mid[0], mid[1] - bw * .2), (outer[0], outer[1] - bw * .1)) + \
+            _qbez((outer[0], outer[1] - bw * .1), (mid[0], mid[1] + bw * .6), (inner[0], inner[1] + bw * .55))[1:]
+        out.append(_decal(head, 'brow', brow, M['brow'], 0.0027))
+        if g['blush']:
+            out.append(_decal(head, 'blush', _ellipse(s * 0.078, 0.955, 0.026, 0.013, 12), M['blush'], 0.0011))
+    if g['mouth']:
+        line = _qbez((-0.02, 0.918), (0.0, 0.912), (0.021, 0.92))
+        out.append(_decal(head, 'lip', line + [(px, pz + 0.0035) for px, pz in line[::-1]], M['lip'], 0.0026))
+    nose = _qbez((0.006, 0.975), (0.014, 0.955), (0.004, 0.949))
+    out.append(_decal(head, 'nose', nose + [(px + 0.003, pz) for px, pz in nose[::-1]], M['nose'], 0.0026))
+    return out

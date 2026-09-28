@@ -4,28 +4,27 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 // both modules have finished evaluating. It supplies each unit's class and look (skin, hair,
 // iris colours) so a model and its portrait agree.
 import { UNITS } from './units.js';
-import { faceTexture } from './faces.js';
 
 // Every unit is built on the universal humanoid (tools/blender/humanoid.py). Class -> model:
 // the named heroes (paladin = Brenna, barbarian = Dreg) come from build_heroes.py and the
 // neutral recruitable troops (pikeman, archer, cavalier) from build_recruits.py. Recruits are
 // unnamed and shared: the faction colour comes from the `cloth` materials, the rest from each
-// unit's `look`. `gaze` picks the painted face preset (faces.js); `mount` seats the rider on the
-// Blender-built horse.
+// unit's `look`. `mount` seats the rider on the Blender-built horse. Faces (anime eyes, brows, mouth) are
+// flat decal polygons and the ink outline is a baked inverted hull, both built into the GLBs.
 const HORSE = 'models/env/horse.glb';
 export const MODEL_SPECS = {
-  paladin: { hero: 'models/env/brenna.glb', gaze: 'noble' },
-  barbarian: { hero: 'models/env/dreg.glb', gaze: 'fierce' },
-  pikeman: { hero: 'models/env/pikeman.glb', gaze: 'steady' },
-  archer: { hero: 'models/env/archer.glb', gaze: 'keen' },
-  cavalier: { hero: 'models/env/cavalier.glb', gaze: 'steady', mount: true },
+  paladin: { hero: 'models/env/brenna.glb' },
+  barbarian: { hero: 'models/env/dreg.glb' },
+  pikeman: { hero: 'models/env/pikeman.glb' },
+  archer: { hero: 'models/env/archer.glb' },
+  cavalier: { hero: 'models/env/cavalier.glb', mount: true },
 };
 
 // Faction cloth colours plus the matching accents shared with portraits.js: cool rim light and
 // a dark ink outline.
 const FACTION_ACCENT = {
-  blue: { cloth: 0x2f62c4, rim: 0xa9d0ff, outline: 0x0c1426 },
-  red: { cloth: 0xc0392b, rim: 0xffb592, outline: 0x240a0a },
+  blue: { cloth: 0x1a4fa0, rim: 0xa9d0ff, outline: 0x050912 },
+  red: { cloth: 0xa8231c, rim: 0xffb592, outline: 0x120404 },
 };
 
 const loader = new GLTFLoader();
@@ -55,39 +54,8 @@ function addRim(material, faction) {
   return material;
 }
 
-// Inverted-hull outline: a back-face copy of each visible mesh pushed out along its normals
-// in a dark faction tint. Costs one extra draw per mesh; no post pass, so it works with the
-// EffectComposer stack and on phones with HD off.
-const outlineMats = new Map();
-function outlineMaterial(faction, width) {
-  const key = `${faction}|${width}`;
-  if (!outlineMats.has(key)) {
-    const m = new THREE.MeshBasicMaterial({ color: FACTION_ACCENT[faction].outline, side: THREE.BackSide });
-    m.onBeforeCompile = (s) => {
-      s.vertexShader = s.vertexShader.replace('#include <begin_vertex>',
-        `#include <begin_vertex>\ntransformed += normalize(normal) * ${width.toFixed(4)};`);
-    };
-    m.customProgramCacheKey = () => `outline-${width}`;
-    outlineMats.set(key, m);
-  }
-  return outlineMats.get(key);
-}
-
-function addOutlines(root, faction, width) {
-  const meshes = [];
-  root.traverse((o) => { if (o.isMesh && o.visible && !o.userData.outline && !o.userData.noOutline) meshes.push(o); });
-  for (const o of meshes) {
-    const hull = new THREE.Mesh(o.geometry, outlineMaterial(faction, width));
-    hull.userData.outline = true;
-    hull.castShadow = false;
-    hull.receiveShadow = false;
-    hull.raycast = () => {}; // picking uses the real mesh
-    o.add(hull); // identity transform: follows the mesh and its visibility
-  }
-}
-
 // Horse (Blender-built, see tools/blender/build_units.py): smooth skin-modifier body, dagged
-// barding and bridle. Its caparison takes the faction colour; the neck and tail are separate
+// barding and bridle (reins run from the bit to the rider's hand). Its caparison takes the faction colour; the neck and tail are separate
 // nodes animated in update(). Matte like the rest of the cast; only tack metal is cel-shaded.
 const HORSE_SADDLE_Y = 0.4; // at scale 1, keep in sync with build_units.py
 const HORSE_SCALE = 1.7; // sized for the ~1.18-tall riders of the humanoid standard
@@ -97,7 +65,11 @@ function horseMaterial(name, faction) {
   const key = `${name}|${faction}`;
   if (!horseMats.has(key)) {
     const fc = FACTION_ACCENT[faction].cloth;
-    const colors = { coat: 0x8a5a36, mane: 0x2a1c14, blaze: 0xeee6d6, hoof: 0x2b2522, leather: 0x5a3a22, caparison: fc, trim: 0xe0b040, steel: 0xc8d0da };
+    if (name === 'ink') {
+      horseMats.set(key, new THREE.MeshBasicMaterial({ color: FACTION_ACCENT[faction].outline }));
+      return horseMats.get(key);
+    }
+    const colors = { coat: 0x8a5a36, mane: 0x2a1c14, blaze: 0xeee6d6, hoof: 0x2b2522, leather: 0x5c381e, caparison: fc, trim: 0xf0b830, steel: 0xb8c4d6 };
     const metal = name === 'steel' || name === 'trim';
     const m = metal
       ? new THREE.MeshToonMaterial({ color: colors[name], gradientMap: gradientMap(STEP_HARD) })
@@ -116,7 +88,6 @@ async function buildHorse(faction) {
     o.receiveShadow = true;
     o.material = horseMaterial(o.material.name, faction);
   });
-  addOutlines(horse, faction, 0.0055);
   horse.scale.setScalar(HORSE_SCALE);
   return { root: horse, neck: horse.getObjectByName('neck'), tail: horse.getObjectByName('tail') };
 }
@@ -125,12 +96,12 @@ async function buildHorse(faction) {
 // hierarchy hips > torso > head / arm > fore, hips > thigh > shin, torso > cape. There is no
 // skeleton or clip; the idle (breathing, head sway, cape flutter, weight shift) and the
 // selected "ready" pose are driven here. Illustrated look: matte cloth/fur/skin
-// (roughness 0.9+), cel-shaded metals with hard light/shadow borders, a painted face texture
-// (faces.js) and the inverted-hull ink outline shared with the other units.
+// (roughness 0.9+), cel-shaded polished metals with hard light/shadow borders, flat anime face
+// decals and a baked inverted-hull ink outline (both built into the GLBs).
 // The humanoid standard is ~1.18 tall (3.75 heads) with slender limbs, which reads a little small
 // on the map; this is the one place the whole cast is scaled up to match the terrain.
 const HERO_SCALE = 1.1;
-const STEP_HARD = [0.4, 0.4, 0.86, 0.86, 1.2]; // metals: two hard tones + a bright band
+const STEP_HARD = [0.4, 0.4, 0.9, 0.9, 1.25]; // polished metal: two hard tones and a bright band // metals: two hard tones + a bright band
 const gradients = new Map();
 function gradientMap(steps) {
   const key = steps.join();
@@ -143,16 +114,30 @@ function gradientMap(steps) {
   }
   return gradients.get(key);
 }
-const HERO_METAL = { steel: 0x9fabbe, gold: 0xe6b73c, iron: 0x77757f, brass: 0xc79a48 };
-const HERO_MATTE = { white: 0xf2ede0, leather: 0x6a4428, furdark: 0x6a4428, bone: 0xf0e6cc, darkwood: 0x4a2c18 };
+const HERO_METAL = { steel: 0xb8c4d6, gold: 0xf0b830, iron: 0x5a5866, brass: 0xd9a441 };
+const HERO_MATTE = { white: 0xf2ede0, leather: 0x5c381e, furdark: 0x5a3820, bone: 0xefe4c8, darkwood: 0x4a2c18 };
+// Face decals (tools/blender/humanoid.py face_decals): flat unlit shapes layered a millimetre apart.
+const DECAL_LAYER = { sclera: 1, blush: 1, iris: 2, lip: 2, nose: 2, brow: 3, pupil: 3, lash: 5, shine: 4 };
 const heroMats = new Map();
-function heroMaterial(name, faction, look, gaze) {
-  const key = `${name}|${faction}|${look.skin}|${look.hair}|${look.eyes}|${gaze}`;
+function heroMaterial(name, faction, look) {
+  const key = `${name}|${faction}|${look.skin}|${look.hair}|${look.eyes}`;
   if (heroMats.has(key)) return heroMats.get(key);
+  const dark = (hex, k) => new THREE.Color(hex).multiplyScalar(k);
   let m;
-  if (name === 'face') {
-    m = new THREE.MeshStandardMaterial({ map: faceTexture(look, gaze), roughness: 0.92 });
-  } else if (name in HERO_METAL) {
+  if (name === 'ink') {
+    m = new THREE.MeshBasicMaterial({ color: FACTION_ACCENT[faction].outline });
+    heroMats.set(key, m);
+    return m;
+  }
+  if (name in DECAL_LAYER) {
+    const colors = { sclera: 0xf7f1ea, iris: look.eyes, pupil: 0x120b16, shine: 0xffffff, lash: 0x1c1218,
+      brow: dark(look.hair, 0.6), lip: 0xc86a6a, blush: 0xf09a96, nose: dark(look.skin, 0.78) };
+    m = new THREE.MeshBasicMaterial({ color: colors[name], vertexColors: name === 'iris', polygonOffset: true,
+      polygonOffsetFactor: -DECAL_LAYER[name], polygonOffsetUnits: -DECAL_LAYER[name] });
+    heroMats.set(key, m);
+    return m;
+  }
+  if (name in HERO_METAL) {
     m = new THREE.MeshToonMaterial({ color: HERO_METAL[name], gradientMap: gradientMap(STEP_HARD) });
   } else if (name === 'gem') {
     m = new THREE.MeshStandardMaterial({ color: 0x3aa8ff, roughness: 0.55, emissive: 0x1a6cff, emissiveIntensity: 0.8 });
@@ -164,12 +149,12 @@ function heroMaterial(name, faction, look, gaze) {
     m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1.0, vertexColors: true });
   } else if (name === 'cloth' || name === 'clothdark') {
     const c = new THREE.Color(FACTION_ACCENT[faction].cloth);
-    if (name === 'clothdark') c.multiplyScalar(0.45);
+    if (name === 'clothdark') c.multiplyScalar(0.5);
     m = new THREE.MeshStandardMaterial({ color: c, roughness: 0.9 });
   } else {
     m = new THREE.MeshStandardMaterial({ color: HERO_MATTE[name] ?? 0x888888, roughness: 0.92 });
   }
-  if (!(m instanceof THREE.MeshToonMaterial) || true) addRim(m, faction);
+  addRim(m, faction);
   heroMats.set(key, m);
   return m;
 }
@@ -181,15 +166,15 @@ async function buildHero(spec, id, faction) {
   root.traverse((o) => {
     if (!o.isMesh) return;
     const name = o.material.name;
-    o.material = heroMaterial(name, faction, look, spec.gaze);
+    o.material = heroMaterial(name, faction, look);
     if (o.material.vertexColors && !o.geometry.attributes.color) {
       o.geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(o.geometry.attributes.position.count * 3).fill(1), 3));
     }
-    o.castShadow = true;
-    o.receiveShadow = true;
+    const flat = name === 'ink' || name in DECAL_LAYER;
+    o.castShadow = !flat;
+    o.receiveShadow = !flat;
   });
   root.scale.setScalar(HERO_SCALE);
-  addOutlines(root, faction, 0.0055 / HERO_SCALE);
   const N = {};
   for (const n of ['hips', 'torso', 'head', 'arm_l', 'fore_l', 'arm_r', 'fore_r', 'cape', 'thigh_l', 'shin_l', 'thigh_r', 'shin_r']) N[n] = root.getObjectByName(n);
   const rest = new Map(Object.values(N).filter(Boolean).map((o) => [o, o.quaternion.clone()]));

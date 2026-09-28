@@ -9,7 +9,7 @@ Design sheets: design_assets/brenna paladin.png, design_assets/dreg barbarian.pn
 
 Direction: illustrated 2.5D tactics (Fire Emblem / Unicorn Overlord / Triangle Strategy),
 heroic ~3.75 heads, NOT chibi toys. Rules applied here:
-  * face = one smooth head with a flat painted face texture (src/faces.js), no eye meshes;
+  * face = one smooth head with flat anime decal polygons (humanoid.face_decals), no eye spheres;
   * hair = layered anime locks with sharp tapered tips over a solid cap, vertex-colour
     gradients (dark roots -> light tips); beards integrate into the jaw and cover the mouth;
   * silhouette first: oversized winged pauldrons, gothic collar and cape (Brenna); jagged
@@ -28,11 +28,11 @@ from mathutils import Vector
 
 sys.path.insert(0, os.path.dirname(__file__))
 from common import (  # noqa: E402
-    activate, apply_modifiers, auto_smooth, cone, cube, export, hard, material, mesh_from, paint, reset, rod, sphere, wedge,
+    activate, apply_modifiers, auto_smooth, cone, cube, export, hard, lin, material, mesh_from, paint, reset, rod, sphere, wedge,
 )
 from humanoid import (  # noqa: E402
-    CHEST_Z, HEAD_C, HIERARCHY, HIP_Z, NECK_Z, SHOULDER_Z, WAIST_Z, all_nodes, assemble, ball, boot, build_head,
-    hair_cap, head_pt, loft, make_joints, orient_z, tube, xform,
+    CHEST_Z, HEAD_C, HIERARCHY, HIP_Z, NECK_Z, SHOULDER_Z, WAIST_Z, add_ink, all_nodes, assemble, ball, boot, build_head,
+    face_decals, hair_cap, head_pt, limb, loft, make_joints, orient_z, tube, xform,
 )
 
 FRONT = Vector((0, -1, 0))
@@ -41,18 +41,29 @@ D = math.radians
 
 # --------------------------------------------------------------------------- shared bits
 
-def mats():
-    def m(n, c, r=0.9, **k):
-        return material(n, c, r, **k)
+def _shade(hexstr, k):
+    v = int(hexstr.lstrip('#'), 16)
+    return '#%02x%02x%02x' % tuple(int(((v >> sh) & 255) * k) for sh in (16, 8, 0))
+
+
+def mats(skin='#f0cdb4', hair='#6b4226', eyes='#4a6a9a', cloth='#1A4FA0'):
+    """Shared palette in sRGB hex (rich, saturated). The game re-tints by material name: cloth /
+    clothdark by faction, skin / hair / iris / brow per unit look (src/models.js); the values here are
+    the defaults, so the GLB looks right in any viewer."""
+    def m(n, h, r=0.9):
+        return material(n, lin(h), r)
+    ink = m('ink', '#050508', 1.0)
+    ink.use_backface_culling = True  # inverted hull: the flipped shell must be single-sided to show only its rim
     return {
-        'face': m('face', (1, 1, 1)), 'skin': m('skin', (0.95, 0.8, 0.7)),
-        'hair': m('hair', (1, 1, 1), vertex_colors=True), 'cloth': m('cloth', (0.18, 0.37, 0.72)),
-        'clothdark': m('clothdark', (0.08, 0.16, 0.4)), 'white': m('white', (0.94, 0.92, 0.87)),
-        'steel': m('steel', (0.82, 0.84, 0.88), 0.4), 'gold': m('gold', (0.86, 0.66, 0.24), 0.4),
-        'iron': m('iron', (0.3, 0.29, 0.3), 0.5), 'brass': m('brass', (0.72, 0.54, 0.26), 0.4),
-        'leather': m('leather', (0.36, 0.22, 0.13)), 'fur': m('fur', (1, 1, 1), vertex_colors=True),
-        'furdark': m('furdark', (0.36, 0.24, 0.14)), 'bone': m('bone', (0.9, 0.85, 0.74)),
-        'gem': m('gem', (0.2, 0.55, 1.0), 0.3), 'darkwood': m('darkwood', (0.24, 0.15, 0.09)),
+        'skin': m('skin', skin), 'hair': m('hair', hair), 'fur': m('fur', '#ffffff'),
+        'cloth': m('cloth', cloth), 'clothdark': m('clothdark', _shade(cloth, 0.5)), 'white': m('white', '#f2ede0'),
+        'steel': m('steel', '#b8c4d6', 0.35), 'gold': m('gold', '#f0b830', 0.35), 'iron': m('iron', '#4a4852', 0.5),
+        'brass': m('brass', '#d9a441', 0.4), 'leather': m('leather', '#5C381E'), 'furdark': m('furdark', '#5a3820'),
+        'bone': m('bone', '#efe4c8'), 'gem': m('gem', '#3aa8ff', 0.3), 'darkwood': m('darkwood', '#4a2c18'),
+        'sclera': m('sclera', '#f7f1ea'), 'iris': m('iris', eyes, 0.5), 'pupil': m('pupil', '#120b16', 0.5),
+        'shine': m('shine', '#ffffff', 0.4), 'lash': m('lash', '#1c1218', 0.6), 'brow': m('brow', _shade(hair, 0.6)),
+        'lip': m('lip', '#c86a6a'), 'blush': m('blush', '#f09a96'), 'nose': m('nose', _shade(skin, 0.78)),
+        'ink': ink,
     }
 
 
@@ -248,16 +259,20 @@ def base_parts(J, S):
 
     for side in ('l', 'r'):
         hip, kn, an, toe = J['hip_' + side], J['knee_' + side], J['ankle_' + side], J['toe_' + side]
-        th = tube('thigh', hip, kn, 0.056 * ls, 0.043 * ls, M[S['thigh']])
-        parts['thigh_' + side] += [th, ball('hipjoint', hip, 0.056 * ls, M[S['thigh']])]
-        objs['thigh_' + side] = th
-        parts['shin_' + side] += [ball('knee', kn, 0.044 * ls, M[S['thigh']]), tube('shin', kn, an, 0.041 * ls, 0.028 * ls, M[S['shin']])]
-        shaft_to = an + (kn - an) * 0.54
+        th = limb('thigh', hip, kn, 0.056 * ls, 0.043 * ls, M[S['thigh']])
+        parts['thigh_' + side] += th
+        objs['thigh_' + side] = th[0]
+        dt = (kn - hip).normalized()
+        # the shin garment starts above the knee, so trousers / greaves bridge the joint continuously
+        parts['shin_' + side] += limb('shin', kn - dt * 0.035, an, 0.045 * ls, 0.029 * ls, M[S['shin']])
+        shaft_to = an + (kn - an) * 0.66
         parts['shin_' + side] += boot(side, an, toe, {'boot': M[S['boot']], 'trim': M[S['boot_trim']], 'sole': M['leather']},
-                                      pointed=S['pointed'], cuff_r=0.05 * ls, shaft_to=shaft_to)
+                                      pointed=S['pointed'], cuff_r=0.052 * ls, shaft_to=shaft_to)
         sh, el, wr = J['sh_' + side], J['el_' + side], J['wr_' + side]
-        parts['arm_' + side] += [tube('upper', sh, el, 0.041 * ls, 0.034 * ls, M[S['upper']]), ball('shoulder', sh, 0.047 * ls, M[S['upper']])]
-        parts['fore_' + side] += [tube('fore', el, wr, 0.034 * ls, 0.028 * ls, M[S['fore']]), ball('elbow', el, 0.037 * ls, M[S['upper']])]
+        du = (el - sh).normalized()
+        parts['arm_' + side] += limb('upper', sh, el, 0.042 * ls, 0.036 * ls, M[S['upper']])
+        # the forearm garment starts above the elbow: sleeves / vambraces cover it continuously
+        parts['fore_' + side] += limb('fore', el - du * 0.032, wr, 0.037 * ls, 0.029 * ls, M[S['fore']])
         df = (wr - el).normalized()
         hand = wr + df * 0.038
         parts['fore_' + side].append(fist(hand, df, ls, M[S['hand']]))
@@ -265,8 +280,8 @@ def base_parts(J, S):
         parts['fore_' + side].append(ball('thumb', hand + lat * 0.03 + FRONT * 0.012 + df * 0.006, 0.014, M[S['hand']], scale=(1, 1, 1.5)))
 
     neck = tube('neck', J['Mt'] @ Vector((0, 0, 0.72)), Vector((0, -0.004, 0.89)), 0.036 * (ws ** 0.4), 0.033, M['skin'])
-    head = build_head(M['face'], S['jaw'], S['chin'])
-    parts['head'] += [head, neck]
+    head = build_head(M['skin'], S['jaw'], S['chin'])
+    parts['head'] += [head, neck] + face_decals(head, M, S['gaze'])
     for s in (-1, 1):
         parts['head'].append(ball('ear', (s * 0.127, 0.012, 1.02), 0.02, M['skin'], scale=(0.6, 0.8, 1.5), segs=8, rings=6))
     objs['head'] = head
@@ -353,11 +368,11 @@ def battleaxe(G, ad, M):
 
 def build_brenna():
     reset()
-    M = mats()
+    M = mats('#f0cdb4', '#c9b6e6', '#5a64c8')
     hand_r = Vector((-0.2, -0.2, 0.6))
     hand_l = Vector((0.225, -0.1, 0.55))
     J = make_joints(hand_r, hand_l, ws=1.0)
-    S = dict(M=M, ws=1.0, ls=1.0, depth=1.0, hipw=1.0, jaw=0.94, chin=1.0, pointed=1.0, torso='steel', pelvis='steel',
+    S = dict(M=M, gaze='noble', ws=1.0, ls=1.0, depth=1.0, hipw=1.0, jaw=0.94, chin=1.0, pointed=1.0, torso='steel', pelvis='steel',
              thigh='white', shin='white', boot='steel', boot_trim='gold', upper='cloth', fore='steel', hand='steel')
     P, O = base_parts(J, S)
     head, torso, pelvis = O['head'], O['torso'], O['pelvis']
@@ -474,7 +489,8 @@ def build_brenna():
     P['fore_l'] += scepter(J['wr_l'] + (J['wr_l'] - J['el_l']).normalized() * 0.036, (0.16, -0.04, 1.0), M)
 
     root = assemble(P, J)
-    export('brenna.glb', all_nodes(root), texcoords=True, vcolor=True)
+    add_ink(root, M['ink'])
+    export('brenna.glb', all_nodes(root), texcoords=False, vcolor=True)
     return root
 
 
@@ -482,11 +498,11 @@ def build_brenna():
 
 def build_dreg():
     reset()
-    M = mats()
+    M = mats('#d8a98a', '#9c4722', '#5b7088', cloth='#A8231C')
     hand_r = Vector((-0.235, -0.15, 0.65))
     hand_l = Vector((0.235, -0.09, 0.5))
     J = make_joints(hand_r, hand_l, ws=1.3, stance={'twist': 10.0, 'lean': 8.0})
-    S = dict(M=M, ws=1.3, ls=1.28, depth=1.25, hipw=1.1, jaw=1.14, chin=0.85, pointed=0.0, torso='iron', pelvis='leather',
+    S = dict(M=M, gaze='fierce', ws=1.3, ls=1.28, depth=1.25, hipw=1.1, jaw=1.14, chin=0.85, pointed=0.0, torso='iron', pelvis='leather',
              thigh='leather', shin='leather', boot='leather', boot_trim='fur', upper='skin', fore='leather', hand='leather')
     P, O = base_parts(J, S)
     head, torso, pelvis = O['head'], O['torso'], O['pelvis']
@@ -614,7 +630,8 @@ def build_dreg():
     P['fore_r'] += battleaxe(J['wr_r'] + (J['wr_r'] - J['el_r']).normalized() * 0.04, (-0.3, -0.16, 0.94), M)
 
     root = assemble(P, J)
-    export('dreg.glb', all_nodes(root), texcoords=True, vcolor=True)
+    add_ink(root, M['ink'])
+    export('dreg.glb', all_nodes(root), texcoords=False, vcolor=True)
     return root
 
 

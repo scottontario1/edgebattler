@@ -20,9 +20,10 @@ import bpy
 
 sys.path.insert(0, os.path.dirname(__file__))
 from common import (  # noqa: E402
-    activate, apply_modifiers, cone, cube, cylinder, export, hard, join, material, mesh_from, reset, rod,
+    activate, apply_modifiers, cone, cube, cylinder, export, hard, join, lin, material, mesh_from, reset, rod,
     skin_chain, snap, sphere,
 )
+from humanoid import add_ink_to  # noqa: E402
 
 SADDLE_Y = 0.4  # keep in sync with HORSE_SADDLE_Y in src/models.js
 
@@ -92,8 +93,8 @@ def build_horse():
     reset()
     coat, mane = material('coat', (0.47, 0.27, 0.15), 0.7), material('mane', (0.1, 0.07, 0.05), 0.8)
     blaze, hoof = material('blaze', (0.93, 0.9, 0.84), 0.7), material('hoof', (0.17, 0.15, 0.13), 0.6)
-    leather, steel = material('leather', (0.35, 0.2, 0.11), 0.6), material('steel', (0.75, 0.78, 0.82), 0.3)
-    capa, trim = material('caparison', (0.18, 0.37, 0.72), 0.75), material('trim', (0.83, 0.66, 0.24), 0.35)
+    leather, steel = material('leather', lin('#5C381E'), 0.8), material('steel', lin('#b8c4d6'), 0.35)
+    capa, trim = material('caparison', lin('#1A4FA0'), 0.9), material('trim', lin('#f0b830'), 0.35)
     parts = []
 
     # Barrel: deep chest, dipped back, rounded rump.
@@ -156,11 +157,10 @@ def build_horse():
     noseband = bpy.context.active_object
     noseband.data.materials.append(leather)
     neck_parts.append(noseband)
-    for side in (-1, 1):
+    for side in (-1, 1):  # the reins are modelled on the rider (build_recruits.py), from the bit to the hand
         cheek_lo = snap(head, (0, -0.435, 0.485), (side, 0, 0), 0.004)
         cheek_hi = snap(head, (0, -0.345, 0.575), (side, 0, 0), 0.004)
         neck_parts.append(rod('cheekpiece', cheek_lo, cheek_hi, 0.005, leather))
-        neck_parts.append(rod('rein', cheek_lo, (side * 0.05, -0.14, 0.43), 0.004, leather))
     neck_node = join('neck', neck_parts, (0, -0.2, 0.34))
 
     # Tail: thick flowing tuft from the croup.
@@ -174,7 +174,10 @@ def build_horse():
     for child in (neck_node, tail_node):
         child.parent = body
         child.matrix_parent_inverse = body.matrix_world.inverted()
-    export('horse.glb', [body, neck_node, tail_node], texcoords=False)  # colour-only materials
+    ink = material('ink', lin('#050508'), 1.0)
+    ink.use_backface_culling = True
+    add_ink_to([body, neck_node, tail_node], ink)
+    export('horse.glb', [body, neck_node, tail_node] + [c for n in (body, neck_node, tail_node) for c in n.children if c.name.endswith('_ink')], texcoords=False)  # colour-only materials
     return body
 
 

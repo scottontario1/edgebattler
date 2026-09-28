@@ -24,9 +24,9 @@ from mathutils import Matrix, Vector
 
 sys.path.insert(0, os.path.dirname(__file__))
 from common import (  # noqa: E402
-    activate, cone, cube, export, hard, mesh_from, paint, reset, rod, wedge,
+    activate, apply_modifiers, cone, cube, export, hard, mesh_from, paint, reset, rod, wedge,
 )
-from humanoid import xform  # noqa: E402
+from humanoid import add_ink, loft, xform  # noqa: E402
 from humanoid import (  # noqa: E402
     HIP_Z, NECK_Z, SHOULDER_Z, WAIST_Z, all_nodes, assemble, ball, hair_cap, head_pt, make_joints, orient_z, tube,
 )
@@ -148,10 +148,20 @@ def heater_shield(c, n, M):
 # --------------------------------------------------------------------------- helmets
 
 def kettle_helm(head, M, plume=True):
-    parts = [hair_cap(head, M['steel'], 1.09, lambda x: 1.075, 0.985, thick=0.016),
-             cone('brim', 0.185, 0.155, 0.014, (0, 0.012, 1.078), M['steel'], verts=20),
-             hard(cube('nasal', (0.016, 0.008, 0.115), (0, -0.126, 1.012), M['steel']), 0.003)]
-    parts.append(ring('helm_band', (0, 0.008, 1.088), 0.128, 0.008, M['brass'], segs=16, scale=(1, 0.96, 1)))
+    """Sallet / kettle hat as ONE mesh: a lofted dome that flows straight into a swept brim (wider
+    at the back as a neck shade), closed with a thick rim, plus a comb ridge, nasal bar and band."""
+    prof = [(1.198, 0.02, 0.022, 0.012), (1.182, 0.078, 0.082, 0.012), (1.152, 0.128, 0.13, 0.011), (1.117, 0.149, 0.149, 0.01),
+            (1.092, 0.154, 0.154, 0.01), (1.085, 0.163, 0.176, 0.014), (1.079, 0.176, 0.196, 0.018), (1.072, 0.179, 0.2, 0.019)]
+    shell = loft('kettle', [((0, cy, z), ru, rv) for z, ru, rv, cy in prof], M['steel'], sides=28, caps=(True, False))
+    sol = shell.modifiers.new('solid', 'SOLIDIFY')
+    sol.thickness = 0.014
+    sol.offset = -1
+    apply_modifiers(shell)
+    parts = [shell,
+             wedge('comb', [V(0, -0.09, 1.16), V(0, -0.02, 1.207), V(0, 0.06, 1.2), V(0, 0.12, 1.16)], [0.016, 0.022, 0.02, 0.014], 0.026, M['steel'],
+                   facing=V(1, 0, 0)),
+             hard(cube('nasal', (0.016, 0.008, 0.115), (0, -0.128, 1.012), M['steel']), 0.003),
+             ring('helm_band', (0, 0.013, 1.096), 0.15, 0.008, M['brass'], segs=24, scale=(1, 1.06, 1))]
     if plume:
         for k, w in enumerate((0.06, 0.05)):
             parts.append(wedge('plume', [V(0, 0.0, 1.205), V(0, 0.05 + 0.01 * k, 1.285), V(0, 0.14, 1.27 - 0.02 * k), V(0, 0.23, 1.15 - 0.05 * k)],
@@ -159,14 +169,22 @@ def kettle_helm(head, M, plume=True):
     return parts
 
 
+def rein(a, b, M, sag=0.035):
+    """Leather rein from a to b with a little droop (two rods through a sagging midpoint)."""
+    a, b = Vector(a), Vector(b)
+    mid = (a + b) / 2 + V(0, 0, -sag)
+    return [rod('rein', a, mid, 0.0042, M['leather'], 5), rod('rein', mid, b, 0.0042, M['leather'], 5),
+            ball('bit_ring', b, 0.011, M['brass'], segs=6, rings=4)]
+
+
 # --------------------------------------------------------------------------- Pikeman
 
 def build_pikeman():
     reset()
-    M = mats()
+    M = mats('#e8b995', '#6b4226', '#4a6a9a')
     J = make_joints(V(-0.03, -0.16, 0.55), V(-0.08, -0.23, 0.78), ws=1.05, stance={'twist': 6.0, 'lean': 5.0})
-    S = dict(M=M, ws=1.05, ls=1.1, depth=1.1, hipw=1.0, jaw=1.0, chin=1.0, pointed=0.0, torso='steel', pelvis='leather',
-             thigh='clothdark', shin='steel', boot='leather', boot_trim='steel', upper='iron', fore='steel', hand='leather')
+    S = dict(M=M, gaze='steady', ws=1.05, ls=1.1, depth=1.1, hipw=1.0, jaw=1.0, chin=1.0, pointed=0.0, torso='steel', pelvis='leather',
+             thigh='clothdark', shin='clothdark', boot='leather', boot_trim='steel', upper='iron', fore='steel', hand='leather')
     P, O = base_parts(J, S)
     head, torso, pelvis = O['head'], O['torso'], O['pelvis']
     targets = [torso, pelvis, O['thigh_l'], O['thigh_r']]
@@ -187,12 +205,15 @@ def build_pikeman():
         P['arm_' + side] += pauldron_set(J, side, s, M, 0.115, 'steel', 'brass', wing=False, rows=1, tilt=0.5)
         wr, el = J['wr_' + side], J['el_' + side]
         P['fore_' + side].append(ring('cuff', wr - (wr - el).normalized() * 0.01, 0.036, 0.012, M['brass'], segs=10))
+    for side in ('l', 'r'):
+        P['shin_' + side].append(dome('cop', J['knee_' + side] + FRONT * 0.03, 0.05, 0.55, M['steel'], 0, tilt_x=-1.2))
     P['head'] += kettle_helm(head, M) + short_hair(head, M)
     Gr = J['wr_r'] + (J['wr_r'] - J['el_r']).normalized() * 0.036
     Gl = J['wr_l'] + (J['wr_l'] - J['el_l']).normalized() * 0.036
     P['fore_r'] += pike(Gr, Gl, M)
     root = assemble(P, J)
-    export('pikeman.glb', all_nodes(root), texcoords=True, vcolor=True)
+    add_ink(root, M['ink'])
+    export('pikeman.glb', all_nodes(root), texcoords=False, vcolor=True)
     return root
 
 
@@ -200,11 +221,11 @@ def build_pikeman():
 
 def build_archer():
     reset()
-    M = mats()
+    M = mats('#f0cdb4', '#b5462b', '#3f7a4a')
     J = make_joints(V(-0.03, -0.2, 0.67), V(0.2, -0.3, 0.7), ws=0.95,
                     stance={'twist': -18.0, 'lean': 3.0, 'ankle_l': (0.11, -0.085), 'ankle_r': (-0.115, 0.05),
                             'toe_l': (0.45, -0.9), 'toe_r': (-0.8, -0.6)})
-    S = dict(M=M, ws=0.95, ls=0.92, depth=0.95, hipw=0.95, jaw=0.94, chin=1.0, pointed=0.3, torso='white', pelvis='leather',
+    S = dict(M=M, gaze='keen', ws=0.95, ls=0.92, depth=0.95, hipw=0.95, jaw=0.94, chin=1.0, pointed=0.3, torso='white', pelvis='leather',
              thigh='clothdark', shin='leather', boot='leather', boot_trim='clothdark', upper='white', fore='leather', hand='leather')
     P, O = base_parts(J, S)
     head, torso, pelvis = O['head'], O['torso'], O['pelvis']
@@ -228,28 +249,37 @@ def build_archer():
     for side in ('l', 'r'):
         wr, el = J['wr_' + side], J['el_' + side]
         P['fore_' + side].append(ring('cuff', wr - (wr - el).normalized() * 0.012, 0.031, 0.012, M['clothdark'], segs=10))
-        P['fore_' + side].append(tube('bracer', el + (wr - el).normalized() * 0.05, wr, 0.037, 0.03, M['leather'], sides=10))
+        d = (wr - el).normalized()
+        for t in (0.3, 0.55, 0.8):  # leather vambrace: buckled straps down the forearm
+            c = el + (wr - el) * t
+            rr = 0.036 * 0.92 * (1 - 0.22 * t) + 0.007
+            P['fore_' + side].append(tube('strap', c - d * 0.009, c + d * 0.009, rr, rr, M['darkwood'], sides=10))
+            P['fore_' + side].append(hard(cube('buckle', (0.012, 0.008, 0.012), tuple(c + FRONT * (rr + 0.002)), M['brass']), 0.002))
 
     # hood, cowl and short cloak in the faction colour
     hood = hair_cap(head, M['cloth'], 1.065, lambda x: 1.085 - 0.16 * min(1.0, (abs(x) / 0.08) ** 2), 0.88, thick=0.018, from_idx=1)
     xform([hood], Matrix.Translation((0, 0.016, 0.004)))  # sit back so the brow stays clear
     paint(hood, (0.9, 0.9, 0.9))
     P['head'].append(hood)
-    P['head'].append(wedge('hood_tail', [V(0, 0.12, 1.06), V(0, 0.18, 0.98), V(0, 0.2, 0.88), V(0, 0.2, 0.76)], [0.12, 0.11, 0.09, 0.0], 0.045,
+    P['head'].append(wedge('hood_tail', [V(0, 0.12, 1.06), V(0, 0.17, 0.99), V(0, 0.19, 0.93), V(0, 0.19, 0.88)], [0.12, 0.1, 0.07, 0.0], 0.045,
                            M['cloth'], facing=V(1, 0, 0)))
     P['head'] += short_hair(head, M, fringe=True)
     nk = J['neck']
     P['cape'].append(cape_sheet('mantle', nk.z + 0.0, 0.5, 0.14, 0.22, nk.y + 0.095, nk.y + 0.16, [M['cloth'], M['clothdark']], folds=2))
 
-    # quiver on the back with fletched arrows
-    qa, qb = V(-0.085, 0.145, 0.56), V(-0.02, 0.118, 0.86)
-    P['torso'].append(tube('quiver', qa, qb, 0.03, 0.038, M['leather'], sides=10))
-    P['torso'].append(ring('quiver_rim', tuple(qb), 0.039, 0.008, M['brass'], segs=10))
-    for k, off in enumerate((-0.014, 0.0, 0.014)):
-        d = (qb - qa).normalized()
-        base = qb + V(off, 0.0, 0.0)
-        P['torso'].append(rod('q_arrow', base - d * 0.02, base + d * 0.13, 0.005, M['darkwood'], 5))
-        P['torso'].append(wedge('q_fletch', [base + d * 0.1, base + d * 0.15, base + d * 0.19], [0.03, 0.034, 0.0], 0.006, M['white'], facing=V(1, 0, 0)))
+    # quiver on the back with a bundle of fletched arrows (big faction / white feathers)
+    qa, qb = V(-0.11, 0.152, 0.47), V(-0.02, 0.124, 0.8)
+    P['torso'].append(tube('quiver', qa, qb, 0.036, 0.046, M['leather'], sides=12))
+    P['torso'].append(ring('quiver_rim', tuple(qb), 0.047, 0.009, M['brass'], segs=12))
+    P['torso'].append(ring('quiver_band', tuple(qa + (qb - qa) * 0.4), 0.043, 0.007, M['darkwood'], segs=12))
+    d = (qb - qa).normalized()
+    for k, (off, tilt) in enumerate(((-0.024, -0.05), (-0.008, 0.0), (0.01, 0.04), (0.026, 0.09), (0.0, 0.0))):
+        base = qb + V(off, 0.006 * (k % 2), 0.0)
+        tip = base + d * 0.19 + V(tilt, 0.0, 0.0)
+        P['torso'].append(rod('q_arrow', base - d * 0.03, tip, 0.006, M['darkwood'], 5))
+        for j, m in enumerate((M['cloth'], M['white'])):
+            P['torso'].append(wedge('q_fletch', [tip - d * 0.06, tip + d * 0.02, tip + d * 0.11], [0.05, 0.058, 0.0], 0.008, m,
+                                    facing=V(1 if j == 0 else 0, 0 if j == 0 else 1, 0)))
 
     # bow in the left hand, arrow nocked on the string hand
     Gl = J['wr_l'] + (J['wr_l'] - J['el_l']).normalized() * 0.036
@@ -257,21 +287,31 @@ def build_archer():
     P['fore_l'] += longbow(Gl, V(0.06, 0.0, 1.0), V(0.0, -1.0, 0.0), M)
     P['fore_r'] += arrow(Gr, (Gl - Gr) + V(0.0, -0.02, 0.0), M, 0.62)
     root = assemble(P, J)
-    export('archer.glb', all_nodes(root), texcoords=True, vcolor=True)
+    add_ink(root, M['ink'])
+    export('archer.glb', all_nodes(root), texcoords=False, vcolor=True)
     return root
 
 
 # --------------------------------------------------------------------------- Cavalier
 
-CAV_STANCE = {'twist': 3.0, 'lean': 2.0, 'hip_x': 0.08, 'ankle_r': (-0.235, 0.0), 'ankle_l': (0.235, 0.0),
-              'toe_r': (0.0, -1.0), 'toe_l': (0.0, -1.0), 'ankle_z': 0.14, 'knee_out': 0.6}
+# Seated astride: knees bent forward toward the stirrups, feet a touch behind the knees.
+CAV_STANCE = {'twist': 3.0, 'lean': 2.0, 'hip_x': 0.08, 'ankle_r': (-0.235, 0.05), 'ankle_l': (0.235, 0.05),
+              'toe_r': (0.0, -1.0), 'toe_l': (0.0, -1.0), 'ankle_z': 0.12, 'knee_out': 0.35}
+# Mount layout, kept in sync with HORSE_SCALE / HERO_SCALE / HORSE_SADDLE_Y in src/models.js.
+HORSE_SCALE, RIDER_SCALE, SADDLE_Y, RIDER_CROTCH = 1.7, 1.1, 0.4, 0.44
+RIDER_DZ = SADDLE_Y * HORSE_SCALE - RIDER_CROTCH * RIDER_SCALE
+
+
+def bit_point(side):
+    """Horse bit ring (horse-local (+-0.045, -0.44, 0.47)) expressed in the rider's model space."""
+    return V(side * 0.045 * HORSE_SCALE / RIDER_SCALE, -0.44 * HORSE_SCALE / RIDER_SCALE, (0.47 * HORSE_SCALE - RIDER_DZ) / RIDER_SCALE)
 
 
 def build_cavalier():
     reset()
-    M = mats()
-    J = make_joints(V(-0.18, -0.14, 0.6), V(0.13, -0.2, 0.55), ws=1.08, stance=CAV_STANCE)
-    S = dict(M=M, ws=1.08, ls=1.05, depth=1.05, hipw=1.0, jaw=1.0, chin=1.0, pointed=0.5, torso='steel', pelvis='steel',
+    M = mats('#d9a57c', '#3a2a1e', '#5a7a3a')
+    J = make_joints(V(-0.18, -0.14, 0.6), V(0.1, -0.24, 0.58), ws=1.08, stance=CAV_STANCE)
+    S = dict(M=M, gaze='steady', ws=1.08, ls=1.05, depth=1.05, hipw=1.0, jaw=1.0, chin=1.0, pointed=0.5, torso='steel', pelvis='steel',
              thigh='steel', shin='steel', boot='leather', boot_trim='gold', upper='iron', fore='steel', hand='steel')
     P, O = base_parts(J, S)
     head, torso, pelvis = O['head'], O['torso'], O['pelvis']
@@ -294,7 +334,7 @@ def build_cavalier():
         P['shin_' + side].append(dome('cop', kn + FRONT * 0.03, 0.05, 0.55, M['steel'], 0, tilt_x=-1.2))
 
     # open-faced sallet with a tall faction plume and a gold browband
-    P['head'] += kettle_helm(head, M)[:2] + [hard(cube('nasal', (0.016, 0.008, 0.1), (0, -0.126, 1.02), M['gold']), 0.003)]
+    P['head'] += kettle_helm(head, M, plume=False)
     for s in (-1, 1):  # cheek plates
         P['head'].append(plate('cheek', [(0, 0.06), (0.05, 0.04), (0.06, -0.04), (0.02, -0.09), (-0.03, -0.03)],
                                head_pt(head, D(s * 78), D(-14), 0.012), V(0.0, 1.0, 0.0), V(0, 0, 1), 0.012, M['steel'], 0.003))
@@ -308,9 +348,12 @@ def build_cavalier():
     Gr = J['wr_r'] + (J['wr_r'] - J['el_r']).normalized() * 0.036
     P['fore_r'] += lance(Gr, V(-0.1, -0.3, 0.95), M)
     el, wr = J['el_l'], J['wr_l']
+    grip_l = wr + (wr - el) * 0.0
+    P['fore_l'] += rein(grip_l, bit_point(1), M) + rein(grip_l, bit_point(-1), M, 0.05)
     P['fore_l'] += heater_shield(el + (wr - el) * 0.5 + V(0.1, -0.075, 0.03), V(0.6, -0.8, 0.0), M)
     root = assemble(P, J)
-    export('cavalier.glb', all_nodes(root), texcoords=True, vcolor=True)
+    add_ink(root, M['ink'])
+    export('cavalier.glb', all_nodes(root), texcoords=False, vcolor=True)
     return root
 
 

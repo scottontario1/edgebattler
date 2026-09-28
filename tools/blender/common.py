@@ -32,6 +32,14 @@ def reset():
     _materials.clear()
 
 
+def lin(h):
+    """'#rrggbb' or 0xrrggbb sRGB -> the linear RGB tuple Blender material inputs expect."""
+    if isinstance(h, str):
+        h = int(h.lstrip('#'), 16)
+    f = lambda v: ((v / 255 + 0.055) / 1.055) ** 2.4 if v / 255 > 0.04045 else v / 255 / 12.92
+    return (f((h >> 16) & 255), f((h >> 8) & 255), f(h & 255))
+
+
 def material(name, color=(0.8, 0.8, 0.8), rough=0.9, vertex_colors=False):
     if name in _materials:
         return _materials[name]
@@ -40,10 +48,8 @@ def material(name, color=(0.8, 0.8, 0.8), rough=0.9, vertex_colors=False):
     bsdf = m.node_tree.nodes['Principled BSDF']
     bsdf.inputs['Base Color'].default_value = (*color, 1)
     bsdf.inputs['Roughness'].default_value = rough
-    if vertex_colors:
-        attr = m.node_tree.nodes.new('ShaderNodeVertexColor')
-        attr.layer_name = 'Col'
-        m.node_tree.links.new(attr.outputs['Color'], bsdf.inputs['Base Color'])
+    # vertex_colors is a hint only: COLOR_0 is exported from the 'Col' layer (export(vcolor=True)) and
+    # glTF multiplies it with this base colour, in the game and in any viewer.
     _materials[name] = m
     return m
 
