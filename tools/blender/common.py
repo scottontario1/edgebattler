@@ -48,7 +48,7 @@ def material(name, color=(0.8, 0.8, 0.8), rough=0.9, vertex_colors=False):
     return m
 
 
-def export(name, objects, texcoords=True, extras=False):
+def export(name, objects, texcoords=True, extras=False, vcolor=False):
     path = os.path.join(OUT, name)
     bpy.ops.object.select_all(action='DESELECT')
     for o in objects:
@@ -57,6 +57,7 @@ def export(name, objects, texcoords=True, extras=False):
     bpy.ops.export_scene.gltf(
         filepath=path, export_format='GLB', use_selection=True, export_apply=True, export_yup=True,
         export_texcoords=texcoords, export_extras=extras,
+        **({'export_vertex_color': 'ACTIVE'} if vcolor else {}),
     )
     print('wrote', path, os.path.getsize(path), 'bytes')
 
@@ -279,7 +280,18 @@ def auto_smooth(o, degrees=30):
     return o
 
 
-def wedge(name, pts, widths, thick, mat, centre=None, facing=None):
+def paint(o, c0=(1, 1, 1), c1=None, t=None):
+    """Vertex colour layer 'Col' (exported as COLOR_0). Flat c0, or a gradient c0->c1 by per-vertex t."""
+    attr = o.data.color_attributes.get('Col') or o.data.color_attributes.new('Col', 'BYTE_COLOR', 'POINT')
+    for i in range(len(o.data.vertices)):
+        f = 0.0 if t is None else t[i]
+        c = c0 if c1 is None else tuple(a + (b - a) * f for a, b in zip(c0, c1))
+        attr.data[i].color = (c[0], c[1], c[2], 1.0)
+    o.data.color_attributes.active_color = attr
+    return o
+
+
+def wedge(name, pts, widths, thick, mat, centre=None, facing=None, grad=None):
     """Chunky stylised lock/ribbon: a diamond cross-section swept along `pts`, `widths` wide
     and `thick` deep (scalar or per point), ending in a point when the last width is 0.
     The flat side faces away from `centre` (hair around a head) or along `facing`
@@ -287,7 +299,7 @@ def wedge(name, pts, widths, thick, mat, centre=None, facing=None):
     from mathutils import Vector
     P = [Vector(p) for p in pts]
     T = thick if isinstance(thick, (list, tuple)) else [thick] * len(P)
-    verts, faces = [], []
+    verts, faces, vt = [], [], []
     n_prev = None
     for i, p in enumerate(P):
         t = (P[min(i + 1, len(P) - 1)] - P[max(i - 1, 0)]).normalized()
@@ -302,10 +314,13 @@ def wedge(name, pts, widths, thick, mat, centre=None, facing=None):
         n = s.cross(t).normalized()
         n_prev = n
         w, th = widths[i] / 2, T[i] / 2
+        tt = i / max(1, len(P) - 1)
         if widths[i] <= 0:
             verts.append(tuple(p))
+            vt.append(tt)
         else:
             verts += [tuple(p + s * w), tuple(p + n * th), tuple(p - s * w), tuple(p - n * th)]
+            vt += [tt] * 4
     rings = [4 if widths[i] > 0 else 1 for i in range(len(P))]
     starts = [sum(rings[:i]) for i in range(len(P))]
     faces.append(tuple(reversed(range(4))))  # root cap
@@ -325,4 +340,6 @@ def wedge(name, pts, widths, thick, mat, centre=None, facing=None):
     bpy.ops.mesh.select_all(action='SELECT')
     bpy.ops.mesh.normals_make_consistent(inside=False)
     bpy.ops.object.mode_set(mode='OBJECT')
+    if grad:
+        paint(o, grad[0], grad[1], vt)
     return auto_smooth(o, 30)

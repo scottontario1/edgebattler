@@ -1,4 +1,4 @@
-"""Builds Brenna (paladin) and Dreg (berserker) from scratch as stylised chibi miniatures.
+"""Builds Brenna (paladin) and Dreg (berserker) on the universal humanoid (humanoid.py).
 
 Run headless from the project root:
     blender -b --factory-startup -P tools/blender/build_heroes.py
@@ -7,21 +7,17 @@ It also runs inside a live Blender over Blender MCP (see common.reset()).
 Output: public/models/env/brenna.glb, public/models/env/dreg.glb
 Design sheets: design_assets/brenna paladin.png, design_assets/dreg barbarian.png.
 
-Style rules (tactics miniature, read from a ~40 degree overhead camera):
-  * Built in game units, feet on Z=0, facing -Y (+Z toward the camera in three.js).
-    ~1.15 tall: head 35%, torso 25%, legs 40%; chunky limbs, mitten hands, big boots.
-  * Hair = a solid cap in the hair colour plus a few large faceted wedge clumps and bangs
-    framing the face (common.wedge), never thin strands; beards are one solid mass with
-    chunky braids.
-  * Macro silhouette over micro detail: oversized shoulders, collar/cape or fur mantle and
-    weapons at ~1.4x scale; colour-blocked materials, gold/brass only on rims.
-  * Shading: smooth with 30 degree auto-smooth so faceted edges stay crisp.
-
-Node hierarchy (animated procedurally in src/models.js):
-  hero -> torso (pivot at the waist) -> head (neck), arm_l / arm_r (shoulders), cape (collar)
-Material names map to game materials in src/models.js: skin, hair, eye (iris, from
-look.eyes), pupil, shine, blush and the gear set (steel, gold, gem, white, cloth = faction
-colour, leather, iron, fur, furdark, brass, bone, darkwood).
+Direction: illustrated 2.5D tactics (Fire Emblem / Unicorn Overlord / Triangle Strategy),
+heroic ~3.75 heads, NOT chibi toys. Rules applied here:
+  * face = one smooth head with a flat painted face texture (src/faces.js), no eye meshes;
+  * hair = layered anime locks with sharp tapered tips over a solid cap, vertex-colour
+    gradients (dark roots -> light tips); beards integrate into the jaw and cover the mouth;
+  * silhouette first: oversized winged pauldrons, gothic collar and cape (Brenna); jagged
+    layered fur mantle and double-bitted axe (Dreg); weapons at ~1.25x;
+  * matte cloth/fur/skin, cel-shaded metals (materials are assigned in src/models.js), and an
+    inverted-hull ink outline added at load.
+Material names are contracts with src/models.js: face, skin, hair, cloth (faction colour),
+clothdark, white, steel, gold, iron, brass, leather, fur, furdark, bone, gem, darkwood.
 """
 import math
 import os
@@ -32,14 +28,33 @@ from mathutils import Vector
 
 sys.path.insert(0, os.path.dirname(__file__))
 from common import (  # noqa: E402
-    activate, apply_modifiers, auto_smooth, cone, cube, cylinder, export, hard, join, material, mesh_from, reset,
-    rod, skin_chain, sphere, wedge,
+    activate, apply_modifiers, auto_smooth, cone, cube, export, hard, material, mesh_from, paint, reset, rod, sphere, wedge,
+)
+from humanoid import (  # noqa: E402
+    CHEST_Z, HEAD_C, HIERARCHY, HIP_Z, NECK_Z, SHOULDER_Z, WAIST_Z, all_nodes, assemble, ball, boot, build_head,
+    hair_cap, head_pt, loft, make_joints, orient_z, tube, xform,
 )
 
 FRONT = Vector((0, -1, 0))
+D = math.radians
 
 
-# --------------------------------------------------------------------------- helpers
+# --------------------------------------------------------------------------- shared bits
+
+def mats():
+    def m(n, c, r=0.9, **k):
+        return material(n, c, r, **k)
+    return {
+        'face': m('face', (1, 1, 1)), 'skin': m('skin', (0.95, 0.8, 0.7)),
+        'hair': m('hair', (1, 1, 1), vertex_colors=True), 'cloth': m('cloth', (0.18, 0.37, 0.72)),
+        'clothdark': m('clothdark', (0.08, 0.16, 0.4)), 'white': m('white', (0.94, 0.92, 0.87)),
+        'steel': m('steel', (0.82, 0.84, 0.88), 0.4), 'gold': m('gold', (0.86, 0.66, 0.24), 0.4),
+        'iron': m('iron', (0.3, 0.29, 0.3), 0.5), 'brass': m('brass', (0.72, 0.54, 0.26), 0.4),
+        'leather': m('leather', (0.36, 0.22, 0.13)), 'fur': m('fur', (1, 1, 1), vertex_colors=True),
+        'furdark': m('furdark', (0.36, 0.24, 0.14)), 'bone': m('bone', (0.9, 0.85, 0.74)),
+        'gem': m('gem', (0.2, 0.55, 1.0), 0.3), 'darkwood': m('darkwood', (0.24, 0.15, 0.09)),
+    }
+
 
 def snap_n(targets, origin, direction, reach=1.0):
     """Surface point and normal on `targets`, looking along -direction from outside."""
@@ -58,74 +73,13 @@ def snap_n(targets, origin, direction, reach=1.0):
     return (best[1], best[2]) if best else (o, d)
 
 
-def orient(o, normal, base=FRONT):
-    """Rotate object so its local `base` axis points along `normal`, and apply."""
-    o.rotation_mode = 'QUATERNION'
-    o.rotation_quaternion = Vector(base).rotation_difference(Vector(normal).normalized())
-    activate(o)
-    bpy.ops.object.transform_apply(rotation=True)
-    return o
-
-
-def facet_sphere(name, radii, loc, mat, segs=10, rings=6):
-    o = sphere(name, radii, loc, mat, segs=segs, rings=rings, smooth=False)
-    return auto_smooth(o, 30)
-
-
-def head_mesh(name, centre, radii, jaw, mat):
-    """Chibi head: a sphere whose lower half tapers into a jaw (`jaw` = taper amount)."""
-    bpy.ops.mesh.primitive_uv_sphere_add(segments=28, ring_count=18, radius=1, location=(0, 0, 0))
-    o = bpy.context.active_object
-    o.name = name
-    for v in o.data.vertices:
-        if v.co.z < 0:
-            f = 1 + v.co.z * jaw  # z in [-1, 0]
-            v.co.x *= f
-            v.co.y *= 1 + v.co.z * jaw * 0.5
-    o.scale = radii
-    o.location = centre
-    activate(o)
-    bpy.ops.object.transform_apply(scale=True, location=True)
-    bpy.ops.object.shade_smooth()
-    o.data.materials.append(mat)
-    return o
-
-
-def face_part(head, name, x, z, radii, mat, centre, out=0.002):
-    """Flat decal-like feature (eye, pupil, brow, blush) laid onto the face."""
-    p, n = snap_n(head, (x, centre[1], z), (x * 1.6, -1, (z - centre[2]) * 0.8), reach=1.0)
-    o = sphere(name, radii, (0, 0, 0), mat, segs=16, rings=10)
-    orient(o, n)
-    o.location = p + n * out
-    activate(o)
-    bpy.ops.object.transform_apply(location=True)
-    return o
-
-
-def bar(name, a, b, width, depth, mat, head=None, out=0.004):
-    """Flat bar from a to b (brows, lash lines), optionally snapped onto the head surface."""
-    a, b = Vector(a), Vector(b)
-    if head is not None:
-        a = snap_n(head, a, (a.x * 1.4, -1, 0.1), 1.0)[0] + FRONT * out
-        b = snap_n(head, b, (b.x * 1.4, -1, 0.1), 1.0)[0] + FRONT * out
-    d = b - a
-    o = cube(name, (width, depth, d.length), (0, 0, 0), mat)
-    o.rotation_mode = 'QUATERNION'
-    o.rotation_quaternion = d.to_track_quat('Z', 'Y')
-    o.location = (a + b) / 2
-    activate(o)
-    bpy.ops.object.transform_apply(location=True, rotation=True)
-    return hard(o, min(width, depth) * 0.3)
-
-
 def front_y(targets, x, z):
-    p, _ = snap_n(targets, (x, 0, z), FRONT, reach=2.0)
-    return p.y
+    return snap_n(targets, (x, 0, z), FRONT, reach=2.0)[0].y
 
 
-def panel(name, targets, xs, top, hem, rows, gap, mats, zone, flare=0.0, thick=0.012):
-    """Cloth/plate panel draped over the front of `targets` (drapes straight below the widest
-    point). zone(i, j, cols, rows) -> material index per face."""
+def panel(name, targets, xs, top, hem, rows, gap, mat_list, zone, flare=0.0, thick=0.012):
+    """Cloth/plate panel draped over the front of `targets`; drapes straight below the widest
+    point. zone(i, j, cols, rows) -> material index per face."""
     verts, faces, zones = [], [], []
     for x in xs:
         y_prev = None
@@ -142,9 +96,9 @@ def panel(name, targets, xs, top, hem, rows, gap, mats, zone, flare=0.0, thick=0
             a = i * (rows + 1) + j
             faces.append((a, a + 1, a + rows + 2, a + rows + 1))
             zones.append(zone(i, j, cols, rows))
-    o = mesh_from(name, verts, faces, mats[0])
-    for m in mats[1:]:
-        o.data.materials.append(m)
+    o = mesh_from(name, verts, faces, mat_list[0])
+    for mm in mat_list[1:]:
+        o.data.materials.append(mm)
     for k, z in enumerate(zones):
         o.data.polygons[k].material_index = z
     sol = o.modifiers.new('solid', 'SOLIDIFY')
@@ -154,8 +108,8 @@ def panel(name, targets, xs, top, hem, rows, gap, mats, zone, flare=0.0, thick=0
     return auto_smooth(o, 30)
 
 
-def dome(name, centre, radius, squash, mat, tilt_y, segs=8, rings=4):
-    """Faceted half-shell (pauldron), tilted outward about Y."""
+def dome(name, centre, radius, squash, mat, tilt_y, segs=8, rings=3, tilt_x=0.0):
+    """Faceted half-shell (pauldron / cop), tilted outward about Y."""
     bpy.ops.mesh.primitive_uv_sphere_add(segments=segs, ring_count=rings * 2, radius=radius, location=(0, 0, 0))
     o = bpy.context.active_object
     o.name = name
@@ -166,7 +120,7 @@ def dome(name, centre, radius, squash, mat, tilt_y, segs=8, rings=4):
     bm.to_mesh(o.data)
     bm.free()
     o.scale = (1.1, 1.0, squash)
-    o.rotation_euler = (0, tilt_y, 0)
+    o.rotation_euler = (tilt_x, tilt_y, 0)
     o.location = centre
     activate(o)
     bpy.ops.object.transform_apply(scale=True, rotation=True, location=True)
@@ -190,29 +144,15 @@ def ring(name, centre, major, minor, mat, rot=(0, 0, 0), segs=16, scale=(1, 1, 1
     return auto_smooth(o, 30)
 
 
-def star(name, centre, r_out, r_in, points, mat, facing, thick=0.01):
-    verts = [(0, 0, 0)]
-    for k in range(points * 2):
-        a = math.pi * k / points
-        r = r_out if k % 2 == 0 else r_in
-        verts.append((math.sin(a) * r, 0, math.cos(a) * r))
-    n = points * 2
-    o = mesh_from(name, verts, [(0, 1 + k, 1 + (k + 1) % n) for k in range(n)], mat)
-    sol = o.modifiers.new('solid', 'SOLIDIFY')
-    sol.thickness = thick
-    apply_modifiers(o)
-    orient(o, facing)
-    o.location = centre
-    activate(o)
-    bpy.ops.object.transform_apply(location=True)
+def facet(name, radii, loc, mat, segs=10, rings=6):
+    o = ball(name, loc, 1.0, mat, scale=radii, segs=segs, rings=rings, smooth=False)
     return auto_smooth(o, 30)
 
 
 def plate(name, profile, centre, u, v, thick, mat, bevel=0.004):
     """Flat extruded plate from a 2D profile laid out in the plane spanned by u and v."""
     c, u, v = Vector(centre), Vector(u).normalized(), Vector(v).normalized()
-    verts = [tuple(c + u * a + v * b) for a, b in profile]
-    o = mesh_from(name, verts, [tuple(range(len(verts)))], mat)
+    o = mesh_from(name, [tuple(c + u * a + v * b) for a, b in profile], [tuple(range(len(profile)))], mat)
     sol = o.modifiers.new('solid', 'SOLIDIFY')
     sol.thickness = thick
     sol.offset = 0
@@ -220,34 +160,53 @@ def plate(name, profile, centre, u, v, thick, mat, bevel=0.004):
     return auto_smooth(hard(o, bevel), 30)
 
 
-def node(name, parts, pivot, parent=None):
-    o = join(name, parts, pivot)
-    if parent is not None:
-        o.parent = parent
-        o.matrix_parent_inverse = parent.matrix_world.inverted()
-    return o
+def blade_plate(name, profile, edge_idx, centre, u, v, thick, base_mat, edge_mat):
+    """Beveled blade: a dark body plate plus a slightly thicker steel strip along the cutting
+    edge (profile indices edge_idx) so the edge reads as a distinct bright bevel."""
+    c, u, v = Vector(centre), Vector(u).normalized(), Vector(v).normalized()
+    pts = [c + u * a + v * b for a, b in profile]
+    body = mesh_from(name, [tuple(p) for p in pts], [tuple(range(len(pts)))], base_mat)
+    sol = body.modifiers.new('solid', 'SOLIDIFY')
+    sol.thickness = thick
+    sol.offset = 0
+    apply_modifiers(body)
+    ctr = sum(pts, Vector()) / len(pts)
+    inner = [p + (ctr - p) * 0.13 for p in pts]
+    verts = [tuple(pts[i]) for i in edge_idx] + [tuple(inner[i]) for i in edge_idx]
+    n = len(edge_idx)
+    faces = [(k, k + 1, n + k + 1, n + k) for k in range(n - 1)]
+    strip = mesh_from(name + '_edge', verts, faces, edge_mat)
+    s2 = strip.modifiers.new('solid', 'SOLIDIFY')
+    s2.thickness = thick * 1.5
+    s2.offset = 0
+    apply_modifiers(strip)
+    return [auto_smooth(hard(body, 0.004), 30), auto_smooth(strip, 30)]
 
 
-def cape_sheet(name, top_z, bot_z, top_w, bot_w, y0, y1, mats, folds=3, rows=14, cols=16):
-    """Voluminous cape hanging behind the shoulders: wraps forward at the top corners,
-    flares and folds toward a wavy hem. mats = [cloth, trim]."""
+def fist(pos, direction, ls, mat):
+    o = ball('fist', pos, 1.0, mat, scale=(0.037 * ls, 0.034 * ls, 0.048 * ls), segs=12, rings=8)
+    return orient_z(o, direction)
+
+
+def cape_sheet(name, top_z, bot_z, top_w, bot_w, y0, y1, mat_list, folds=3, rows=14, cols=16):
+    """Cape hanging behind the shoulders: wraps forward at the top corners, flares and folds
+    toward a wavy hem. mat_list = [cloth, trim]."""
     verts, faces, zones = [], [], []
     for i in range(cols + 1):
         u = -1 + 2 * i / cols
         for j in range(rows + 1):
             v = j / rows
             w = top_w + (bot_w - top_w) * v ** 0.8
-            x = u * w
-            z = top_z + (bot_z - top_z) * v + (0.025 * math.sin(u * math.pi * 4) * v if j == rows else 0)
-            y = y0 - 0.1 * u * u * (1 - v) ** 2 + (y1 - y0) * v ** 1.3 + 0.03 * math.sin(u * math.pi * folds) * v
-            verts.append((x, y, z))
+            z = top_z + (bot_z - top_z) * v + (0.03 * math.sin(u * math.pi * 4) * v if j == rows else 0)
+            y = y0 - 0.1 * u * u * (1 - v) ** 2 + (y1 - y0) * v ** 1.3 + 0.035 * math.sin(u * math.pi * folds) * v
+            verts.append((u * w, y, z))
     for i in range(cols):
         for j in range(rows):
             a = i * (rows + 1) + j
             faces.append((a, a + rows + 1, a + rows + 2, a + 1))
             zones.append(1 if i == 0 or i == cols - 1 or j == rows - 1 else 0)
-    o = mesh_from(name, verts, faces, mats[0])
-    o.data.materials.append(mats[1])
+    o = mesh_from(name, verts, faces, mat_list[0])
+    o.data.materials.append(mat_list[1])
     for k, z in enumerate(zones):
         o.data.polygons[k].material_index = z
     sol = o.modifiers.new('solid', 'SOLIDIFY')
@@ -256,80 +215,138 @@ def cape_sheet(name, top_z, bot_z, top_w, bot_w, y0, y1, mats, folds=3, rows=14,
     return auto_smooth(o, 30)
 
 
-def mats():
-    return {
-        'skin': material('skin', (0.95, 0.8, 0.7), 0.6),
-        'hair': material('hair', (0.8, 0.72, 0.92), 0.55),
-        'eye': material('eye', (0.3, 0.35, 0.8), 0.3),
-        'pupil': material('pupil', (0.05, 0.03, 0.06), 0.4),
-        'shine': material('shine', (1, 1, 1), 0.2),
-        'blush': material('blush', (0.95, 0.55, 0.55), 0.8),
-        'steel': material('steel', (0.82, 0.84, 0.88), 0.3),
-        'gold': material('gold', (0.86, 0.66, 0.24), 0.3),
-        'gem': material('gem', (0.2, 0.55, 1.0), 0.15),
-        'white': material('white', (0.94, 0.92, 0.87), 0.7),
-        'cloth': material('cloth', (0.18, 0.37, 0.72), 0.7),
-        'leather': material('leather', (0.36, 0.22, 0.13), 0.7),
-        'iron': material('iron', (0.3, 0.29, 0.3), 0.5),
-        'fur': material('fur', (0.6, 0.42, 0.26), 0.9),
-        'furdark': material('furdark', (0.36, 0.24, 0.14), 0.9),
-        'brass': material('brass', (0.72, 0.54, 0.26), 0.4),
-        'bone': material('bone', (0.9, 0.85, 0.74), 0.6),
-        'darkwood': material('darkwood', (0.24, 0.15, 0.09), 0.7),
-    }
+def gradient_wedge(name, pts, widths, thick, mat, grad, centre=None, facing=None):
+    return wedge(name, pts, widths, thick, mat, centre=centre, facing=facing, grad=grad)
 
 
-def face(head, centre, M, fem, eye_h, brow_angle, brow_z=0.06, brow_w=0.016, iris_w=0.036):
-    """Anime face: tall iris ovals with pupils, highlights and lash lines, brows, mouth."""
-    parts = []
-    cx, cy, cz = centre
-    ez = cz - 0.005
+HAIR_GRAD = ((0.45, 0.45, 0.45), (1.0, 1.0, 1.0))  # multiplies the unit's hair colour
+FUR_GRAD = ((0.07, 0.04, 0.025), (0.62, 0.43, 0.24))  # dark roots -> warm tan tips
+
+
+# --------------------------------------------------------------------------- base body
+
+def base_parts(J, S):
+    """Skin-level anatomy on the universal humanoid: torso, hips, legs with heeled boots, arms
+    with fists, neck, head and ears. S picks materials and body proportions."""
+    M = S['M']
+    ws, ls, dep = S['ws'], S['ls'], S['depth']
+    parts = {n: [] for n, _ in HIERARCHY}
+    objs = {}
+
+    ts = [(0.545, 0.085 * ws, 0.06 * dep), (WAIST_Z, 0.076 * ws, 0.055 * dep), (0.64, 0.098 * ws, 0.068 * dep),
+          (CHEST_Z, 0.128 * ws, 0.08 * dep), (0.755, 0.14 * ws, 0.076 * dep), (SHOULDER_Z + 0.02, 0.114 * ws, 0.064 * dep),
+          (NECK_Z + 0.01, 0.052, 0.046)]
+    torso = loft('torso_shell', [((0, -0.004 if z >= 0.65 else 0, z), ru, rv) for z, ru, rv in ts], M[S['torso']], sides=16)
+    xform([torso], J['Mt'])
+    parts['torso'].append(torso)
+    objs['torso'] = torso
+
+    pelvis = loft('pelvis', [((0, 0.004, 0.44), 0.07 * ls, 0.058), ((0, 0.004, HIP_Z), 0.098 * ls * S['hipw'], 0.068),
+                             ((0, 0.002, WAIST_Z - 0.008), 0.08 * ls, 0.057)], M[S['pelvis']], sides=16)
+    parts['hips'].append(pelvis)
+    objs['pelvis'] = pelvis
+
+    for side in ('l', 'r'):
+        hip, kn, an, toe = J['hip_' + side], J['knee_' + side], J['ankle_' + side], J['toe_' + side]
+        th = tube('thigh', hip, kn, 0.056 * ls, 0.043 * ls, M[S['thigh']])
+        parts['thigh_' + side] += [th, ball('hipjoint', hip, 0.056 * ls, M[S['thigh']])]
+        objs['thigh_' + side] = th
+        parts['shin_' + side] += [ball('knee', kn, 0.044 * ls, M[S['thigh']]), tube('shin', kn, an, 0.041 * ls, 0.028 * ls, M[S['shin']])]
+        shaft_to = an + (kn - an) * 0.54
+        parts['shin_' + side] += boot(side, an, toe, {'boot': M[S['boot']], 'trim': M[S['boot_trim']], 'sole': M['leather']},
+                                      pointed=S['pointed'], cuff_r=0.05 * ls, shaft_to=shaft_to)
+        sh, el, wr = J['sh_' + side], J['el_' + side], J['wr_' + side]
+        parts['arm_' + side] += [tube('upper', sh, el, 0.041 * ls, 0.034 * ls, M[S['upper']]), ball('shoulder', sh, 0.047 * ls, M[S['upper']])]
+        parts['fore_' + side] += [tube('fore', el, wr, 0.034 * ls, 0.028 * ls, M[S['fore']]), ball('elbow', el, 0.037 * ls, M[S['upper']])]
+        df = (wr - el).normalized()
+        hand = wr + df * 0.038
+        parts['fore_' + side].append(fist(hand, df, ls, M[S['hand']]))
+        lat = df.cross(Vector((0, 0, 1))).normalized() * (1 if side == 'l' else -1)
+        parts['fore_' + side].append(ball('thumb', hand + lat * 0.03 + FRONT * 0.012 + df * 0.006, 0.014, M[S['hand']], scale=(1, 1, 1.5)))
+
+    neck = tube('neck', J['Mt'] @ Vector((0, 0, 0.72)), Vector((0, -0.004, 0.89)), 0.036 * (ws ** 0.4), 0.033, M['skin'])
+    head = build_head(M['face'], S['jaw'], S['chin'])
+    parts['head'] += [head, neck]
     for s in (-1, 1):
-        x = s * 0.078
-        parts.append(face_part(head, 'iris', x, ez, (iris_w, 0.008, eye_h), M['eye'], centre, 0.001))
-        parts.append(face_part(head, 'pupil', x, ez - eye_h * 0.15, (0.018, 0.008, eye_h * 0.5), M['pupil'], centre, 0.004))
-        parts.append(face_part(head, 'shine', x - s * 0.012, ez + eye_h * 0.4, (0.011, 0.006, 0.013), M['shine'], centre, 0.007))
-        top = ez + eye_h * 0.95
-        parts.append(bar('lash', (x - 0.045, cy, top - (0.012 if s > 0 else 0.0)), (x + 0.045, cy, top - (0.0 if s > 0 else 0.012)),
-                         0.014 if fem else 0.011, 0.008, M['pupil'], head))
-        by = cz + brow_z
-        inner, outer = (x - s * 0.035, cy, by - brow_angle), (x + s * 0.04, cy, by + brow_angle * 0.6)
-        parts.append(bar('brow', inner, outer, brow_w, 0.012, M['hair'], head))
-        if fem:
-            parts.append(face_part(head, 'blush', s * 0.11, cz - 0.085, (0.03, 0.004, 0.014), M['blush'], centre, 0.001))
-    parts.append(bar('mouth', (-0.022, cy, cz - 0.12), (0.022, cy, cz - 0.12), 0.008, 0.006, M['pupil'], head, 0.002))
+        parts['head'].append(ball('ear', (s * 0.127, 0.012, 1.02), 0.02, M['skin'], scale=(0.6, 0.8, 1.5), segs=8, rings=6))
+    objs['head'] = head
+    return parts, objs
+
+
+def pauldron_set(J, side, s, M, big, shell, rim, wing=True, rows=2, tilt=0.55):
+    """Oversized angular shoulder armour on the arm node: dome, layered lames, rim rings, wing."""
+    c = J['sh_' + side] + Vector((s * 0.03, 0.0, 0.035))
+    out = [dome('pauldron', c, big, 0.55, M[shell], s * tilt),
+           ring('pauldron_rim', c + Vector((s * 0.004, 0, -0.002)), big * 1.04, 0.012, M[rim], (0, s * tilt, 0), segs=8, scale=(1.1, 1, 1))]
+    for k in range(1, rows + 1):
+        ck = c + Vector((s * 0.05 * k, 0, -0.068 * k))
+        r = big * (1 - 0.2 * k)
+        out.append(dome('lame', ck, r, 0.5, M[shell], s * (tilt + 0.3 * k)))
+        out.append(ring('lame_rim', ck, r * 1.04, 0.01, M[rim], (0, s * (tilt + 0.3 * k), 0), segs=8, scale=(1.1, 1, 1)))
+    if wing:
+        out.append(plate('wing', [(0, 0), (0.05, 0.02), (0.12, 0.14), (0.065, 0.075), (0.035, 0.11), (0.0, 0.045)],
+                         c + Vector((s * 0.07, 0.015, 0.045)), (s, 0, 0), (0, 0, 1), 0.02, M[rim]))
+    return out
+
+
+# --------------------------------------------------------------------------- weapons
+
+def sword(G, bd, M, ls=1.0):
+    """Elegant longsword at ~1.25x: thin ridged blade, gold crossguard, wrapped grip."""
+    bd = Vector(bd).normalized()
+    side = bd.cross(FRONT).normalized()
+    parts = [ball('pommel', G - bd * 0.085, 0.024, M['gold'], segs=10, rings=6),
+             rod('grip', G - bd * 0.07, G + bd * 0.05, 0.016, M['leather'], 8),
+             rod('guard', G + bd * 0.055 - side * 0.085, G + bd * 0.055 + side * 0.085, 0.014, M['gold'], 8),
+             ball('guard_l', G + bd * 0.055 - side * 0.09, 0.02, M['gold'], segs=8, rings=5),
+             ball('guard_r', G + bd * 0.055 + side * 0.09, 0.02, M['gold'], segs=8, rings=5),
+             facet('guard_gem', (0.017, 0.012, 0.017), tuple(G + bd * 0.06 + FRONT * 0.012), M['gem'], 8, 5)]
+    base = G + bd * 0.075
+    path = [base + bd * s for s in (0.0, 0.07, 0.25, 0.41, 0.53)]
+    parts.append(wedge('blade', path, [0.054, 0.056, 0.05, 0.038, 0.0], [0.016, 0.022, 0.02, 0.014, 0.0],
+                       M['steel'], facing=FRONT))
+    parts.append(wedge('fuller', [base + bd * 0.02, base + bd * 0.36], [0.014, 0.008], [0.026, 0.02], M['iron'], facing=FRONT))
     return parts
 
 
-def hair_cap(name, centre, radii, hairline, nape, mat):
-    """Solid skull cap in the hair colour: covers top and back, opens for the face below
-    `hairline` (relative z) and ends at `nape` at the back."""
-    bpy.ops.mesh.primitive_uv_sphere_add(segments=24, ring_count=14, radius=1, location=(0, 0, 0))
-    cap = bpy.context.active_object
-    cap.name = name
-    import bmesh
-    bm = bmesh.new()
-    bm.from_mesh(cap.data)
-    kill = [v for v in bm.verts if (v.co.y < -0.25 and v.co.z < hairline + 0.35 * max(0, abs(v.co.x) - 0.5))
-            or v.co.z < nape]
-    bmesh.ops.delete(bm, geom=kill, context='VERTS')
-    bm.to_mesh(cap.data)
-    bm.free()
-    cap.scale = radii
-    cap.location = centre
-    activate(cap)
-    bpy.ops.object.transform_apply(scale=True, location=True)
-    sol = cap.modifiers.new('solid', 'SOLIDIFY')
-    sol.thickness = 0.02
-    sol.offset = -1
-    apply_modifiers(cap)
-    cap.data.materials.append(mat)
-    return auto_smooth(cap, 40)
+def scepter(G, sd, M):
+    """Ornate blue-gem scepter: dark shaft, gold bands, caged gem and a cross finial."""
+    sd = Vector(sd).normalized()
+    parts = [rod('shaft', G - sd * 0.22, G + sd * 0.5, 0.016, M['darkwood'], 8)]
+    for t in (-0.14, 0.05, 0.22, 0.36):
+        parts.append(rod('band', G + sd * (t - 0.012), G + sd * (t + 0.012), 0.022, M['gold'], 8))
+    top = G + sd * 0.58
+    parts.append(facet('gem', (0.052, 0.052, 0.06), tuple(top), M['gem'], 8, 6))
+    for k in range(4):
+        off = Vector((math.cos(k * math.pi / 2), math.sin(k * math.pi / 2), 0)) * 0.05
+        parts.append(rod('cage', top - sd * 0.07 + off, top + sd * 0.07 + off, 0.008, M['gold'], 6))
+    parts.append(ring('cage_lo', tuple(top - sd * 0.065), 0.048, 0.01, M['gold'], segs=10))
+    parts.append(rod('cross_v', top + sd * 0.06, top + sd * 0.19, 0.012, M['gold'], 6))
+    parts.append(rod('cross_h', top + sd * 0.14 + Vector((-0.045, 0, 0)), top + sd * 0.14 + Vector((0.045, 0, 0)), 0.011, M['gold'], 6))
+    return parts
 
 
-def on_head(head, centre, direction, out):
-    p, n = snap_n(head, centre, direction, reach=1.0)
-    return p + n * out
+def battleaxe(G, ad, M):
+    """Double-bitted battleaxe at ~1.25x: long wrapped haft, iron socket, two crescent bits with
+    bright beveled cutting edges, a spike on top."""
+    ad = Vector(ad).normalized()
+    side = ad.cross(FRONT).normalized()
+    parts = [rod('haft', G - ad * 0.24, G + ad * 0.66, 0.025, M['darkwood'], 8)]
+    for t in (-0.14, 0.09):
+        parts.append(rod('wrap', G + ad * (t - 0.03), G + ad * (t + 0.03), 0.03, M['cloth'], 8))
+    hc = G + ad * 0.56
+    parts.append(rod('socket', hc - ad * 0.075, hc + ad * 0.075, 0.042, M['iron'], 8))
+    sp = cone('spike', 0.028, 0.0, 0.12, tuple(hc + ad * 0.135), M['iron'], verts=6)
+    parts.append(orient_z(sp, ad))
+    bit = [(0.04, 0.045), (0.11, 0.085), (0.19, 0.17), (0.245, 0.2), (0.262, 0.11), (0.268, 0.0),
+           (0.262, -0.11), (0.245, -0.2), (0.19, -0.17), (0.11, -0.085), (0.04, -0.045)]
+    for bs in (1, -1):
+        prof = [(bs * a, b) for a, b in bit]
+        if bs < 0:
+            prof.reverse()
+        idx = list(range(3, 8)) if bs > 0 else list(range(3, 8))
+        parts += blade_plate('bit', prof, idx, hc, side, ad, 0.034, M['iron'], M['steel'])
+    return parts
 
 
 # --------------------------------------------------------------------------- Brenna
@@ -337,47 +354,62 @@ def on_head(head, centre, direction, out):
 def build_brenna():
     reset()
     M = mats()
-    HC = (0, 0, 0.94)
+    hand_r = Vector((-0.2, -0.2, 0.6))
+    hand_l = Vector((0.225, -0.1, 0.55))
+    J = make_joints(hand_r, hand_l, ws=1.0)
+    S = dict(M=M, ws=1.0, ls=1.0, depth=1.0, hipw=1.0, jaw=0.94, chin=1.0, pointed=1.0, torso='steel', pelvis='steel',
+             thigh='white', shin='white', boot='steel', boot_trim='gold', upper='cloth', fore='steel', hand='steel')
+    P, O = base_parts(J, S)
+    head, torso, pelvis = O['head'], O['torso'], O['pelvis']
+    legs = [O['thigh_l'], O['thigh_r']]
 
-    # ---- legs, boots, hips (root node)
-    legs = []
+    # belt with a gold buckle, hip tassets
+    yb = front_y([torso, pelvis], 0, WAIST_Z + 0.012)
+    P['torso'].append(ring('belt', (0, 0.003, WAIST_Z + 0.012), 0.092, 0.017, M['leather'], scale=(1, 0.74, 1)))
+    P['torso'].append(hard(cube('buckle', (0.06, 0.02, 0.05), (0, yb - 0.012, WAIST_Z + 0.012), M['gold']), 0.005))
     for s in (-1, 1):
-        x = s * 0.075
-        legs.append(skin_chain('thigh', [(x, 0, 0.46), (x * 1.05, -0.005, 0.28)], [0.068, 0.058], M['steel']))
-        legs.append(skin_chain('greave', [(x * 1.05, -0.005, 0.29), (x * 1.1, 0, 0.1)], [0.058, 0.05], M['steel']))
-        legs.append(facet_sphere('knee', (0.05, 0.04, 0.045), (x * 1.05, -0.05, 0.28), M['gold'], 8, 5))
-        legs.append(skin_chain('boot', [(x * 1.1, 0.02, 0.055), (x * 1.1, -0.1, 0.04)], [(0.065, 0.05), (0.06, 0.04)], M['steel']))
-        legs.append(hard(cube('sole', (0.12, 0.2, 0.02), (x * 1.1, -0.04, 0.01), M['leather']), 0.006))
-    legs.append(ring('belt', (0, 0, 0.47), 0.15, 0.022, M['leather'], scale=(1, 0.75, 1)))
-    legs.append(hard(cube('buckle', (0.06, 0.02, 0.045), (0, -0.125, 0.47), M['gold']), 0.005))
-    for s in (-1, 1):  # hip tassets
-        legs.append(dome('tasset', (s * 0.13, -0.01, 0.42), 0.09, 0.9, M['steel'], s * 1.4, segs=8, rings=3))
-    root = node('hero', legs, (0, 0, 0))
+        P['hips'].append(dome('tasset', Vector((s * 0.115, -0.005, HIP_Z - 0.03)), 0.085, 0.8, M['steel'], s * 1.3, segs=8, rings=3))
+        P['hips'].append(ring('tasset_rim', Vector((s * 0.115, -0.005, HIP_Z - 0.03)), 0.089, 0.009, M['gold'], (0, s * 1.3, 0), segs=8, scale=(1.1, 1, 1)))
 
-    # ---- torso: breastplate, tabard, sun crest, collar, pauldrons
-    chest = skin_chain('chest', [(0, 0, 0.45), (0, 0, 0.6), (0, 0, 0.72)], [(0.14, 0.1), (0.155, 0.11), (0.17, 0.11)],
-                       M['steel'], levels=2)
-    torso = [chest]
-    W = 0.12
-    tab = panel('tabard', [chest] + [o for o in bpy.data.objects if o.name.startswith('hero')],
-                [-W + 2 * W * i / 8 for i in range(9)],
-                top=lambda x: 0.7, hem=lambda x: 0.18 + 0.1 * abs(x) / W, rows=16, gap=0.012,
-                mats=[M['white'], M['gold']], flare=0.03,
+    # white tabard with gold border, sun crest and a blue gothic arch; blue side skirts
+    W = 0.105
+    targets = [torso, pelvis] + legs
+    tab = panel('tabard', targets, [-W + 2 * W * i / 8 for i in range(9)], top=lambda x: 0.735,
+                hem=lambda x: 0.235 + 0.09 * abs(x) / W, rows=18, gap=0.014, mat_list=[M['white'], M['gold']], flare=0.04,
                 zone=lambda i, j, n, m: 1 if i == 0 or i == n - 1 or j >= m - 1 else 0)
-    torso.append(tab)
-    yc = front_y([tab], 0, 0.6) - 0.012
-    torso.append(star('sun', (0, yc, 0.6), 0.075, 0.03, 8, M['gold'], FRONT, 0.01))
-    torso.append(facet_sphere('sun_gem', (0.022, 0.012, 0.022), (0, yc - 0.012, 0.6), M['gem'], 8, 5))
-    # high gothic collar: flared open-front band behind the neck, gold rim
+    P['torso'].append(tab)
+    arch = panel('arch', [tab], [-0.055 + 0.11 * i / 6 for i in range(7)], top=lambda x: 0.44 - 0.07 * abs(x) / 0.055,
+                 hem=lambda x: 0.30, rows=8, gap=0.004, mat_list=[M['cloth'], M['gold']], thick=0.006,
+                 zone=lambda i, j, n, m: 1 if i == 0 or i == n - 1 or j == 0 else 0)
+    P['torso'].append(arch)
+    yc = front_y([tab], 0, 0.62)
+    star_pts = [(0, 0, 0)]
+    for k in range(16):
+        a = math.pi * k / 8
+        r = 0.085 if k % 2 == 0 else 0.033
+        star_pts.append((math.sin(a) * r, yc - 0.012, 0.62 + math.cos(a) * r))
+    sun = mesh_from('sun', [(0, yc - 0.012, 0.62)] + star_pts[1:], [(0, 1 + k, 1 + (k + 1) % 16) for k in range(16)], M['gold'])
+    s_sol = sun.modifiers.new('solid', 'SOLIDIFY')
+    s_sol.thickness = 0.012
+    apply_modifiers(sun)
+    P['torso'].append(auto_smooth(sun, 30))
+    P['torso'].append(facet('sun_gem', (0.024, 0.014, 0.024), (0, yc - 0.028, 0.62), M['gem'], 8, 5))
+    for s in (-1, 1):
+        side_skirt = panel('skirt', targets, [s * 0.115 + s * 0.05 * i / 4 for i in range(5)] if s > 0 else [s * 0.115 + s * 0.05 * i / 4 for i in range(5)][::-1],
+                           top=lambda x: 0.56, hem=lambda x: 0.27, rows=8, gap=0.022, mat_list=[M['cloth']], zone=lambda *a: 0, flare=0.05)
+        P['hips'].append(side_skirt)
+
+    # high gothic collar: an open-front flared band with crenellated gold tips
     verts, faces = [], []
     n_a, n_z = 12, 4
+    nk = J['neck']
     for i in range(n_a + 1):
-        a = math.radians(-125 + 250 * i / n_a)  # 0 = back
+        a = math.radians(-125 + 250 * i / n_a)
         for j in range(n_z + 1):
             t = j / n_z
-            r = 0.12 + 0.1 * t ** 1.4
-            z = 0.7 + 0.16 * t + (0.035 if (i % 2 and j == n_z) else 0)  # crenellated gothic tips
-            verts.append((math.sin(a) * r, 0.02 + math.cos(a) * r * 0.9, z))
+            r = 0.078 + 0.09 * t ** 1.4
+            z = nk.z - 0.01 + 0.16 * t + (0.035 if (i % 2 and j == n_z) else 0)
+            verts.append((math.sin(a) * r, nk.y + 0.03 + math.cos(a) * r * 0.9, z))
     for i in range(n_a):
         for j in range(n_z):
             a = i * (n_z + 1) + j
@@ -387,91 +419,63 @@ def build_brenna():
     for k, f in enumerate(collar.data.polygons):
         if (k % n_z) == n_z - 1:
             f.material_index = 1
-    sol = collar.modifiers.new('solid', 'SOLIDIFY')
-    sol.thickness = 0.014
+    c_sol = collar.modifiers.new('solid', 'SOLIDIFY')
+    c_sol.thickness = 0.013
     apply_modifiers(collar)
-    torso.append(auto_smooth(collar, 30))
-    # 2x angular winged pauldrons
+    P['torso'].append(auto_smooth(collar, 30))
+    for s in (-1, 1):  # cape clasps at the collar
+        p = J['neck'] + Vector((s * 0.1, -0.05, -0.03))
+        P['torso'].append(ball('clasp', p, 0.026, M['gold'], segs=8, rings=5))
+        P['torso'].append(facet('clasp_gem', (0.014, 0.01, 0.014), tuple(p + FRONT * 0.02), M['gem'], 8, 5))
+
+    # oversized winged pauldrons
+    for s, side in ((1, 'l'), (-1, 'r')):
+        P['arm_' + side] += pauldron_set(J, side, s, M, 0.17, 'steel', 'gold', wing=True, rows=2, tilt=0.5)
+        # vambrace with gold cuffs and a couter at the elbow
+        wr, el = J['wr_' + side], J['el_' + side]
+        P['fore_' + side].append(ring('cuff', wr - (wr - el).normalized() * 0.008, 0.036, 0.013, M['gold'], segs=10))
+        P['fore_' + side].append(dome('couter', el + FRONT * 0.0, 0.05, 0.6, M['steel'], s * 0.3))
+
+    # long lavender hair: solid cap, centre-parted layered bangs, locks over the pauldrons
+    hair = [hair_cap(head, M['hair'], 1.055, lambda x: 1.105 - 0.13 * (abs(x) / 0.12) ** 2, 0.985)]
+    hair[0].location = Vector((0, 0, 0))
+    paint(hair[0], (0.7, 0.7, 0.7))
     for s in (-1, 1):
-        c = Vector((s * 0.2, 0.0, 0.73))
-        torso.append(dome('pauldron', c, 0.13, 0.62, M['steel'], s * 0.55))
-        torso.append(ring('pauldron_rim', c + Vector((s * 0.005, 0, -0.005)), 0.137, 0.012, M['gold'], (0, s * 0.55, 0), segs=8, scale=(1.1, 1, 1)))
-        torso.append(dome('lame', c + Vector((s * 0.06, 0, -0.075)), 0.1, 0.55, M['steel'], s * 0.95))
-        # wing: a pointed plate flaring up and out from the pauldron's outer top edge
-        torso.append(plate('wing', [(0, 0), (0.06, 0.02), (0.13, 0.13), (0.07, 0.07), (0.04, 0.1), (0.0, 0.04)],
-                           c + Vector((s * 0.06, 0.02, 0.04)), (s, 0, 0), (0, 0, 1), 0.022, M['gold']))
-    torso_node = node('torso', torso, (0, 0, 0.46), root)
+        for k, (a0, e0, a1, e1, a2, e2, a3, e3) in enumerate((
+                (6, 66, 22, 46, 36, 27, 50, 9),
+                (3, 70, 12, 52, 21, 35, 27, 19),
+                (26, 62, 46, 42, 68, 20, 88, -6))):
+            pts = [head_pt(head, D(s * a0), D(e0), 0.02), head_pt(head, D(s * a1), D(e1), 0.034),
+                   head_pt(head, D(s * a2), D(e2), 0.036), head_pt(head, D(s * a3), D(e3), 0.028)]
+            w = (0.07, 0.078, 0.07, 0.0) if k < 2 else (0.06, 0.07, 0.066, 0.0)
+            hair.append(gradient_wedge('bang', pts, list(w), 0.032, M['hair'], HAIR_GRAD, centre=(0, 0.01, 1.03)))
+        # flowing lock from the temple, over the pauldron
+        sh = J['sh_l' if s > 0 else 'sh_r']
+        pts = [head_pt(head, D(s * 75), D(38), 0.02), head_pt(head, D(s * 100), D(0), 0.045),
+               Vector((s * 0.155, 0.03, 0.93)), Vector((s * 0.215, 0.015, 0.905)), Vector((s * 0.29, -0.01, 0.84)),
+               Vector((s * 0.335, -0.03, 0.75))]
+        hair.append(gradient_wedge('lock', pts, [0.085, 0.095, 0.09, 0.09, 0.08, 0.0], 0.04, M['hair'], HAIR_GRAD, centre=(0, 0.02, 0.9)))
+        pts = [head_pt(head, D(s * 60), D(46), 0.02), head_pt(head, D(s * 90), D(10), 0.05),
+               Vector((s * 0.15, -0.045, 0.9)), Vector((s * 0.165, -0.085, 0.8)), Vector((s * 0.17, -0.1, 0.7))]
+        hair.append(gradient_wedge('lock_front', pts, [0.07, 0.078, 0.07, 0.06, 0.0], 0.034, M['hair'], HAIR_GRAD, centre=(0, 0.0, 0.9)))
+    for x, y_out, tip in ((0.0, 0.2, 0.34), (-0.075, 0.185, 0.4), (0.075, 0.185, 0.4), (-0.135, 0.15, 0.5), (0.135, 0.15, 0.5)):
+        az = D(180 - math.copysign(1, x if x else 1) * abs(x) * 260)
+        pts = [head_pt(head, az, D(40), 0.02), Vector((x * 1.15, 0.14, 0.9)), Vector((x * 1.5, y_out - 0.02, 0.68)),
+               Vector((x * 1.7, y_out, 0.5)), Vector((x * 1.7, y_out + 0.01, tip))]
+        hair.append(gradient_wedge('back', pts, [0.13, 0.15, 0.15, 0.12, 0.0], 0.05, M['hair'], HAIR_GRAD, centre=(0, 0.02, 0.8)))
+    P['head'] += hair
 
-    # ---- head: skull, neck, face, hair
-    neck = cylinder('neck', 0.045, 0.1, (0, 0, 0.76), M['skin'], verts=12)
-    head = head_mesh('head', HC, (0.205, 0.19, 0.2), 0.3, M['skin'])
-    parts = [head, neck] + face(head, HC, M, fem=True, eye_h=0.05, brow_angle=0.004, brow_z=0.058, brow_w=0.012)
-    parts.append(hair_cap('cap', (HC[0], HC[1] + 0.005, HC[2] + 0.005), (0.218, 0.205, 0.212), 0.42, -0.62, M['hair']))
-    # front bangs: three wide clumps per side from a centre part, tips at the brow line
-    for s in (-1, 1):
-        for k, (spread, z_tip, w) in enumerate(((0.03, 1.015, 0.11), (0.1, 1.005, 0.11), (0.17, 1.02, 0.09))):
-            root_p = on_head(head, HC, (s * 0.05, -0.35, 1), 0.02)
-            mid = on_head(head, HC, (s * (spread + 0.04) * 3.2, -1, 0.7), 0.025)
-            tip = on_head(head, (HC[0], HC[1], z_tip), (s * (spread + 0.02) * 4.5, -1, 0.0), 0.018)
-            parts.append(wedge('bang', [root_p, mid, tip], [w, w * 1.1, 0.0], 0.04, M['hair'], centre=HC))
-    # long side bangs framing the face, down to the jaw
-    for s in (-1, 1):
-        # rooted at the temples and hanging just outside the cheeks so the eyes stay clear
-        a = on_head(head, HC, (s * 1.0, -0.45, 0.55), 0.015)
-        b = on_head(head, HC, (s * 1.0, -0.25, -0.1), 0.03)
-        pts = [a, b, b + Vector((s * 0.025, 0.0, -0.12)), b + Vector((s * 0.02, 0.02, -0.22))]
-        parts.append(wedge('sidebang', pts, [0.07, 0.075, 0.06, 0.0], 0.035, M['hair'], centre=HC))
-    # big back/side clumps falling past the shoulders over the cape
-    for s, dx, back, tip_z in ((0, 0, 1, 0.36), (-1, 0.09, 1, 0.4), (1, 0.09, 1, 0.4), (-1, 0.17, 0.4, 0.5), (1, 0.17, 0.4, 0.5)):
-        x0 = s * dx
-        a = on_head(head, HC, (x0 * 4, back, 0.9), 0.015)
-        b = on_head(head, HC, (x0 * 5.5, back, -0.1), 0.03)
-        pts = [a, b, Vector((x0 * 1.5 + s * 0.04, b.y + 0.07, 0.66)), Vector((x0 * 1.6 + s * 0.05, b.y + 0.1, tip_z + 0.1)),
-               Vector((x0 * 1.5 + s * 0.04, b.y + 0.1, tip_z))]
-        parts.append(wedge('clump', pts, [0.15, 0.17, 0.16, 0.12, 0.0], 0.05, M['hair'], centre=(0, 0, pts[2].z)))
-    head_node = node('head', parts, (0, 0, 0.74), torso_node)
+    # royal-blue cape with gold trim
+    nk = J['neck']
+    P['cape'].append(cape_sheet('cape_mesh', nk.z + 0.005, 0.1, 0.17, 0.37, nk.y + 0.105, nk.y + 0.3, [M['cloth'], M['gold']]))
 
-    # ---- arms with mitten gauntlets; longsword (right) and scepter (left), both ~1.4x
-    for s, name in ((1, 'arm_l'), (-1, 'arm_r')):
-        sh = Vector((s * 0.19, 0, 0.7))
-        hand = Vector((s * 0.27, -0.03, 0.43))
-        arm = [skin_chain('arm', [tuple(sh), (s * 0.24, -0.01, 0.56), tuple(hand + Vector((0, 0, 0.04)))], [0.055, 0.05, 0.05], M['steel']),
-               facet_sphere('cuff', (0.058, 0.058, 0.03), tuple(hand + Vector((0, 0, 0.055))), M['gold'], 10, 4),
-               facet_sphere('gauntlet', (0.06, 0.055, 0.065), tuple(hand), M['steel'], 10, 6),
-               facet_sphere('thumb', (0.022, 0.022, 0.03), tuple(hand + Vector((-s * 0.04, -0.035, 0.01))), M['steel'], 6, 4)]
-        if s < 0:  # longsword angled down and forward
-            d = Vector((-0.25, -0.55, -1)).normalized()
-            g = hand + Vector((0, -0.02, 0))
-            arm.append(rod('grip', g - d * 0.06, g + d * 0.05, 0.016, M['leather'], 8))
-            arm.append(facet_sphere('pommel', (0.026, 0.026, 0.026), tuple(g - d * 0.075), M['gold'], 8, 5))
-            side = d.cross(Vector((0, 0, 1))).normalized()
-            guard = g + d * 0.065
-            arm.append(rod('guard', guard - side * 0.08, guard + side * 0.08, 0.016, M['gold'], 8))
-            arm.append(facet_sphere('guard_gem', (0.018, 0.018, 0.018), tuple(guard - side.cross(d) * 0.01), M['gem'], 8, 5))
-            base = guard + d * 0.02
-            blade = [(-0.028, 0), (0.028, 0), (0.024, 0.5), (0.0, 0.58), (-0.024, 0.5)]
-            arm.append(plate('blade', blade, base, side, d, 0.018, M['steel'], 0.006))
-        else:  # ornate scepter held upright
-            up = Vector((0.25, -0.1, 1)).normalized()
-            g = hand + Vector((0, -0.02, 0))
-            arm.append(rod('shaft', g - up * 0.14, g + up * 0.4, 0.016, M['darkwood'], 8))
-            for t in (-0.1, 0.1, 0.3):
-                arm.append(rod('band', g + up * (t - 0.01), g + up * (t + 0.01), 0.021, M['gold'], 8))
-            top = g + up * 0.47
-            arm.append(facet_sphere('scepter_gem', (0.05, 0.05, 0.055), tuple(top), M['gem'], 8, 6))
-            for k in range(4):
-                off = Vector((math.cos(k * math.pi / 2), math.sin(k * math.pi / 2), 0)) * 0.048
-                arm.append(rod('cage', top - up * 0.06 + off, top + up * 0.06 + off, 0.008, M['gold'], 6))
-            arm.append(ring('cage_lo', tuple(top - up * 0.055), 0.045, 0.01, M['gold'], segs=10))
-            arm.append(rod('cross_v', top + up * 0.05, top + up * 0.16, 0.011, M['gold'], 6))
-            arm.append(rod('cross_h', top + up * 0.12 + Vector((-0.04, 0, 0)), top + up * 0.12 + Vector((0.04, 0, 0)), 0.01, M['gold'], 6))
-        node(name, arm, tuple(sh), torso_node)
+    # longsword (ready, blade up and out) and the jewelled scepter
+    P['fore_r'] += sword(J['wr_r'] + (J['wr_r'] - J['el_r']).normalized() * 0.036, (-0.5, -0.22, 0.83), M)
+    P['fore_l'] += scepter(J['wr_l'] + (J['wr_l'] - J['el_l']).normalized() * 0.036, (0.16, -0.04, 1.0), M)
 
-    # ---- voluminous royal-blue cape with gold trim
-    cape = cape_sheet('cape_mesh', 0.74, 0.03, 0.2, 0.38, 0.13, 0.32, [M['cloth'], M['gold']])
-    node('cape', [cape], (0, 0.13, 0.74), torso_node)
-
-    export('brenna.glb', all_nodes(root), texcoords=False)
+    root = assemble(P, J)
+    export('brenna.glb', all_nodes(root), texcoords=True, vcolor=True)
+    return root
 
 
 # --------------------------------------------------------------------------- Dreg
@@ -479,142 +483,139 @@ def build_brenna():
 def build_dreg():
     reset()
     M = mats()
-    HC = (0, 0, 0.98)
+    hand_r = Vector((-0.235, -0.15, 0.65))
+    hand_l = Vector((0.235, -0.09, 0.5))
+    J = make_joints(hand_r, hand_l, ws=1.3, stance={'twist': 10.0, 'lean': 8.0})
+    S = dict(M=M, ws=1.3, ls=1.28, depth=1.25, hipw=1.1, jaw=1.14, chin=0.85, pointed=0.0, torso='iron', pelvis='leather',
+             thigh='leather', shin='leather', boot='leather', boot_trim='fur', upper='skin', fore='leather', hand='leather')
+    P, O = base_parts(J, S)
+    head, torso, pelvis = O['head'], O['torso'], O['pelvis']
+    legs = [O['thigh_l'], O['thigh_r']]
 
-    legs = []
+    # crimson sash-belt with a wolf-head buckle; layered iron breastplate rim
+    P['torso'].append(ring('belt', (0, 0.003, WAIST_Z + 0.012), 0.105, 0.022, M['cloth'], scale=(1, 0.78, 1)))
+    yb = front_y([torso, pelvis], 0, WAIST_Z + 0.012)
+    P['torso'].append(ball('buckle', (0, yb - 0.018, WAIST_Z + 0.012), 0.036, M['brass'], scale=(1, 0.5, 1), segs=10, rings=6))
     for s in (-1, 1):
-        x = s * 0.09
-        legs.append(skin_chain('thigh', [(x, 0, 0.46), (x * 1.05, 0, 0.27)], [0.085, 0.07], M['leather']))
-        legs.append(skin_chain('greave', [(x * 1.05, 0, 0.28), (x * 1.1, 0, 0.1)], [0.068, 0.06], M['iron']))
-        legs.append(facet_sphere('knee', (0.06, 0.045, 0.055), (x * 1.05, -0.055, 0.27), M['iron'], 8, 5))
-        legs.append(skin_chain('boot', [(x * 1.1, 0.02, 0.06), (x * 1.1, -0.1, 0.045)], [(0.075, 0.06), (0.07, 0.05)], M['leather']))
-        legs.append(ring('boot_fur', (x * 1.1, 0.0, 0.12), 0.075, 0.03, M['fur'], segs=10))
-        legs.append(hard(cube('sole', (0.14, 0.22, 0.025), (x * 1.1, -0.04, 0.012), M['furdark']), 0.006))
-    legs.append(ring('belt', (0, 0, 0.47), 0.19, 0.03, M['cloth'], scale=(1, 0.75, 1)))  # crimson sash-belt
-    legs.append(facet_sphere('buckle', (0.05, 0.02, 0.05), (0, -0.155, 0.47), M['brass'], 10, 6))
-    root = node('hero', legs, (0, 0, 0))
-
-    chest = skin_chain('chest', [(0, 0, 0.44), (0, 0, 0.6), (0, 0, 0.75)], [(0.19, 0.13), (0.205, 0.14), (0.215, 0.14)],
-                       M['iron'], levels=2)
-    torso = [chest]
-    # crimson loincloth + leather flaps, dagged hems
-    for x0, x1, mat, g in ((-0.08, 0.08, M['cloth'], 0.03), (-0.19, -0.08, M['leather'], 0.02), (0.08, 0.19, M['leather'], 0.02)):
-        xs = [x0 + (x1 - x0) * i / 4 for i in range(5)]
-        torso.append(panel('flap', [chest] + [o for o in bpy.data.objects if o.name.startswith('hero')], xs,
-                           top=lambda x: 0.46, hem=lambda x, x0=x0, x1=x1: 0.14 + 0.05 * (round((x - x0) / (x1 - x0) * 4) % 2),
-                           rows=6, gap=g, mats=[mat], zone=lambda *a: 0, flare=0.05, thick=0.012))
-    # crimson baldric across the iron breastplate
+        P['torso'].append(orient_z(cone('wolf_ear', 0.016, 0.0, 0.04, (s * 0.024, yb - 0.02, WAIST_Z + 0.048), M['brass'], verts=4), (s * 0.3, -0.1, 1)))
+    P['torso'].append(ring('plate_rim', (0, 0, 0.745), 0.118 * 1.3, 0.014, M['brass'], scale=(1, 0.66, 1)))
+    # crimson baldric across the plate and a fang necklace
     pts = []
     for k in range(9):
         t = k / 8
-        x, z = -0.17 + 0.34 * t, 0.74 - 0.26 * t
-        pts.append(Vector((x, front_y([chest], x, z) - 0.012, z)))
-    torso.append(wedge('baldric', pts, [0.075] * 9, 0.018, M['cloth'], facing=FRONT))
-    torso.append(ring('plate_rim', (0, 0, 0.745), 0.2, 0.018, M['brass'], scale=(1.05, 0.72, 1)))
-    # massive jagged fur mantle broadening the shoulders
-    torso.append(ring('mantle_base', (0, 0.02, 0.78), 0.2, 0.075, M['furdark'], segs=10, scale=(1.15, 0.95, 0.9)))
-    rows = [(0.82, 0.2, 0.17, 0.22, 0.12, 16, 60), (0.74, 0.26, 0.21, 0.27, 0.14, 14, 55), (0.62, 0.25, 0.22, 0.24, 0.13, 10, 100)]
-    for ri, (z, rx, ry, length, width, n, gap_deg) in enumerate(rows):
+        x, z = -0.17 + 0.34 * t, 0.755 - 0.27 * t
+        pts.append(Vector((x, front_y([torso], x, z) - 0.012, z)))
+    P['torso'].append(wedge('baldric', pts, [0.07] * 9, 0.016, M['cloth'], facing=FRONT))
+    for k in range(9):
+        t = (k - 4) / 4
+        x, z = t * 0.12, 0.775 - (1 - t * t) * 0.05
+        p = Vector((x, front_y([torso], x, z) - 0.02, z))
+        if k % 2 == 0:
+            f = cone('fang', 0.014, 0.0, 0.06, tuple(p + Vector((0, -0.004, -0.032))), M['bone'], verts=5)
+            f.rotation_euler = (math.pi, 0, 0)
+            activate(f)
+            bpy.ops.object.transform_apply(rotation=True)
+            P['torso'].append(f)
+        else:
+            P['torso'].append(ball('bead', p, 0.012, M['brass'], segs=6, rings=4))
+
+    # crimson loincloth between leather flaps, dagged hems
+    targets = [torso, pelvis] + legs
+    for x0, x1, mm, g in ((-0.065, 0.065, 'cloth', 0.034), (-0.17, -0.065, 'leather', 0.022), (0.065, 0.17, 'leather', 0.022)):
+        xs = [x0 + (x1 - x0) * i / 4 for i in range(5)]
+        P['hips'].append(panel('flap', targets, xs, top=lambda x: 0.53,
+                               hem=lambda x, x0=x0, x1=x1: 0.2 + 0.05 * (round((x - x0) / (x1 - x0) * 4) % 2),
+                               rows=6, gap=g, mat_list=[M[mm]], zone=lambda *a: 0, flare=0.05, thick=0.012))
+
+    # jagged layered fur mantle (overlapping angular planes, dark roots -> light tips)
+    fur = []
+    # rows ride above the pauldron domes (tops ~z 0.89) so the fur reads over the armour, and
+    # tips drape down over their rims; (z, rx, ry, length, width, count, front gap deg, drop)
+    rows = [(0.935, 0.15, 0.115, 0.13, 0.10, 16, 50, 0.55), (0.915, 0.235, 0.14, 0.19, 0.125, 18, 58, 0.75),
+            (0.87, 0.31, 0.16, 0.22, 0.13, 16, 72, 0.9), (0.77, 0.25, 0.19, 0.26, 0.13, 11, 118, 1.0)]
+    for ri, (z, rx, ry, length, width, n, gap_deg, drop) in enumerate(rows):
         for k in range(n):
-            a = 2 * math.pi * (k + 0.5 * (ri % 2)) / n  # 0 = back
-            if abs(math.atan2(math.sin(a), -math.cos(a))) < math.radians(gap_deg):
+            a = 2 * math.pi * (k + 0.5 * (ri % 2)) / n
+            if abs(math.atan2(math.sin(a), -math.cos(a))) < D(gap_deg):
                 continue
-            base = Vector((math.sin(a) * rx, math.cos(a) * ry + 0.02, z))
-            out = Vector((math.sin(a), math.cos(a), 0))
-            tip = base + out * length * 0.85 + Vector((0, 0, -length * (0.35 + 0.2 * ri)))
-            mid = base.lerp(tip, 0.45) + Vector((0, 0, 0.03))
-            mat = M['fur'] if (k + ri) % 3 else M['furdark']
-            torso.append(wedge('fur', [base - out * 0.04, mid, tip], [width, width * 0.8, 0.0], width * 0.5, mat,
-                               centre=(0, 0, z)))
-    for s in (-1, 1):  # iron pauldrons sitting in the fur
-        c = Vector((s * 0.25, 0.0, 0.76))
-        torso.append(dome('pauldron', c, 0.12, 0.6, M['iron'], s * 0.6))
-        torso.append(ring('pauldron_rim', c, 0.128, 0.014, M['brass'], (0, s * 0.6, 0), segs=8, scale=(1.1, 1, 1)))
-    torso_node = node('torso', torso, (0, 0, 0.46), root)
+            base = Vector((math.sin(a) * rx * 1.05, 0.02 + math.cos(a) * ry, z + 0.004 * (k % 3)))
+            out = Vector((math.sin(a), math.cos(a) * 0.8, 0))
+            tip = base + out * length * 0.7 + Vector((0, 0, -length * drop))
+            mid = base + out * length * 0.4 + Vector((0, 0, -length * drop * 0.2 + 0.012))
+            fur.append(wedge('fur', [base - out * 0.03, mid, tip], [width, width * 1.05, 0.0], width * 0.4, M['fur'],
+                             centre=(0, 0.02, z), grad=FUR_GRAD))
+    P['torso'] += fur
 
-    # head: wild tawny mane over a solid cap, solid braided beard, angry brow
-    neck = cylinder('neck', 0.06, 0.1, (0, 0, 0.79), M['skin'], verts=12)
-    head = head_mesh('head', HC, (0.21, 0.195, 0.2), 0.18, M['skin'])
-    parts = [head, neck] + face(head, HC, M, fem=False, eye_h=0.026, brow_angle=-0.022, brow_z=0.032, brow_w=0.028, iris_w=0.03)
-    parts.append(hair_cap('cap', (HC[0], HC[1] + 0.008, HC[2] + 0.01), (0.225, 0.212, 0.215), 0.45, -0.55, M['hair']))
-    # wild clumps: back/sides sweeping out and down, two spiky crown chunks, forelocks
-    for s, dx, zb, spread in ((0, 0, 0.72, 0.0), (-1, 0.1, 0.74, 0.06), (1, 0.1, 0.74, 0.06), (-1, 0.19, 0.8, 0.1), (1, 0.19, 0.8, 0.1)):
-        x0 = s * dx
-        a = on_head(head, HC, (x0 * 4, 1, 0.9), 0.015)
-        b = on_head(head, HC, (x0 * 5, 1, -0.05), 0.04)
-        pts = [a, b, Vector((x0 * 1.4 + s * spread, b.y + 0.08, 0.85)), Vector((x0 * 1.5 + s * spread * 1.4, b.y + 0.1, zb))]
-        parts.append(wedge('mane', pts, [0.17, 0.19, 0.15, 0.0], 0.06, M['hair'], centre=(0, 0, 0.9)))
+    for s, side in ((1, 'l'), (-1, 'r')):
+        P['arm_' + side] += pauldron_set(J, side, s, M, 0.135, 'iron', 'brass', wing=False, rows=2, tilt=0.6)
+        wr, el = J['wr_' + side], J['el_' + side]
+        df = (wr - el).normalized()
+        P['fore_' + side].append(tube('bracer', el + df * 0.045, wr, 0.043, 0.037, M['iron'], sides=10))
+        P['fore_' + side].append(ring('bracer_fur', wr - df * 0.004, 0.04, 0.018, M['fur'], segs=10))
+        paint(P['fore_' + side][-1], (0.45, 0.31, 0.18))
+    for side in ('l', 'r'):  # knee guards over the leather, fur tops on the boots
+        kn = J['knee_' + side]
+        P['shin_' + side].append(dome('kneeguard', kn + FRONT * 0.03, 0.058, 0.55, M['iron'], 0, tilt_x=-1.2))
+
+    # wild ginger mane swept back over a solid cap, jaw-integrated beard with braids
+    hair = [hair_cap(head, M['hair'], 1.06, lambda x: 1.1 - 0.1 * (abs(x) / 0.12) ** 2, 0.97)]
+    paint(hair[0], (0.7, 0.7, 0.7))
+    for layer, (n, el0, drop, spread, w) in enumerate(((7, 70, 0.0, 0.05, 0.10), (7, 48, 0.16, 0.1, 0.13), (5, 22, 0.3, 0.14, 0.15))):
+        for k in range(n):
+            f = -1 + 2 * k / (n - 1)
+            az = D(180 + f * 74)
+            root = head_pt(head, az, D(el0), 0.02)
+            back = Vector((math.sin(az), -math.cos(az), 0))  # outward horizontal
+            end_z = 0.98 - drop - 0.12 * (1 - abs(f))
+            pts = [root, head_pt(head, az, D(el0 - 25), 0.05),
+                   Vector((f * 0.13 * (1 + spread * 3), 0.145 + 0.02 * layer, 0.93 - drop * 0.5)),
+                   Vector((f * 0.17 * (1 + spread * 3), 0.17 + 0.03 * layer, end_z - 0.08)),
+                   Vector((f * 0.2 * (1 + spread * 3), 0.19 + 0.03 * layer, end_z - 0.2 - 0.05 * layer))]
+            hair.append(gradient_wedge('mane', pts, [w, w * 1.1, w * 1.05, w * 0.7, 0.0], 0.05, M['hair'], HAIR_GRAD, centre=(0, 0.03, 0.9)))
+    for s in (-1, 1):  # front locks swept back over the temples; sideburn into the beard
+        pts = [head_pt(head, D(s * 12), D(66), 0.02), head_pt(head, D(s * 42), D(52), 0.03),
+               head_pt(head, D(s * 78), D(30), 0.04), head_pt(head, D(s * 112), D(8), 0.05)]
+        hair.append(gradient_wedge('sweep', pts, [0.08, 0.09, 0.085, 0.0], 0.034, M['hair'], HAIR_GRAD, centre=(0, 0.01, 1.03)))
+        pts = [head_pt(head, D(s * 88), D(20), 0.02), head_pt(head, D(s * 84), D(-8), 0.05), head_pt(head, D(s * 62), D(-30), 0.05)]
+        hair.append(gradient_wedge('sideburn', pts, [0.06, 0.075, 0.0], 0.04, M['hair'], HAIR_GRAD, centre=(0, 0.01, 1.03)))
+    P['head'] += hair
+
+    bst = [((0, -0.045, 0.99), 0.108, 0.07), ((0, -0.056, 0.93), 0.12, 0.078), ((0, -0.068, 0.87), 0.118, 0.085),
+           ((0, -0.085, 0.80), 0.104, 0.09), ((0, -0.09, 0.73), 0.078, 0.078), ((0, -0.09, 0.68), 0.032, 0.04)]
+    beard = loft('beard', bst, M['hair'], sides=16, subsurf=1)
+    paint(beard, (0.8, 0.8, 0.8))
+    P['head'].append(beard)
+    # layered strands over the beard front (tapered, dark roots -> light tips)
+    for x, z0, z1 in ((-0.075, 0.95, 0.74), (-0.04, 0.93, 0.7), (0.0, 0.93, 0.68), (0.04, 0.93, 0.7), (0.075, 0.95, 0.74)):
+        pts = []
+        for f in (0.0, 0.35, 0.7, 1.0):
+            z = z0 + (z1 - z0) * f
+            xx = x * (1.0 - 0.45 * f)
+            pts.append(Vector((xx, snap_n([beard], (xx, 0, z), FRONT, reach=2.0)[0].y - 0.006, z)))
+        P['head'].append(gradient_wedge('strand', pts, [0.05, 0.056, 0.046, 0.0], 0.022, M['hair'], HAIR_GRAD, facing=FRONT))
     for s in (-1, 1):
-        a = on_head(head, HC, (s * 0.3, -0.3, 1), 0.015)
-        b = on_head(head, HC, (s * 0.55, 0.5, 0.8), 0.045)
-        parts.append(wedge('crown', [a, b, b + Vector((s * 0.06, 0.1, -0.06))], [0.14, 0.15, 0.0], 0.06, M['hair'], centre=HC))
-        a = on_head(head, HC, (s * 0.25, -0.6, 1), 0.015)
-        b = on_head(head, HC, (s * 0.9, -0.7, 0.35), 0.02)
-        parts.append(wedge('forelock', [a, b, b + Vector((s * 0.05, 0.0, -0.08))], [0.1, 0.09, 0.0], 0.04, M['hair'], centre=HC))
-        a = on_head(head, HC, (s * 1, -0.2, 0.2), 0.02)  # sideburn into the beard
-        parts.append(wedge('sideburn', [a, a + Vector((0, -0.02, -0.1)), a + Vector((-s * 0.02, -0.05, -0.18))],
-                           [0.07, 0.08, 0.06], 0.04, M['hair'], centre=HC))
-    # beard: one solid mass from the jaw down over the chest, mustache, three chunky braids
-    top = on_head(head, HC, (0, -1, -0.55), 0.0)
-    beard = [top + Vector((0, -0.005, 0.02)), Vector((0, top.y - 0.03, 0.8)), Vector((0, top.y - 0.03, 0.68)), Vector((0, top.y - 0.02, 0.6))]
-    parts.append(auto_smooth(skin_chain('beard', [tuple(p) for p in beard],
-                                        [(0.16, 0.08), (0.155, 0.085), (0.12, 0.07), (0.06, 0.04)], M['hair'], levels=1), 35))
-    for s in (-1, 1):  # jaw-line fullness joining the sideburns
-        a = on_head(head, HC, (s * 0.8, -0.7, -0.35), 0.01)
-        parts.append(auto_smooth(skin_chain('jaw', [tuple(a), tuple(a + Vector((-s * 0.05, -0.04, -0.1)))],
-                                            [(0.06, 0.05), (0.05, 0.04)], M['hair'], levels=1), 35))
-    for s in (-1, 1):
-        a = on_head(head, HC, (s * 0.05, -1, -0.28), 0.012)
-        parts.append(wedge('mustache', [a, a + Vector((s * 0.07, -0.01, -0.03)), a + Vector((s * 0.1, 0.0, -0.09))],
-                           [0.05, 0.045, 0.0], 0.03, M['hair'], facing=FRONT))
-    for x, n_beads in ((-0.07, 3), (0.0, 4), (0.07, 3)):
-        p = Vector((x, beard[-1].y, 0.62))
-        for b in range(n_beads):
-            p = p + Vector((0, 0, -0.045))
-            parts.append(facet_sphere('braid', (0.03, 0.027, 0.03), tuple(p + Vector((0.006 * (b % 2), 0, 0))), M['hair'], 8, 5))
-        parts.append(ring('braid_ring', tuple(p + Vector((0, 0, -0.03))), 0.024, 0.01, M['bone'], segs=8))
-        parts.append(facet_sphere('braid_tip', (0.02, 0.02, 0.02), tuple(p + Vector((0, 0, -0.055))), M['hair'], 6, 4))
-    head_node = node('head', parts, (0, 0, 0.78), torso_node)
+        a = head_pt(head, D(s * 12), D(-22), 0.01)
+        mus = gradient_wedge('mustache', [a, a + Vector((s * 0.06, -0.012, -0.03)), a + Vector((s * 0.115, 0.005, -0.09))],
+                             [0.065, 0.06, 0.0], 0.04, M['hair'], HAIR_GRAD, facing=FRONT)
+        P['head'].append(mus)
+    # three chunky braids hanging from the beard: interlocked slanted links, tapering, bone/brass ties
+    for x, links, tie in ((-0.058, 4, 'bone'), (0.0, 5, 'brass'), (0.058, 4, 'bone')):
+        p = Vector((x, -0.152, 0.715))
+        for b in range(links):
+            k = 1.0 - 0.09 * b
+            p = p + Vector((0.0, -0.002, -0.036 * k))
+            link = sphere('braid', (0.026 * k, 0.02 * k, 0.034 * k), tuple(p), M['hair'], segs=8, rings=5, rot=(0, 0.5 * (-1) ** b, 0))
+            paint(link, (0.8, 0.8, 0.8))
+            P['head'].append(link)
+        P['head'].append(ring('tie', p + Vector((0, 0, -0.024)), 0.022, 0.012, M[tie], segs=8))
+        P['head'].append(gradient_wedge('braid_tip', [p + Vector((0, 0, -0.03)), p + Vector((0, -0.002, -0.06)), p + Vector((0, 0, -0.1))],
+                                        [0.045, 0.04, 0.0], 0.026, M['hair'], HAIR_GRAD, facing=FRONT))
 
-    # arms: thick, leather bracers with fur cuffs, big mitts; double-bitted axe (right hand)
-    for s, name in ((1, 'arm_l'), (-1, 'arm_r')):
-        sh = Vector((s * 0.24, 0, 0.72))
-        hand = Vector((s * 0.33, -0.03, 0.44))
-        arm = [skin_chain('arm', [tuple(sh), (s * 0.3, -0.01, 0.58), tuple(hand + Vector((0, 0, 0.05)))], [0.07, 0.065, 0.06], M['skin']),
-               ring('bracer_fur', tuple(hand + Vector((0, 0, 0.1))), 0.06, 0.026, M['fur'], segs=10),
-               skin_chain('bracer', [tuple(hand + Vector((0, 0, 0.1))), tuple(hand + Vector((0, 0, 0.04)))], [0.064, 0.06], M['leather']),
-               facet_sphere('mitt', (0.072, 0.065, 0.072), tuple(hand), M['leather'], 10, 6),
-               facet_sphere('thumb', (0.026, 0.026, 0.034), tuple(hand + Vector((-s * 0.05, -0.04, 0.01))), M['leather'], 6, 4)]
-        if s < 0:
-            d = Vector((-0.45, -0.25, 1)).normalized()  # held outward, head above the shoulder
-            g = hand + Vector((0, -0.02, 0))
-            arm.append(rod('haft', g - d * 0.2, g + d * 0.72, 0.024, M['darkwood'], 8))
-            for t in (-0.12, 0.08):
-                arm.append(rod('wrap', g + d * (t - 0.03), g + d * (t + 0.03), 0.029, M['cloth'], 8))
-            hc = g + d * 0.62
-            side = d.cross(Vector((0, -1, 0))).normalized()  # blade plane faces the camera
-            arm.append(rod('socket', hc - d * 0.07, hc + d * 0.07, 0.04, M['iron'], 8))
-            arm.append(cone('spike', 0.03, 0.0, 0.1, tuple(hc + d * 0.12), M['iron'], verts=6))
-            arm[-1] = orient(arm[-1], d, base=Vector((0, 0, 1)))
-            crescent = [(0.03, 0.08), (0.12, 0.13), (0.22, 0.17), (0.27, 0.06), (0.28, -0.06), (0.22, -0.17), (0.12, -0.13), (0.03, -0.08)]
-            for bs in (-1, 1):
-                prof = [(bs * a, b) for a, b in crescent]
-                if bs < 0:
-                    prof.reverse()
-                arm.append(plate('blade', prof, hc, side, d, 0.04, M['iron'], 0.012))
-                edge = [(bs * a, b) for a, b in crescent[2:6]]
-                for (ax, az), (bx, bz) in zip(edge, edge[1:]):
-                    arm.append(rod('edge', hc + side * ax + d * az, hc + side * bx + d * bz, 0.012, M['steel'], 6))
-        node(name, arm, tuple(sh), torso_node)
+    P['fore_r'] += battleaxe(J['wr_r'] + (J['wr_r'] - J['el_r']).normalized() * 0.04, (-0.3, -0.16, 0.94), M)
 
-    export('dreg.glb', all_nodes(root), texcoords=False)
-
-
-def all_nodes(root):
-    out = [root]
-    for c in root.children_recursive:
-        out.append(c)
-    return out
+    root = assemble(P, J)
+    export('dreg.glb', all_nodes(root), texcoords=True, vcolor=True)
+    return root
 
 
 if __name__ == '__main__':

@@ -5,6 +5,7 @@ import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 // both modules have finished evaluating. It supplies each unit's hair colour so the model's
 // hair matches the portrait.
 import { UNITS } from './units.js';
+import { faceTexture } from './faces.js';
 
 // KayKit Adventurers (CC0, Kay Lousberg — see public/models/kaykit/LICENSE-*.txt).
 // Each GLB carries every weapon for its class; `show` picks which ones stay visible.
@@ -28,13 +29,13 @@ export const MODEL_SPECS = {
   aldric:  { file: 'Knight.glb', show: ['1H_Sword', 'Badge_Shield'], hide: ['Knight_Helmet'] },
   // Brenna and Dreg are built from scratch (tools/blender/build_heroes.py) to the design
   // sheets in design_assets/ and the tactics-miniature style rules; see buildHero().
-  brenna:  { hero: 'models/env/brenna.glb' },
+  brenna:  { hero: 'models/env/brenna.glb', gaze: 'noble' },
   wren:    { file: 'Rogue_Hooded.glb', show: [], gear: ['bow', 'quiver'] },
   elowen:  { file: 'Mage.glb', show: ['2H_Staff'], pose: { '2H_Staff': STAFF_OUT } },
   garrick: { file: 'Knight.glb', show: ['Round_Shield'], gear: ['lance', 'plume'], mount: true },
 
   morvath: { file: 'Barbarian.glb', show: ['2H_Axe'], scale: 1.32 },
-  dreg:    { hero: 'models/env/dreg.glb' },
+  dreg:    { hero: 'models/env/dreg.glb', gaze: 'fierce' },
   sable:   { file: 'Rogue_Hooded.glb', show: [], gear: ['bow', 'quiver'] },
   vex:     { file: 'Mage.glb', show: ['1H_Wand', 'Spellbook_open'] },
   grisk:   { file: 'Barbarian.glb', show: ['1H_Axe'], hide: ['Barbarian_Hat', 'Barbarian_Cape'], gear: ['bandana'] },
@@ -377,21 +378,57 @@ async function buildHorse(faction) {
   return { root: horse, neck: horse.getObjectByName('neck'), tail: horse.getObjectByName('tail') };
 }
 
-// Heroes built from scratch in Blender as rigid parts: hero -> torso -> head, arm_l, arm_r,
-// cape. No skeleton or clips; the idle (breathing, head sway, cape flutter) and the
-// weapon-raised ready pose are driven here. Skin, hair and iris take the unit's look.
-const FACE_MATS = new Set(['eye', 'pupil', 'shine', 'blush']);
-const heroMats = new Map();
-function heroMaterial(name, faction, look) {
-  const custom = { skin: look.skin, hair: look.hair, eye: look.eyes, pupil: 0x1a1016, shine: 0xffffff, blush: 0xf29a96 };
-  if (!(name in custom)) return gearMaterial(name, faction);
-  const key = `${name}|${faction}|${custom[name]}`;
-  if (!heroMats.has(key)) {
-    const m = new THREE.MeshStandardMaterial({ color: custom[name] ?? 0x888888, roughness: name === 'shine' ? 0.2 : 0.6 });
-    if (name === 'shine') { m.emissive = new THREE.Color(0xffffff); m.emissiveIntensity = 0.6; }
-    heroMats.set(key, FACE_MATS.has(name) ? m : addRim(m, faction));
+// Heroes built from scratch on the universal humanoid (tools/blender/humanoid.py): a node
+// hierarchy hips > torso > head / arm > fore, hips > thigh > shin, torso > cape. There is no
+// skeleton or clip; the idle (breathing, head sway, cape flutter, weight shift) and the
+// selected "ready" pose are driven here. Illustrated look: matte cloth/fur/skin
+// (roughness 0.9+), cel-shaded metals with hard light/shadow borders, a painted face texture
+// (faces.js) and the inverted-hull ink outline shared with the other units.
+// The humanoid standard is ~1.18 tall (3.75 heads) with slender limbs, which reads a touch small
+// beside the chunkier KayKit units; this is the one place the whole cast is scaled to match.
+const HERO_SCALE = 1.1;
+const STEP_HARD = [0.42, 0.42, 0.95, 0.95, 1.35]; // metals: two hard tones + a bright band
+const gradients = new Map();
+function gradientMap(steps) {
+  const key = steps.join();
+  if (!gradients.has(key)) {
+    const t = new THREE.DataTexture(new Uint8Array(steps.map((v) => Math.min(255, Math.round(v * 255)))), steps.length, 1, THREE.RedFormat);
+    t.minFilter = t.magFilter = THREE.NearestFilter;
+    t.generateMipmaps = false;
+    t.needsUpdate = true;
+    gradients.set(key, t);
   }
-  return heroMats.get(key);
+  return gradients.get(key);
+}
+const HERO_METAL = { steel: 0xd2dae6, gold: 0xe6b73c, iron: 0x77757f, brass: 0xc79a48 };
+const HERO_MATTE = { white: 0xf2ede0, leather: 0x6a4428, furdark: 0x6a4428, bone: 0xf0e6cc, darkwood: 0x4a2c18 };
+const heroMats = new Map();
+function heroMaterial(name, faction, look, gaze) {
+  const key = `${name}|${faction}|${look.skin}|${look.hair}|${look.eyes}|${gaze}`;
+  if (heroMats.has(key)) return heroMats.get(key);
+  let m;
+  if (name === 'face') {
+    m = new THREE.MeshStandardMaterial({ map: faceTexture(look, gaze), roughness: 0.92 });
+  } else if (name in HERO_METAL) {
+    m = new THREE.MeshToonMaterial({ color: HERO_METAL[name], gradientMap: gradientMap(STEP_HARD) });
+  } else if (name === 'gem') {
+    m = new THREE.MeshStandardMaterial({ color: 0x3aa8ff, roughness: 0.55, emissive: 0x1a6cff, emissiveIntensity: 0.8 });
+  } else if (name === 'skin') {
+    m = new THREE.MeshStandardMaterial({ color: look.skin, roughness: 0.92 });
+  } else if (name === 'hair') {
+    m = new THREE.MeshStandardMaterial({ color: look.hair, roughness: 0.88, vertexColors: true });
+  } else if (name === 'fur') {
+    m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1.0, vertexColors: true });
+  } else if (name === 'cloth' || name === 'clothdark') {
+    const c = new THREE.Color(FACTION_ACCENT[faction].cloth);
+    if (name === 'clothdark') c.multiplyScalar(0.45);
+    m = new THREE.MeshStandardMaterial({ color: c, roughness: 0.9 });
+  } else {
+    m = new THREE.MeshStandardMaterial({ color: HERO_MATTE[name] ?? 0x888888, roughness: 0.92 });
+  }
+  if (!(m instanceof THREE.MeshToonMaterial) || true) addRim(m, faction);
+  heroMats.set(key, m);
+  return m;
 }
 
 async function buildHero(spec, id, faction) {
@@ -401,19 +438,23 @@ async function buildHero(spec, id, faction) {
   root.traverse((o) => {
     if (!o.isMesh) return;
     const name = o.material.name;
-    o.material = heroMaterial(name, faction, look);
-    o.castShadow = !FACE_MATS.has(name);
+    o.material = heroMaterial(name, faction, look, spec.gaze);
+    if (o.material.vertexColors && !o.geometry.attributes.color) {
+      o.geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(o.geometry.attributes.position.count * 3).fill(1), 3));
+    }
+    o.castShadow = true;
     o.receiveShadow = true;
-    if (FACE_MATS.has(name)) o.userData.noOutline = true;
   });
-  addOutlines(root, faction, 0.008);
-  const part = (n) => root.getObjectByName(n);
-  const torso = part('torso'), head = part('head'), armL = part('arm_l'), armR = part('arm_r'), cape = part('cape');
-  const rest = new Map([torso, head, armL, armR, cape].filter(Boolean).map((o) => [o, o.quaternion.clone()]));
+  root.scale.setScalar(HERO_SCALE);
+  addOutlines(root, faction, 0.0055 / HERO_SCALE);
+  const N = {};
+  for (const n of ['hips', 'torso', 'head', 'arm_l', 'fore_l', 'arm_r', 'fore_r', 'cape', 'thigh_l', 'shin_l', 'thigh_r', 'shin_r']) N[n] = root.getObjectByName(n);
+  const rest = new Map(Object.values(N).filter(Boolean).map((o) => [o, o.quaternion.clone()]));
+  const restPos = N.hips ? N.hips.position.clone() : null;
   const e = new THREE.Euler(), q = new THREE.Quaternion();
-  const pose = (o, x, y, z) => {
-    if (!o) return;
-    o.quaternion.copy(rest.get(o)).multiply(q.setFromEuler(e.set(x, y, z)));
+  const pose = (n, x, y, z) => {
+    const o = N[n];
+    if (o) o.quaternion.copy(rest.get(o)).multiply(q.setFromEuler(e.set(x, y, z)));
   };
   const phase = Math.random() * 10;
   let ready = 0, target = 0;
@@ -422,14 +463,18 @@ async function buildHero(spec, id, faction) {
     setActive(active) { target = active ? 1 : 0; },
     update(dt, t) {
       ready += (target - ready) * Math.min(1, dt * 8);
-      const breath = Math.sin(t * 2 + phase);
-      if (torso) torso.scale.set(1 + breath * 0.008, 1 + breath * 0.014, 1 + breath * 0.008);
-      // heads tilt up ~7 degrees so faces read from the overhead tactics camera
-      pose(head, -0.12 + Math.sin(t * 0.9 + phase) * 0.03 - ready * 0.06, Math.sin(t * 0.55 + phase) * 0.07, 0);
-      // weapon arm swings forward and up when selected; the off hand follows a little
-      pose(armR, breath * 0.03 - ready * 0.55, 0, -ready * 0.12);
-      pose(armL, -breath * 0.03 - ready * 0.2, 0, ready * 0.08);
-      pose(cape, 0.03 + Math.max(0, Math.sin(t * 1.3 + phase)) * 0.06 + ready * 0.05, 0, Math.sin(t * 0.8 + phase) * 0.03);
+      const breath = Math.sin(t * 1.9 + phase);
+      const sway = Math.sin(t * 0.7 + phase);
+      if (N.hips) N.hips.position.y = restPos.y - 0.004 * (1 - breath) * 0.5 - ready * 0.006; // sink into the stance
+      pose('torso', breath * 0.012 + ready * 0.05, sway * 0.02, 0);
+      pose('head', -0.06 + Math.sin(t * 0.9 + phase) * 0.025 - ready * 0.05, Math.sin(t * 0.55 + phase) * 0.06, 0);
+      // weapon arm lifts into the ready guard; the off hand tightens
+      pose('arm_r', -ready * 0.32 + breath * 0.02, 0, -ready * 0.1);
+      pose('fore_r', -ready * 0.42, 0, 0);
+      pose('arm_l', -ready * 0.12 - breath * 0.02, 0, ready * 0.06);
+      pose('fore_l', -ready * 0.16, 0, 0);
+      pose('thigh_r', ready * 0.05, 0, 0);
+      pose('cape', 0.03 + Math.max(0, Math.sin(t * 1.3 + phase)) * 0.06 + ready * 0.05, 0, Math.sin(t * 0.8 + phase) * 0.03);
     },
   };
 }
