@@ -287,13 +287,18 @@ export function createUnits(scene) {
     const p = toWorld(data.c, data.r);
     group.position.set(p.x, tileTop(data.c, data.r), p.z);
 
+    // No pedestal: units stand on the terrain over a faint faction-tinted pool and a thin
+    // glowing ring (radius 0.34), like the reference art.
     const fc = FACTION_COLORS[data.faction];
-    const base = add(group, cyl(0.34, 0.37, 0.05, 48), mat(0x2b2724, { roughness: 0.4, metalness: 0.3 }), 0, 0.025, 0);
-    add(group, new THREE.TorusGeometry(0.37, 0.012, 8, 48), gold(), 0, 0.012, 0).rotation.x = Math.PI / 2;
-    base.receiveShadow = true;
-    const ring = add(group, new THREE.TorusGeometry(0.35, 0.02, 10, 64),
-      new THREE.MeshStandardMaterial({ color: fc, emissive: fc, emissiveIntensity: 0.5 }), 0, 0.05, 0);
+    const pool = new THREE.Mesh(new THREE.CircleGeometry(0.34, 48).rotateX(-Math.PI / 2),
+      new THREE.MeshBasicMaterial({ color: fc, transparent: true, opacity: 0.22, depthWrite: false }));
+    pool.position.y = 0.012;
+    pool.renderOrder = 1;
+    group.add(pool);
+    const ring = add(group, new THREE.TorusGeometry(0.34, 0.012, 8, 64),
+      new THREE.MeshStandardMaterial({ color: fc, emissive: fc, emissiveIntensity: 0.5 }), 0, 0.014, 0);
     ring.rotation.x = Math.PI / 2;
+    ring.castShadow = false;
 
     const figure = buildFigure(data);
     figure.position.y = 0.05;
@@ -311,7 +316,7 @@ export function createUnits(scene) {
 
     // Swap in the KayKit model once it loads; the procedural figure stays as the fallback.
     buildModel(data.id, data.faction).then((m) => {
-      m.root.position.y = 0.05;
+      m.root.position.y = 0.01;
       m.root.rotation.y = facing;
       m.root.traverse((o) => { o.userData.unitId = data.id; });
       group.add(m.root);

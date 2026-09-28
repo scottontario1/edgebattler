@@ -3,8 +3,8 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import {
-  grassTexture, dirtTexture, rockTexture, stoneTexture, woodTexture, riverbedTexture,
-  waterNormalTexture, floorTexture, cliffTexture, waterfallTexture,
+  rockTexture, stoneTexture, woodTexture, waterNormalTexture, floorTexture, cliffTexture, waterfallTexture,
+  terrainAtlas, riverTextures, foamNoiseTexture, vnoise,
 } from './textures.js';
 
 // 16 x 12 battlefield. Row 0 is the far (north) edge, row 11 the near edge.
@@ -99,37 +99,9 @@ function mat(color, opts = {}) {
   return matCache.get(key);
 }
 
-// Three texture variants per terrain so neighbouring tiles don't repeat.
-const variants = (make) => [0, 1, 2].map((i) => make(i));
-const TILE_MATS = {
-  G: variants((i) => new THREE.MeshStandardMaterial({ map: grassTexture(10 + i, 86), roughness: 0.95 })),
-  V: variants((i) => new THREE.MeshStandardMaterial({ map: grassTexture(20 + i, 80), roughness: 0.95 })),
-  F: variants((i) => new THREE.MeshStandardMaterial({ map: grassTexture(30 + i, 104), color: 0xb8c8a8, roughness: 0.95 })),
-  R: variants((i) => new THREE.MeshStandardMaterial({ map: dirtTexture(40 + i), roughness: 1 })),
-  M: variants((i) => new THREE.MeshStandardMaterial({ map: rockTexture(50 + i), roughness: 1 })),
-  C: variants((i) => new THREE.MeshStandardMaterial({ map: stoneTexture(60 + i), roughness: 0.9 })),
-  W: variants((i) => new THREE.MeshStandardMaterial({ map: riverbedTexture(70 + i), roughness: 1 })),
-};
-TILE_MATS.K = TILE_MATS.C;
-TILE_MATS.B = TILE_MATS.W;
-
-// Tile blocks use the terrain texture on top and rock strata on the sides
-// (BoxGeometry face order: +x, -x, +y, -y, +z, -z).
-const cliffMats = variants((i) => new THREE.MeshStandardMaterial({ map: cliffTexture(90 + i), roughness: 1 }));
-const blockMats = (top, rand) => {
-  const side = cliffMats[Math.floor(rand() * cliffMats.length)];
-  return [side, side, top, side, side, side];
-};
-
 const rockMat = new THREE.MeshStandardMaterial({ map: rockTexture(80), roughness: 0.95, flatShading: true });
 const stoneMat = new THREE.MeshStandardMaterial({ map: stoneTexture(81), color: 0xe8e2d0, roughness: 0.9 });
 const woodMat = new THREE.MeshStandardMaterial({ map: woodTexture(82), roughness: 0.8 });
-
-const tileGeoCache = new Map();
-function tileGeo(h) {
-  if (!tileGeoCache.has(h)) tileGeoCache.set(h, new RoundedBoxGeometry(0.96, h, 0.96, 3, 0.035));
-  return tileGeoCache.get(h);
-}
 
 function add(parent, geo, material, x = 0, y = 0, z = 0, shadow = true) {
   const m = new THREE.Mesh(geo, material);
@@ -163,17 +135,41 @@ function roughen(geo, seed, amount) {
   return geo;
 }
 
+// Foliage uses per-vertex colour (darker at the base of each tier, lighter at the tip) so a
+// whole forest merges into a single draw call.
+const foliageMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, flatShading: true });
+const trunkMat = mat(0x4e321b);
+
+function tint(geo, hex, dark = 0.6, light = 1.2) {
+  const base = new THREE.Color(hex);
+  geo.computeBoundingBox();
+  const { min, max } = geo.boundingBox;
+  const pos = geo.attributes.position;
+  const colors = new Float32Array(pos.count * 3);
+  const c = new THREE.Color();
+  for (let i = 0; i < pos.count; i++) {
+    const k = (pos.getY(i) - min.y) / (max.y - min.y || 1);
+    c.copy(base).multiplyScalar(dark + (light - dark) * k);
+    colors.set([c.r, c.g, c.b], i * 3);
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  return geo;
+}
+
+const PINE_GREENS = [0x1d4a2a, 0x22532e, 0x285c30, 0x1a4430, 0x2f6434];
+
 function pine(parent, x, z, y, rand, scale = 1) {
   const s = scale * (0.8 + rand() * 0.45);
   const g = new THREE.Group();
   g.position.set(x, y, z);
-  g.scale.setScalar(s);
-  add(g, new THREE.CylinderGeometry(0.022, 0.035, 0.14, 6), mat(0x5b3a1e), 0, 0.07, 0);
-  const green = jitterHex(0x2d5f2a, rand, 0.12);
-  add(g, new THREE.ConeGeometry(0.19, 0.24, 9), mat(green), 0, 0.2, 0);
-  add(g, new THREE.ConeGeometry(0.15, 0.22, 9), mat(jitterHex(green, rand)), 0, 0.31, 0);
-  add(g, new THREE.ConeGeometry(0.1, 0.18, 9), mat(jitterHex(green, rand)), 0, 0.42, 0);
-  g.rotation.y = rand() * Math.PI;
+  g.scale.set(s, s * (0.9 + rand() * 0.35), s);
+  add(g, new THREE.CylinderGeometry(0.02, 0.032, 0.12, 5), trunkMat, 0, 0.06, 0);
+  const green = jitterHex(PINE_GREENS[Math.floor(rand() * PINE_GREENS.length)], rand, 0.08);
+  const tiers = [[0.19, 0.2, 0.17], [0.155, 0.19, 0.27], [0.115, 0.17, 0.36], [0.07, 0.15, 0.45]];
+  for (const [r, h, ty] of tiers) {
+    const cone = new THREE.ConeGeometry(r * (0.92 + rand() * 0.16), h, 8);
+    add(g, tint(cone, jitterHex(green, rand, 0.05), 0.55, 1.25), foliageMat, 0, ty, 0).rotation.y = rand() * 3;
+  }
   parent.add(g);
 }
 
@@ -182,19 +178,66 @@ function oak(parent, x, z, y, rand, scale = 1) {
   const g = new THREE.Group();
   g.position.set(x, y, z);
   g.scale.setScalar(s);
-  add(g, new THREE.CylinderGeometry(0.025, 0.04, 0.18, 6), mat(0x5b3a1e), 0, 0.09, 0);
-  const palette = [0x4f7f30, 0x5b8a34, 0x467a2c, 0x6f8f2e, 0xb0772a];
-  const base = palette[Math.floor(rand() * (rand() < 0.12 ? 5 : 4))];
-  for (let i = 0; i < 4; i++) {
-    const r = 0.1 + rand() * 0.05;
-    add(g, new THREE.IcosahedronGeometry(r, 1), mat(jitterHex(base, rand, 0.1)),
-      (rand() - 0.5) * 0.12, 0.24 + rand() * 0.1, (rand() - 0.5) * 0.12);
+  add(g, new THREE.CylinderGeometry(0.025, 0.04, 0.18, 6), trunkMat, 0, 0.09, 0);
+  const palette = [0x4c8a2c, 0x5a9632, 0x3f7a2a, 0x6c9a2e, 0xb0772a];
+  const base = palette[Math.floor(rand() * (rand() < 0.1 ? 5 : 4))];
+  for (let i = 0; i < 5; i++) {
+    const r = 0.09 + rand() * 0.05;
+    add(g, tint(new THREE.IcosahedronGeometry(r, 1), jitterHex(base, rand, 0.1), 0.6, 1.2), foliageMat,
+      (rand() - 0.5) * 0.14, 0.24 + rand() * 0.1, (rand() - 0.5) * 0.14);
   }
   parent.add(g);
 }
 
-function tree(parent, x, z, y, rand, scale) {
-  (rand() < 0.55 ? pine : oak)(parent, x, z, y, rand, scale);
+function bush(parent, x, z, y, rand, scale = 1) {
+  const base = jitterHex(rand() < 0.5 ? 0x3d7a28 : 0x4a8a2e, rand, 0.1);
+  const n = 2 + Math.floor(rand() * 3);
+  for (let i = 0; i < n; i++) {
+    const r = (0.045 + rand() * 0.035) * scale;
+    const m = add(parent, tint(new THREE.IcosahedronGeometry(r, 1), jitterHex(base, rand, 0.08), 0.55, 1.2), foliageMat,
+      x + (rand() - 0.5) * 0.1 * scale, y + r * 0.7, z + (rand() - 0.5) * 0.1 * scale);
+    m.scale.y = 0.8;
+  }
+}
+
+function tree(parent, x, z, y, rand, scale, pineShare = 0.8) {
+  (rand() < pineShare ? pine : oak)(parent, x, z, y, rand, scale);
+}
+
+// Forest tile: a tight clump of dark pines around the edge with a clearing in the middle (and
+// nothing directly in front of it) so a unit standing there stays visible.
+function forestClump(parent, x, z, y, rand) {
+  const spots = [];
+  for (let k = 0; k < 60 && spots.length < 9; k++) {
+    const dx = (rand() - 0.5) * 0.9, dz = (rand() - 0.5) * 0.9;
+    if (Math.hypot(dx, dz * 1.2) < 0.22) continue;
+    if (dz > 0 && Math.abs(dx) < 0.24) continue;
+    if (spots.some(([sx, sz]) => Math.hypot(sx - dx, sz - dz) < 0.15)) continue;
+    spots.push([dx, dz]);
+  }
+  for (const [dx, dz] of spots) {
+    const front = dz > 0.15 ? 0.78 : 1; // keep the near row a little lower
+    tree(parent, x + dx, z + dz, y, rand, (0.72 + rand() * 0.2) * front, 0.85);
+  }
+  if (rand() < 0.7) bush(parent, x + (rand() - 0.5) * 0.7, z + 0.3 + rand() * 0.12, y, rand, 0.9);
+}
+
+// Split-rail fence from (x0, z0) to (x1, z1).
+function fence(parent, x0, z0, x1, z1, y, rand) {
+  const len = Math.hypot(x1 - x0, z1 - z0);
+  const n = Math.max(2, Math.round(len / 0.17));
+  const ang = Math.atan2(z1 - z0, x1 - x0);
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    const post = add(parent, box, woodMat, x0 + (x1 - x0) * t, y + 0.045, z0 + (z1 - z0) * t);
+    post.scale.set(0.022, 0.09 + rand() * 0.015, 0.022);
+    post.rotation.set((rand() - 0.5) * 0.12, rand(), (rand() - 0.5) * 0.12);
+  }
+  for (const h of [0.04, 0.075]) {
+    const rail = add(parent, box, woodMat, (x0 + x1) / 2, y + h, (z0 + z1) / 2);
+    rail.scale.set(len, 0.012, 0.014);
+    rail.rotation.y = -ang;
+  }
 }
 
 function house(parent, x, z, y, rand) {
@@ -288,8 +331,9 @@ function mergeStatics(root) {
   root.traverse((o) => {
     if (!o.isMesh) return;
     const geo = (o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone()).applyMatrix4(o.matrixWorld);
+    const keepColor = !Array.isArray(o.material) && o.material.vertexColors;
     for (const name of Object.keys(geo.attributes)) {
-      if (!['position', 'normal', 'uv'].includes(name)) geo.deleteAttribute(name);
+      if (!['position', 'normal', 'uv'].includes(name) && !(keepColor && name === 'color')) geo.deleteAttribute(name);
     }
     // Multi-material meshes are split into one piece per material group.
     const parts = Array.isArray(o.material)
@@ -340,7 +384,8 @@ function grassBlades(tiles, rand, time) {
       const k2 = 0.7 + rand() * 0.8;
       s.set(k2, k2 * (0.8 + rand() * 0.6), k2);
       mesh.setMatrixAt(i, m.compose(p, q, s));
-      mesh.setColorAt(i, color.setHSL(0.24 + rand() * 0.06, 0.45 + rand() * 0.2, 0.28 + rand() * 0.18));
+      mesh.setColorAt(i, t === 'F' ? color.setHSL(0.28 + rand() * 0.06, 0.5 + rand() * 0.15, 0.08 + rand() * 0.07)
+        : color.setHSL(0.23 + rand() * 0.06, 0.55 + rand() * 0.2, 0.15 + rand() * 0.12));
       i++;
     }
   }
@@ -517,7 +562,8 @@ function wheatPatches(villages, rand, time) {
 
 // The river enters over the north cliff (column 7). The fall arcs out from the lip like a
 // thrown stream: horizontal travel grows with the square root of the drop.
-function buildWaterfall(scene, riverMat) {
+function buildWaterfall(scene) {
+  const riverMat = new THREE.MeshStandardMaterial({ color: 0x2f7cb8, roughness: 0.15 });
   const x = toWorld(7, 0).x;
   const zTop = -H / 2 - 0.62, zBottom = -H / 2 + 0.06;
   const yTop = 1.3, yBottom = WATER_Y;
@@ -569,6 +615,217 @@ function buildWaterfall(scene, riverMat) {
   };
 }
 
+// ------------------------------------------------------------------ ground
+// The ground is one continuous mesh: a flat top per tile (all sharing one painted atlas, so
+// neighbouring tiles meet without gaps) plus rugged cliff walls wherever the ground steps down.
+
+const FLOOR_Y = 0;
+const DIRS = [[0, -1], [0, 1], [-1, 0], [1, 0]]; // N, S, W, E
+const isWaterCell = (c, r) => 'WB'.includes(terrainAt(c, r));
+const heightAt = (c, r) => (inBounds(c, r) ? groundTop(c, r) : FLOOR_Y);
+const smoothstep = (a, b, x) => {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
+
+const cliffMat = new THREE.MeshStandardMaterial({ map: cliffTexture(90, 0.25), roughness: 1, flatShading: true });
+const mossyCliffMat = new THREE.MeshStandardMaterial({ map: cliffTexture(91, 1), roughness: 1, flatShading: true });
+
+// [bottom, top] of the wall on side `dir` of tile (c, r), or null if the ground doesn't step down.
+function wallSpan(c, r, [dc, dr]) {
+  if (!inBounds(c, r)) return null;
+  const top = groundTop(c, r), bottom = heightAt(c + dc, r + dr);
+  return bottom < top - 1e-4 ? [bottom, top] : null;
+}
+
+function pushWall(out, c, r, dir) {
+  const span = wallSpan(c, r, dir);
+  if (!span) return;
+  const [bottom, top] = span;
+  const [dc, dr] = dir;
+  const x0 = c - W / 2, z0 = r - H / 2;
+  // Edge endpoints (a -> b) and the tiles continuing the wall beyond each end.
+  const alongX = dr !== 0;
+  const a = alongX ? [x0, dr < 0 ? z0 : z0 + 1] : [dc < 0 ? x0 : x0 + 1, z0];
+  const b = alongX ? [x0 + 1, a[1]] : [a[0], z0 + 1];
+  const same = (s) => s && Math.abs(s[0] - bottom) < 1e-4 && Math.abs(s[1] - top) < 1e-4;
+  const runA = same(alongX ? wallSpan(c - 1, r, dir) : wallSpan(c, r - 1, dir));
+  const runB = same(alongX ? wallSpan(c + 1, r, dir) : wallSpan(c, r + 1, dir));
+  const nu = 6, nv = Math.max(2, Math.ceil((top - bottom) / 0.06));
+  const grid = [];
+  for (let j = 0; j <= nv; j++) {
+    const s = j / nv, y = bottom + (top - bottom) * s;
+    for (let i = 0; i <= nu; i++) {
+      const t = i / nu;
+      const x = a[0] + (b[0] - a[0]) * t, z = a[1] + (b[1] - a[1]) * t;
+      // Bulge the face outward with noise; the top and bottom rows and open ends stay put so the
+      // wall still meets the tile tops and neighbouring walls without cracks.
+      const fade = Math.min(runA ? 1 : smoothstep(0, 0.3, t), runB ? 1 : smoothstep(1, 0.7, t));
+      const k = Math.pow(4 * s * (1 - s), 0.5) * fade;
+      const d = ((vnoise(x * 4.5, y * 6, z * 4.5, 11) - 0.3) * 0.08 + (vnoise(x * 13, y * 13, z * 13, 12) - 0.5) * 0.025) * k;
+      grid.push({ p: [x + dc * d, y, z + dr * d], uv: [alongX ? x : z, 1 - (top - y)] });
+    }
+  }
+  const target = isWaterCell(c, r) || !inBounds(c + dc, r + dr) || !isWaterCell(c + dc, r + dr) ? out.cliff : out.moss;
+  const v = (i, j) => grid[j * (nu + 1) + i];
+  const tri = (p, q, w) => {
+    // Wind each triangle so its face points out of the tile.
+    const ux = q.p[0] - p.p[0], uy = q.p[1] - p.p[1], uz = q.p[2] - p.p[2];
+    const vx = w.p[0] - p.p[0], vy = w.p[1] - p.p[1], vz = w.p[2] - p.p[2];
+    const nx = uy * vz - uz * vy, nz = ux * vy - uy * vx;
+    const list = nx * dc + nz * dr >= 0 ? [p, q, w] : [p, w, q];
+    for (const o of list) { target.pos.push(...o.p); target.uv.push(...o.uv); }
+  };
+  for (let j = 0; j < nv; j++) {
+    for (let i = 0; i < nu; i++) {
+      tri(v(i, j), v(i + 1, j), v(i + 1, j + 1));
+      tri(v(i, j), v(i + 1, j + 1), v(i, j + 1));
+    }
+  }
+}
+
+function toGeometry({ pos, uv }) {
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  geo.computeVertexNormals();
+  return geo;
+}
+
+// Road network as smooth polylines in tile units (cell centres at +0.5). Straight runs wobble
+// a little; corners cut across the cell so the path bends instead of turning square.
+function roadPaths(rand) {
+  const isRoad = (c, r) => inBounds(c, r) && 'RB'.includes(terrainAt(c, r));
+  const key = (p) => p.join(',');
+  const nbrs = ([c, r]) => DIRS.map(([dc, dr]) => [c + dc, r + dr]).filter((p) => isRoad(...p));
+  const edge = (p, q) => [key(p), key(q)].sort().join('|');
+  const used = new Set();
+  const cells = [];
+  for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) if (isRoad(c, r)) cells.push([c, r]);
+  const walk = (start, next) => {
+    const chain = [start, next];
+    used.add(edge(start, next));
+    let prev = start, cur = next;
+    while (nbrs(cur).length === 2) {
+      const n = nbrs(cur).find((p) => key(p) !== key(prev));
+      if (used.has(edge(cur, n))) break;
+      used.add(edge(cur, n));
+      chain.push(n);
+      prev = cur; cur = n;
+    }
+    return chain;
+  };
+  const chains = [];
+  for (const pass of [(n) => n !== 2, (n) => n === 2]) {
+    for (const cell of cells) {
+      if (!pass(nbrs(cell).length)) continue;
+      for (const n of nbrs(cell)) if (!used.has(edge(cell, n))) chains.push(walk(cell, n));
+    }
+  }
+  const castleNext = ([c, r]) => DIRS.map(([dc, dr]) => [c + dc, r + dr]).find((p) => inBounds(...p) && 'CK'.includes(terrainAt(...p)));
+  return chains.map((chain) => {
+    const pts = [];
+    const endCastle = (cell) => {
+      const k = castleNext(cell);
+      if (k) pts.push([(cell[0] + k[0]) / 2 + 0.5 + (k[0] - cell[0]) * 0.2, (cell[1] + k[1]) / 2 + 0.5 + (k[1] - cell[1]) * 0.2]);
+    };
+    if (nbrs(chain[0]).length === 1) endCastle(chain[0]);
+    chain.forEach((cell, i) => {
+      const prev = chain[i - 1], next = chain[i + 1];
+      const [cx, cy] = [cell[0] + 0.5, cell[1] + 0.5];
+      if (prev && next) {
+        const straight = prev[0] - cell[0] === cell[0] - next[0] && prev[1] - cell[1] === cell[1] - next[1];
+        if (straight) {
+          const w = (rand() - 0.5) * 0.14;
+          pts.push(prev[0] === cell[0] ? [cx + w, cy] : [cx, cy + w]);
+        }
+      } else {
+        pts.push([cx, cy]);
+      }
+      if (next) {
+        const w = (rand() - 0.5) * 0.1;
+        const mx = (cell[0] + next[0]) / 2 + 0.5, my = (cell[1] + next[1]) / 2 + 0.5;
+        pts.push(next[0] === cell[0] ? [mx + w, my] : [mx, my + w]);
+      }
+    });
+    if (nbrs(chain[chain.length - 1]).length === 1) endCastle(chain[chain.length - 1]);
+    return pts;
+  });
+}
+
+// Rocks along the banks and midstream, in tile units ({ x, y, r }).
+function riverRocks(rand) {
+  const rocks = [];
+  for (let r = 0; r < H; r++) {
+    for (let c = 0; c < W; c++) {
+      if (terrainAt(c, r) !== 'W') continue;
+      for (const [dc, dr] of DIRS) {
+        if (!inBounds(c + dc, r + dr) || isWaterCell(c + dc, r + dr) || rand() > 0.6) continue;
+        const n = 1 + (rand() < 0.45 ? 1 : 0);
+        for (let i = 0; i < n; i++) {
+          const along = 0.12 + rand() * 0.76, off = 0.05 + rand() * 0.09;
+          const x = dc ? (dc < 0 ? off : 1 - off) : along, y = dr ? (dr < 0 ? off : 1 - off) : along;
+          rocks.push({ x: c + x, y: r + y, r: 0.035 + rand() * 0.05 });
+        }
+      }
+      if (rand() < 0.3) rocks.push({ x: c + 0.3 + rand() * 0.4, y: r + 0.3 + rand() * 0.4, r: 0.04 + rand() * 0.04 });
+    }
+  }
+  return rocks;
+}
+
+const ISLAND = { x: 8.0, y: 7.5, r: 0.2 }; // tile units: where the river bends at row 7
+
+function riverDetail(parent, rocks, rand) {
+  const wetRock = new THREE.MeshStandardMaterial({ map: rockTexture(83), color: 0xc4c0b2, roughness: 0.7, flatShading: true });
+  const at = (x, y) => [x - W / 2, y - H / 2];
+  rocks.forEach((k, i) => {
+    const [x, z] = at(k.x, k.y);
+    const m = add(parent, roughen(new THREE.IcosahedronGeometry(k.r, 1), i, 0.5), wetRock, x, WATER_Y - k.r * 0.15, z);
+    m.scale.set(1, 0.75, 1);
+    m.rotation.y = rand() * 3;
+  });
+  // A small wooded island where the river bends.
+  const [ix, iz] = at(ISLAND.x, ISLAND.y);
+  const base = add(parent, roughen(new THREE.CylinderGeometry(ISLAND.r * 0.9, ISLAND.r * 1.15, 0.16, 12, 3), 5, 0.4), wetRock, ix, WATER_Y - 0.04, iz);
+  base.rotation.y = 0.7;
+  const capGeo = tint(roughen(new THREE.CylinderGeometry(ISLAND.r * 0.82, ISLAND.r * 0.92, 0.04, 12, 1), 6, 0.3), 0x5a9a34, 0.8, 1.1);
+  add(parent, capGeo, foliageMat, ix, WATER_Y + 0.055, iz);
+  pine(parent, ix - 0.05, iz - 0.04, WATER_Y + 0.07, rand, 0.62);
+  pine(parent, ix + 0.07, iz - 0.07, WATER_Y + 0.07, rand, 0.5);
+  bush(parent, ix + 0.06, iz + 0.07, WATER_Y + 0.07, rand, 0.8);
+}
+
+function buildGround(scene, rand) {
+  const cellClass = (c, r) => ({ G: 'grass', R: 'grass', F: 'forest', V: 'village', M: 'rock', C: 'stone', K: 'stone', W: 'bed', B: 'bed' })[terrainAt(c, r)];
+  const yards = [], fields = [];
+  for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
+    if (terrainAt(c, r) !== 'V') continue;
+    yards.push([c + 0.5, r + 0.58, 0.3, 0.22]);
+    fields.push([c + 0.5 + 0.22, r + 0.56, c + 0.5 + 0.46, r + 0.9], [c + 0.5 - 0.46, r + 0.56, c + 0.5 - 0.22, r + 0.9]);
+  }
+  const atlas = terrainAtlas({ cols: W, rows: H, px: 128, cellClass, roads: roadPaths(rand), fields, yards, seed: 12 });
+  const tops = { pos: [], uv: [] }, walls = { cliff: { pos: [], uv: [] }, moss: { pos: [], uv: [] } };
+  for (let r = 0; r < H; r++) {
+    for (let c = 0; c < W; c++) {
+      const y = groundTop(c, r), x0 = c - W / 2, z0 = r - H / 2;
+      const u0 = c / W, u1 = (c + 1) / W, v0 = 1 - r / H, v1 = 1 - (r + 1) / H;
+      tops.pos.push(x0, y, z0, x0, y, z0 + 1, x0 + 1, y, z0 + 1, x0, y, z0, x0 + 1, y, z0 + 1, x0 + 1, y, z0);
+      tops.uv.push(u0, v0, u0, v1, u1, v1, u0, v0, u1, v1, u1, v0);
+      for (const dir of DIRS) pushWall(walls, c, r, dir);
+    }
+  }
+  const group = new THREE.Group();
+  const topMesh = new THREE.Mesh(toGeometry(tops), new THREE.MeshStandardMaterial({ map: atlas, roughness: 0.95 }));
+  const cliffs = new THREE.Mesh(toGeometry(walls.cliff), cliffMat);
+  const mossy = new THREE.Mesh(toGeometry(walls.moss), mossyCliffMat);
+  for (const m of [topMesh, cliffs, mossy]) {
+    m.castShadow = m.receiveShadow = true;
+    group.add(m);
+  }
+  scene.add(group);
+}
+
 export function buildMap(scene) {
   const rand = rng(7);
   const flags = [];
@@ -582,27 +839,25 @@ export function buildMap(scene) {
   floor.receiveShadow = true;
   scene.add(floor);
 
-  const waterGeos = [];
   const bridgeTiles = [];
   const villages = [];
   const castles = [];
+  const waterCells = [];
   let mountainSeed = 0;
+
+  buildGround(scene, rand);
+  const rocks = riverRocks(rng(41));
+  riverDetail(statics, rocks, rng(42));
 
   for (let r = 0; r < H; r++) {
     for (let c = 0; c < W; c++) {
       const t = terrainAt(c, r);
-      const info = TERRAIN[t];
       const p = toWorld(c, r);
-      const materials = TILE_MATS[t];
       const top = groundTop(c, r);
-      add(statics, tileGeo(top), blockMats(materials[Math.floor(rand() * materials.length)], rand), p.x, top / 2, p.z, false);
 
       if (t === 'G' || t === 'V' || t === 'F') grassTiles.push({ t, x: p.x, z: p.z, h: top });
-      if (t === 'W' || t === 'B') waterGeos.push(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2).translate(p.x, WATER_Y, p.z));
-      if (t === 'F') {
-        const n = 3 + Math.floor(rand() * 2);
-        for (let i = 0; i < n; i++) tree(statics, p.x + (rand() - 0.5) * 0.6, p.z + (rand() - 0.5) * 0.6, top, rand);
-      }
+      if (t === 'W' || t === 'B') waterCells.push([c, r]);
+      if (t === 'F') forestClump(statics, p.x, p.z, top, rand);
       if (t === 'M') mountain(statics, p.x, p.z, top, rand, mountainSeed++);
       if (t === 'V') villages.push({ x: p.x, z: p.z, y: top, turn: (rand() - 0.5) * 0.3 });
       if (t === 'C' || t === 'K') {
@@ -611,19 +866,33 @@ export function buildMap(scene) {
         makeFlag(p.x, top + KEEP_POLE_TOP - 0.07, p.z - 0.08, faction, flags);
       }
       if (t === 'B') bridgeTiles.push(p);
-      if ((t === 'G' || t === 'R') && rand() < 0.25) {
-        add(statics, new THREE.DodecahedronGeometry(0.03 + rand() * 0.025, 0), rockMat,
-          p.x + (rand() - 0.5) * 0.8, top + 0.01, p.z + (rand() - 0.5) * 0.8);
+      if (t === 'G') {
+        if (rand() < 0.3) {
+          add(statics, new THREE.DodecahedronGeometry(0.03 + rand() * 0.025, 0), rockMat,
+            p.x + (rand() - 0.5) * 0.8, top + 0.01, p.z + (rand() - 0.5) * 0.8);
+        }
+        // A bush in one corner of some meadow tiles, clear of the unit in the middle.
+        if (rand() < 0.35) bush(statics, p.x + (rand() < 0.5 ? -1 : 1) * 0.38, p.z - 0.2 - rand() * 0.2, top, rand, 0.8);
+        // Fences along stretches of road.
+        for (const [dc, dr] of DIRS) {
+          if (!inBounds(c + dc, r + dr) || terrainAt(c + dc, r + dr) !== 'R' || rand() > 0.3) continue;
+          const e = 0.44;
+          if (dr) fence(statics, p.x - e, p.z + dr * e, p.x + e, p.z + dr * e, top, rand);
+          else fence(statics, p.x + dc * e, p.z - e, p.x + dc * e, p.z + e, top, rand);
+        }
       }
     }
   }
 
-  // Decorative woods around the battlefield edge.
-  for (let i = 0; i < 420; i++) {
-    const x = (rand() - 0.5) * 38;
-    const z = (rand() - 0.5) * 30;
-    if (Math.abs(x) < W / 2 + 0.4 && Math.abs(z) < H / 2 + 0.4) continue;
-    tree(statics, x, z, 0, rand, 1.25);
+  // Decorative woods around the battlefield edge: a dense dark pine carpet near the map that
+  // thins out with distance, with the odd broadleaf tree for colour.
+  for (let i = 0; i < 5200; i++) {
+    const x = (rand() - 0.5) * 42;
+    const z = (rand() - 0.5) * 34;
+    const gap = Math.max(Math.abs(x) - W / 2, Math.abs(z) - H / 2);
+    if (gap < 0.3 || (z < -H / 2 && Math.abs(x) < 11.5)) continue;
+    if (rand() < gap / 9) continue;
+    tree(statics, x, z, FLOOR_Y, rand, 1.25, 0.9);
   }
 
   scene.add(mergeStatics(statics));
@@ -632,22 +901,43 @@ export function buildMap(scene) {
   for (const f of flags) scene.add(f.mesh);
   loadBuildings(scene, castles, villages);
 
+  // River: painted colour (turquoise shallows, deep blue channel), rippling normals, and a foam
+  // layer along the banks, around rocks and below the waterfall.
+  const river = riverTextures({
+    cols: W, rows: H, px: 64, isWater: isWaterCell, rocks,
+    spots: [{ x: 7.5, y: 0, r: 0.35 }, { ...ISLAND, r: ISLAND.r + 0.02 }], seed: 5,
+  });
+  const cellPlane = ([c, r], y) => {
+    const g = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2).translate(c - W / 2 + 0.5, y, r - H / 2 + 0.5);
+    const uv = g.attributes.uv;
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, (c + uv.getX(i)) / W, 1 - (r + 1 - uv.getY(i)) / H);
+    return g;
+  };
   const waterNormal = waterNormalTexture();
   const waterMat = new THREE.MeshPhysicalMaterial({
-    color: 0x1b5f8c, roughness: 0.08, metalness: 0, transparent: true, opacity: 0.9, envMapIntensity: 0.5,
-    normalMap: waterNormal, normalScale: new THREE.Vector2(0.35, 0.35), clearcoat: 1, clearcoatRoughness: 0.05,
+    color: 0xffffff, map: river.color, roughness: 0.08, metalness: 0, transparent: true, opacity: 0.93, envMapIntensity: 0.5,
+    normalMap: waterNormal, normalScale: new THREE.Vector2(0.18, 0.18), clearcoat: 0.6, clearcoatRoughness: 0.1,
   });
-  const water = new THREE.Mesh(mergeGeometries(waterGeos), waterMat);
+  waterNormal.repeat.set(20, 15);
+  const water = new THREE.Mesh(mergeGeometries(waterCells.map((cell) => cellPlane(cell, WATER_Y))), waterMat);
   water.receiveShadow = true;
   scene.add(water);
+  const foamNoise = foamNoiseTexture();
+  const foam = new THREE.Mesh(
+    mergeGeometries(waterCells.map((cell) => cellPlane(cell, WATER_Y + 0.004))),
+    new THREE.MeshStandardMaterial({ map: river.foam, alphaMap: foamNoise, transparent: true, depthWrite: false, roughness: 0.6 }),
+  );
+  foam.receiveShadow = true;
+  scene.add(foam);
 
   loadEnvironment(scene, bridgeTiles);
-  const waterfall = buildWaterfall(scene, waterMat);
+  const waterfall = buildWaterfall(scene);
 
   return {
     animate(t) {
       time.value = t;
-      waterNormal.offset.set(t * 0.02, t * 0.035);
+      waterNormal.offset.set(t * 0.05, t * 0.12);
+      foamNoise.offset.set(Math.sin(t * 0.7) * 0.01, t * 0.06);
       waterfall.animate(t);
       for (const f of flags) {
         const pos = f.mesh.geometry.attributes.position;
