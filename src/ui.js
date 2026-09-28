@@ -356,7 +356,16 @@ export function createUI({ renderer, camera, scene, units, view }) {
     card.hidden = !html || state.sheet;
     card.className = cls;
     card.innerHTML = html;
+    // Ease in only when the subject changes, not on every hover refresh.
+    const subject = `${state.mode}:${state.mode === 'target' ? state.hoverId || state.targetId : state.hoverId || state.selectedId}`;
+    if (subject !== lastSubject) {
+      lastSubject = subject;
+      card.classList.remove('enter');
+      void card.offsetWidth;
+      card.classList.add('enter');
+    }
   }
+  let lastSubject = '';
 
   function renderSheet() {
     sheet.hidden = !state.sheet;

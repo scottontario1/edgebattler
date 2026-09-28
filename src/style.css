@@ -246,6 +246,10 @@ html, body {
 .facts { display: flex; gap: 10px; font-size: 11px; color: var(--muted); }
 .facts b { color: var(--ivory); font-weight: 600; }
 
+.enter { animation: card-in 0.16s ease-out; }
+@keyframes card-in { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .enter { animation: none; } }
+
 /* ---------- Actions (lower right) ---------- */
 .actions {
   position: absolute;
