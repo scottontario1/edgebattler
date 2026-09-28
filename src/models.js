@@ -334,7 +334,8 @@ function prepareCharacter(gltf, spec, faction, hair, { hideLegs = false } = {}) 
   return root;
 }
 
-// Horse (Blender-built, see tools/blender/build_units.py). Its caparison takes the
+// Horse (Blender-built, see tools/blender/build_units.py): smooth skin-modifier body, dagged
+// barding and bridle. Its caparison takes the
 // faction colour; the neck and tail are separate nodes animated in setActive/update.
 const HORSE_SADDLE_Y = 0.4; // at scale 1, keep in sync with build_units.py
 const HORSE_SCALE = 1.6; // chibi riders have huge heads; a true-to-life horse looks like a pony
@@ -343,10 +344,10 @@ function horseMaterial(name, faction) {
   const key = `${name}|${faction}`;
   if (!horseMats.has(key)) {
     const fc = FACTION_ACCENT[faction].cloth;
-    const colors = { coat: 0x8a5a36, mane: 0x2a1c14, hoof: 0x2b2522, leather: 0x5a3a22, caparison: fc, trim: 0xd4a93c, steel: 0xb8bec6 };
+    const colors = { coat: 0x8a5a36, mane: 0x2a1c14, blaze: 0xeee6d6, hoof: 0x2b2522, leather: 0x5a3a22, caparison: fc, trim: 0xd4a93c, steel: 0xb8bec6 };
     const shiny = name === 'steel' || name === 'trim';
     horseMats.set(key, addRim(new THREE.MeshStandardMaterial({
-      color: colors[name] ?? 0x888888, roughness: shiny ? 0.35 : 0.8, metalness: shiny ? 0.7 : 0, flatShading: true,
+      color: colors[name] ?? 0x888888, roughness: shiny ? 0.35 : 0.8, metalness: shiny ? 0.7 : 0,
     }), faction));
   }
   return horseMats.get(key);

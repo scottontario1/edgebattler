@@ -18,7 +18,17 @@ _materials = {}
 
 
 def reset():
-    bpy.ops.wm.read_factory_settings(use_empty=True)
+    if bpy.app.background:
+        bpy.ops.wm.read_factory_settings(use_empty=True)
+    else:
+        # Live session (driven over Blender MCP): factory settings would unload the MCP
+        # add-on, so just empty the scene and purge orphaned data.
+        for o in list(bpy.data.objects):
+            bpy.data.objects.remove(o)
+        for coll in (bpy.data.meshes, bpy.data.materials, bpy.data.curves):
+            for block in list(coll):
+                if block.users == 0:
+                    coll.remove(block)
     _materials.clear()
 
 
@@ -38,7 +48,7 @@ def material(name, color=(0.8, 0.8, 0.8), rough=0.9, vertex_colors=False):
     return m
 
 
-def export(name, objects):
+def export(name, objects, texcoords=True):
     path = os.path.join(OUT, name)
     bpy.ops.object.select_all(action='DESELECT')
     for o in objects:
@@ -46,6 +56,7 @@ def export(name, objects):
     bpy.context.view_layer.objects.active = objects[0]
     bpy.ops.export_scene.gltf(
         filepath=path, export_format='GLB', use_selection=True, export_apply=True, export_yup=True,
+        export_texcoords=texcoords,
     )
     print('wrote', path, os.path.getsize(path), 'bytes')
 
