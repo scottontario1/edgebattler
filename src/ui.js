@@ -8,7 +8,7 @@ const MOVE_COST = {
   armor: { G: 1, R: 1, B: 1, V: 1, C: 1, K: 1, F: 2 },
   mounted: { G: 1, R: 1, B: 1, V: 1, C: 1, K: 1, F: 3 },
 };
-const MOVE_TYPE = { knight: 'armor', warlord: 'armor', cavalier: 'mounted' };
+const MOVE_TYPE = { knight: 'armor', paladin: 'armor', barbarian: 'armor', warlord: 'armor', cavalier: 'mounted' };
 const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const key = (c, r) => r * W + c;
 const unkey = (k) => [k % W, Math.floor(k / W)];

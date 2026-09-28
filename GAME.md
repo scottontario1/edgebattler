@@ -10,7 +10,9 @@ Player phase: select unit → see blue move / red attack range → move → atta
 | Class | Move type | Range | Notes |
 |---|---|---|---|
 | Lord | foot | 1 | Lose if they fall |
-| Knight | armor | 1 | High DEF, no mountains |
+| Knight | armor | 1 | High DEF, no mountains (no knights fielded in chapter I) |
+| Paladin | armor | 1 | Brenna: sword; armored like a knight (design_assets/brenna paladin.png) |
+| Barbarian | armor | 1 | Dreg: axe; armored like a knight (design_assets/dreg barbarian.png) |
 | Archer | foot | 2 | Can't counter at range 1 |
 | Mage / Shaman | foot | 1–2 | Magic hits RES |
 | Cavalier | mounted | 1 | MOV 7, slowed by forest |

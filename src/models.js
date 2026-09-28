@@ -18,6 +18,9 @@ import { UNITS } from './units.js';
 // pointed hats + staff/wand = casters, horse = cavalry, oversized horned barbarian = boss.
 const BASE = 'models/kaykit/';
 const HORSE = 'models/env/horse.glb';
+// Blender-built character kits (tools/blender/build_gear.py): armour, hair, cloth and weapons
+// fitted around the KayKit bodies. Each piece names its kit and the bone it follows.
+const GEAR_KITS = 'models/env/gear.glb';
 
 // KayKit's idle holds the staff point-down at the feet; this leans it ~35° out from the body
 // so the crystal clears the mage's wide hat brim (solved against the idle pose).
@@ -25,13 +28,14 @@ const STAFF_OUT = { q: [-0.302, 0.699, 0.553, 0.338], scale: 1.35 };
 
 export const MODEL_SPECS = {
   aldric:  { file: 'Knight.glb', show: ['1H_Sword', 'Badge_Shield'], hide: ['Knight_Helmet'] },
-  brenna:  { file: 'Knight.glb', show: ['Rectangle_Shield'], gear: ['lance'] },
+  // Brenna and Dreg follow the character sheets in design_assets/ via their Blender kits.
+  brenna:  { file: 'Knight.glb', show: ['1H_Sword'], hide: ['Knight_Helmet'], kit: 'paladin' },
   wren:    { file: 'Rogue_Hooded.glb', show: [], gear: ['bow', 'quiver'] },
   elowen:  { file: 'Mage.glb', show: ['2H_Staff'], pose: { '2H_Staff': STAFF_OUT } },
   garrick: { file: 'Knight.glb', show: ['Round_Shield'], gear: ['lance', 'plume'], mount: true },
 
   morvath: { file: 'Barbarian.glb', show: ['2H_Axe'], scale: 1.32 },
-  dreg:    { file: 'Knight.glb', show: ['Spike_Shield'], gear: ['lance'] },
+  dreg:    { file: 'Barbarian.glb', show: [], hide: ['Barbarian_Hat'], kit: 'barbarian', scale: 1.08 },
   sable:   { file: 'Rogue_Hooded.glb', show: [], gear: ['bow', 'quiver'] },
   vex:     { file: 'Mage.glb', show: ['1H_Wand', 'Spellbook_open'] },
   grisk:   { file: 'Barbarian.glb', show: ['1H_Axe'], hide: ['Barbarian_Hat', 'Barbarian_Cape'], gear: ['bandana'] },
@@ -170,6 +174,13 @@ function gearMaterial(kind, faction) {
       leather: { color: 0x5a3a22, roughness: 0.8 },
       cloth: { color: fc, roughness: 0.7 },
       feather: { color: 0xf2ead8, roughness: 0.8 },
+      white: { color: 0xf1ece0, roughness: 0.65 },
+      fur: { color: 0xd6c3a0, roughness: 0.95 },
+      furdark: { color: 0x7a5a3c, roughness: 0.95 },
+      rust: { color: 0x6f6a66, roughness: 0.55, metalness: 0.6 },
+      brass: { color: 0xb8893e, roughness: 0.35, metalness: 0.75 },
+      bone: { color: 0xeae0c8, roughness: 0.6 },
+      gem: { color: 0x3aa8ff, roughness: 0.15, emissive: 0x1a6cff, emissiveIntensity: 0.9 },
     }[kind];
     gearMats.set(key, addRim(new THREE.MeshStandardMaterial(spec), faction));
   }
@@ -314,6 +325,34 @@ function addOutlines(root, faction, width) {
   }
 }
 
+// Add a Blender kit: each piece is exported in the character's default-pose space, so it is
+// placed at that position and then re-parented to its bone (attach keeps the world transform)
+// to follow the animations. Hair pieces take the unit's hair colour.
+const hairMats = new Map();
+function hairMaterial(hair, faction) {
+  const key = `${hair}|${faction}`;
+  if (!hairMats.has(key)) hairMats.set(key, addRim(new THREE.MeshStandardMaterial({ color: hair ?? 0x6b4226, roughness: 0.6 }), faction));
+  return hairMats.get(key);
+}
+function addKit(character, kitScene, kit, faction, hair) {
+  character.updateMatrixWorld(true);
+  for (const src of kitScene.children) {
+    if (src.userData.kit !== kit) continue;
+    const piece = src.clone();
+    piece.traverse((o) => {
+      if (!o.isMesh) return;
+      o.castShadow = true;
+      o.receiveShadow = true;
+      const name = o.material.name;
+      o.material = name === 'hair' ? hairMaterial(hair, faction) : gearMaterial(name, faction);
+    });
+    character.add(piece);
+    const bone = character.getObjectByName(src.userData.bone);
+    if (bone) bone.attach(piece);
+    else console.warn('kit bone missing', src.userData.bone);
+  }
+}
+
 function prepareCharacter(gltf, spec, faction, hair, { hideLegs = false } = {}) {
   const root = SkeletonUtils.clone(gltf.scene);
   root.traverse((o) => {
@@ -331,6 +370,7 @@ function prepareCharacter(gltf, spec, faction, hair, { hideLegs = false } = {}) 
     o.scale.setScalar(p.scale ?? 1);
   }
   for (const g of spec.gear ?? []) GEAR[g]?.(root, faction);
+  if (spec.kit && spec.kitScene) addKit(root, spec.kitScene, spec.kit, faction, hair);
   return root;
 }
 
@@ -371,7 +411,8 @@ export async function buildModel(id, faction) {
   const spec = MODEL_SPECS[id];
   const hair = UNITS.find((u) => u.id === id)?.look?.hair ?? null;
   const gltf = await load(BASE + spec.file);
-  const character = prepareCharacter(gltf, spec, faction, hair, { hideLegs: !!spec.mount });
+  const kitScene = spec.kit ? (await load(GEAR_KITS)).scene : null;
+  const character = prepareCharacter(gltf, { ...spec, kitScene }, faction, hair, { hideLegs: !!spec.mount });
   addOutlines(character, faction, OUTLINE_W / (spec.scale ?? 1));
   const root = new THREE.Group();
 

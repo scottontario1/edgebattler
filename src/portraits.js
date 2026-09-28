@@ -24,12 +24,12 @@ const FACTION = {
 // get a deterministic persona derived from their id.
 const PERSONA = {
   aldric: { fem: false, young: true, mood: 'calm', mouth: 'smile' },
-  brenna: { fem: true, mood: 'determined', mouth: 'neutral', freckles: true },
+  brenna: { fem: true, mood: 'determined', mouth: 'neutral' },
   wren: { fem: false, young: true, mood: 'calm', mouth: 'smirk', freckles: true },
   elowen: { fem: true, mood: 'soft', mouth: 'smile', elf: true },
   garrick: { fem: false, mood: 'stern', mouth: 'neutral' },
   morvath: { fem: false, mood: 'angry', mouth: 'snarl', scar: 'eye' },
-  dreg: { fem: false, mood: 'angry', mouth: 'frown', stubble: true, scar: 'nose' },
+  dreg: { fem: false, mood: 'angry', mouth: 'frown', scar: 'nose' },
   sable: { fem: true, mood: 'sly', mouth: 'smirk', mole: true },
   vex: { fem: false, gaunt: true, mood: 'sly', mouth: 'grin', paint: true },
   grisk: { fem: false, mood: 'angry', mouth: 'grin', scar: 'cheek', earring: true },
@@ -109,7 +109,10 @@ function strand(rx, ry, tx, ty, b1, b2 = b1, off = 0, a = 0.1, b = 0.75) {
 }
 
 // What covers the crown of the head; mirrors each class's battlefield model.
-const HEADWEAR_COVERS = { knight: 'helm', cavalier: 'helm', warlord: 'helm', brigand: 'band', archer: 'hood', mage: 'hat', lord: 'none' };
+const HEADWEAR_COVERS = {
+  knight: 'helm', cavalier: 'helm', warlord: 'helm', brigand: 'band', archer: 'hood', mage: 'hat', lord: 'none',
+  paladin: 'none', barbarian: 'none',
+};
 
 function faceD(P) {
   const j = P.fem ? -0.8 : P.gaunt ? 0 : 1.2;
@@ -160,6 +163,12 @@ function defs(c) {
     </linearGradient>
     <linearGradient id="${id}fur" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#9a8672"/><stop offset="0.5" stop-color="#5e4c3c"/><stop offset="1" stop-color="#2e241c"/>
+    </linearGradient>
+    <linearGradient id="${id}furL" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#f4ead6"/><stop offset="0.5" stop-color="#cdb694"/><stop offset="1" stop-color="#7a5e40"/>
+    </linearGradient>
+    <linearGradient id="${id}ivory" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#fffdf6"/><stop offset="0.6" stop-color="#ece5d6"/><stop offset="1" stop-color="#b9b0a0"/>
     </linearGradient>
     <linearGradient id="${id}bear" x1="0.2" y1="0" x2="0.6" y2="1">
       <stop offset="0" stop-color="#9a7a62"/><stop offset="0.45" stop-color="#6a5040"/><stop offset="1" stop-color="#2e2018"/>
@@ -240,6 +249,8 @@ function behind(c) {
   if (u.cls === 'warlord') s += greatAxe(c);
   if (u.cls === 'brigand') s += handAxe(c);
   if (u.cls === 'mage' && u.faction !== 'red') s += staff(c);
+  if (u.cls === 'paladin') s += mace(c);
+  if (u.cls === 'barbarian') s += beardedAxe(c);
   if (u.cls === 'warlord') {
     // inside of the bear-pelt hood, visible around the bald head
     s += `<path d="M26 96 C20 66 26 26 50.5 22 C75 26 81 66 75 96 Z" fill="#1e140e"/>`;
@@ -301,6 +312,32 @@ function staff(c) {
     <path d="M86 12 L90 21 L86 21 Z" fill="#fff" opacity="0.7"/>`;
 }
 
+// Brenna's jewelled mace (Blender kit paladin_mace): gold cage around a blue gem, cross on top.
+function mace(c) {
+  const { id, f } = c;
+  return `<path d="M72 124 L84 40" stroke="#3e2716" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M72.8 120 L84 44" stroke="#8a6240" stroke-width="0.6"/>
+    <path d="M75.6 100 l3.6 0.6 M77.6 86 l3.6 0.6" stroke="url(#${id}gold)" stroke-width="2.2"/>
+    <circle cx="85.2" cy="31" r="10" fill="${f.gem}" opacity="0.3" filter="url(#${id}soft2)"/>
+    <circle cx="85.2" cy="31" r="5.4" fill="${f.gem}" stroke="#123a7a" stroke-width="0.5"/>
+    <path d="M83 28.5 L85.6 27.6 L84.6 30 Z" fill="#fff" opacity="0.85"/>
+    <path d="M79.2 38 C78 33 78.4 27 80.6 23.6 M91.2 38 C92.4 33 92 27 89.8 23.6 M85.2 37.6 L85.2 24.4" stroke="url(#${id}gold)" stroke-width="1.5" fill="none"/>
+    <path d="M79 38.4 L91.4 38.4 M80.2 23.6 L90.2 23.6" stroke="url(#${id}gold)" stroke-width="1.8"/>
+    <path d="M85.2 23.6 L85.2 13 M81.6 17 L88.8 17" stroke="url(#${id}gold)" stroke-width="2" stroke-linecap="round"/>`;
+}
+
+// Dreg's bearded war axe (Blender kit barbarian_axe), haft over the far shoulder, rusted blade.
+function beardedAxe(c) {
+  const { id } = c;
+  return `<path d="M64 124 L86 34" stroke="#3a2414" stroke-width="3.2" stroke-linecap="round"/>
+    <path d="M65.2 118 L85.4 37" stroke="#7a5534" stroke-width="0.7"/>
+    <path d="M70 104 l4 1 M73.6 90 l4 1 M77.2 76 l4 1" stroke="#5a3a22" stroke-width="2.6"/>
+    <path d="M84 40 C88 36 96 33 104 34 C102 42 102 52 105 62 C98 60 93 56 90 50 C88 47 86 46 83.5 46 Z" fill="url(#${id}steel)" stroke="#111" stroke-width="0.6"/>
+    <path d="M103.5 35 C101.8 43 101.8 52 104.4 61" stroke="#fff" stroke-opacity="0.8" stroke-width="0.9" fill="none"/>
+    <path d="M90 42 C93 41 96 42 98 44 M92 48 C94 47 97 48 99 50" stroke="#6a4a2a" stroke-width="0.7" fill="none" opacity="0.7"/>
+    <rect x="81" y="38" width="6" height="9" rx="1" transform="rotate(14 84 42)" fill="url(#${id}gold)"/>`;
+}
+
 function plume(c) {
   const { id, f } = c;
   const col = shade(f.cloth, 0.15);
@@ -348,10 +385,25 @@ function body(c) {
 
   switch (u.cls) {
     case 'knight':
-    case 'cavalier': {
-      const emblem = u.faction === 'blue'
+    case 'cavalier':
+    case 'paladin': {
+      let emblem = u.faction === 'blue'
         ? `<path d="M52 106 l2.2 4.6 5 .5 -3.8 3.4 1.1 5 -4.5 -2.6 -4.5 2.6 1.1 -5 -3.8 -3.4 5 -.5 Z" fill="${gold}"/>`
         : `<path d="M47 108 L57 108 L52 120 Z" fill="${f.cloth}" stroke="${gold}" stroke-width="0.8"/>`;
+      if (u.cls === 'paladin') {
+        // white tabard with a gold border and radiant sun over the plate, cape brooches
+        let rays = '';
+        for (let k = 0; k < 16; k++) {
+          const a = (k * Math.PI) / 8, r = k % 2 ? 4.2 : 7.4;
+          rays += `M52 111 L${F(52 + Math.sin(a) * r)} ${F(111 - Math.cos(a) * r)} `;
+        }
+        emblem = `<path d="M37 124 L37.5 101 C44 97.5 60 97.5 66.5 101 L67 124 Z" fill="url(#${id}ivory)" stroke="${gold}" stroke-width="1.4"/>
+          <path d="M40 124 L40.4 103" stroke="${gold}" stroke-width="0.5" stroke-dasharray="1.2 1"/><path d="M64 124 L63.6 103" stroke="${gold}" stroke-width="0.5" stroke-dasharray="1.2 1"/>
+          <path d="${rays}" stroke="${gold}" stroke-width="1.1" stroke-linecap="round"/>
+          <circle cx="52" cy="111" r="2.6" fill="${gold}"/><circle cx="52" cy="111" r="1.5" fill="${f.gem}"/>
+          <g><circle cx="33.5" cy="97" r="3" fill="${gold}"/><circle cx="33.5" cy="97" r="1.7" fill="${f.gem}"/>
+          <circle cx="70.5" cy="97" r="3" fill="${gold}"/><circle cx="70.5" cy="97" r="1.7" fill="${f.gem}"/></g>`;
+      }
       return `${capeBack}
         <path d="M24 124 C24 106 34 96 52 96 C70 96 80 106 80 124 Z" fill="${steel}" stroke="${edge}" stroke-width="0.6"/>
         <path d="M52 97 L52 124" stroke="${edge}" stroke-width="0.8"/>${hl('M50.5 99 L50.5 122', 0.45, 0.8)}
@@ -427,6 +479,38 @@ function body(c) {
         <path d="M-6 108 L-2 97 L3 101 L7 91 L12 97 L17 88 L23 94 L28 86 L33 92 L38 85 L44 90 L52 87 L60 90 L66 85 L71 92 L76 86 L81 94 L87 88 L92 97 L97 91 L101 101 L106 97 L106 110 C90 104 72 101 52 104 C32 101 14 104 -6 110 Z" fill="url(#${id}bear)"/>
         <path d="M6 99 l3 6 M16 92 l2 7 M27 89 l2 6 M40 88 l1 6 M64 88 l-1 6 M76 89 l-2 6 M88 92 l-2 7 M97 99 l-3 6" stroke="#c4a488" stroke-width="0.6" opacity="0.7"/>
         <path d="M2 116 l3 -3 M8 118 l3 -3 M94 117 l3 3 M100 115 l3 3" stroke="#6a2a1a" stroke-width="2.2" stroke-linecap="round"/>`;
+    case 'barbarian': {
+      // Dreg: rusted breastplate with a brass rim and wolf boss, fang necklace, and a shaggy
+      // pale fur mantle over both shoulders (design_assets/dreg barbarian.png).
+      const fur = (x0, dir) => {
+        let d = `M${x0} 124`, n = 9;
+        for (let i = 0; i <= n; i++) {
+          const t = i / n;
+          const x = x0 + dir * (4 + t * 42), y = 124 - Math.sin(t * Math.PI * 0.9) * 34 - t * 4;
+          d += ` L${F(x + dir * (i % 2 ? 3 : -1))} ${F(y + (i % 2 ? 5 : 0))}`;
+        }
+        return `${d} L${F(x0 + dir * 44)} 124 Z`;
+      };
+      let fangs = '';
+      for (let k = 0; k < 9; k++) {
+        const t = (k - 4) / 4, x = 52 + t * 12, y = 99 + (1 - t * t) * 5;
+        fangs += k % 2
+          ? `<circle cx="${F(x)}" cy="${F(y)}" r="1.2" fill="${gold}"/>`
+          : `<path d="M${F(x - 1.3)} ${F(y)} L${F(x + 1.3)} ${F(y)} L${F(x)} ${F(y + 5)} Z" fill="url(#${id}bone)"/>`;
+      }
+      return `<path d="M-6 124 L-4 100 C8 90 26 85 44 84 L60 84 C78 85 96 90 108 100 L110 124 Z" fill="url(#${id}fur)"/>
+        <path d="M24 124 C24 106 34 96 52 96 C70 96 80 106 80 124 Z" fill="${steel}" stroke="#2a1a10" stroke-width="0.6"/>
+        <path d="M27 121 C28 107 37 99 52 99 C67 99 76 107 77 121" stroke="${gold}" stroke-width="1.3" fill="none"/>
+        <g fill="${gold}"><circle cx="33" cy="108" r="0.9"/><circle cx="40" cy="102" r="0.9"/><circle cx="64" cy="102" r="0.9"/><circle cx="71" cy="108" r="0.9"/></g>
+        <path d="M34 112 l3 4 M68 111 l-2 5 M44 118 l2 -3" stroke="#7a4a2a" stroke-width="0.8" opacity="0.6"/>
+        <circle cx="52" cy="115" r="4.5" fill="${gold}" stroke="#5a3a10" stroke-width="0.5"/>
+        <path d="M49.4 113 L50.4 110.6 L51.2 113 M52.8 113 L53.6 110.6 L54.6 113 M50 116 Q52 118 54 116" stroke="#5a3a10" stroke-width="0.7" fill="none"/>
+        ${fangs}
+        <path d="${fur(-8, 1)}" fill="url(#${id}furL)"/>
+        <path d="${fur(112, -1)}" fill="url(#${id}furL)"/>
+        <path d="M2 104 l3 7 M10 97 l2 8 M20 93 l1 7 M30 91 l0 6 M100 104 l-3 7 M92 97 l-2 8 M82 93 l-1 7 M72 91 l0 6" stroke="#8a6e4e" stroke-width="0.7" opacity="0.7"/>
+        <path d="M-2 110 C8 100 22 93 36 90" stroke="#fff8e8" stroke-opacity="0.35" stroke-width="1.2" fill="none"/>`;
+    }
     case 'brigand':
       return `<path d="M-6 124 L-6 108 C2 97 20 91 40 87 L64 87 C84 91 102 97 106 108 L106 124 Z" fill="url(#${id}skinB)"/>
         <path d="M76 98 C86 99 96 104 102 112" stroke="${c.skinSh}" stroke-width="1" fill="none" opacity="0.6"/>
@@ -601,7 +685,7 @@ function beard(c) {
   if (!L.beard) return s;
   const hl = shade(L.hair, 0.35), dk = shade(L.hair, -0.4);
   let outer;
-  if (u.cls === 'warlord') {
+  if (u.cls === 'warlord' || u.cls === 'barbarian') {
     outer = 'M33.5 55 C33 74 40 94 51.5 104 C63 94 68 74 66.5 55 C65.5 64 61.5 70 57.5 72.5 C55.5 74.5 53.5 75.5 51.5 75.5 C49.5 75.5 47.5 74.5 45.5 72.5 C41 70 35 64 33.5 55 Z';
   } else if (u.cls === 'brigand') {
     let jag = '';
@@ -625,6 +709,15 @@ function beard(c) {
   s += `<path d="M46.5 69.6 C49 68 51.5 68.8 52.6 69.4 C53.7 68.8 56.2 68 58.8 69.6 C57.4 71.2 55 70.8 52.6 70.6 C50.2 70.8 48 71.2 46.5 69.6 Z" fill="${dk}"/>
     <path d="M47.6 69.4 C49.5 68.6 51 68.9 52.4 69.4" stroke="${hl}" stroke-width="0.4" fill="none"/>`;
   if (u.cls === 'warlord') s += `<rect x="49" y="92" width="5" height="3.2" rx="1" fill="url(#${id}gold)"/><path d="M49 93.2 L54 93.2" stroke="#6a4a10" stroke-width="0.4"/>`;
+  if (u.cls === 'barbarian') {
+    // two plaited beard braids ending in bone beads (the design sheet's braided beard)
+    for (const x of [46, 57]) {
+      let plait = '';
+      for (let k = 0; k < 5; k++) plait += `<ellipse cx="${x + (k % 2 ? 0.6 : -0.6)}" cy="${86 + k * 3.2}" rx="2.4" ry="2" fill="url(#${id}hair)" stroke="${dk}" stroke-width="0.4"/>`;
+      s += `${plait}<rect x="${x - 2}" y="101.5" width="4" height="3.4" rx="1.2" fill="url(#${id}bone)"/>
+        <path d="M${x - 1.2} 105 L${x + 1.2} 105 L${x} 110 Z" fill="url(#${id}bone)"/>`;
+    }
+  }
   return s;
 }
 
@@ -695,10 +788,18 @@ function frontHair(c) {
       const dir = x < px ? -1 : 1;
       add(px + dir * 1.5, py, x + dir * (0.5 + r() * 1.5), y + r() * 1.5 - (cover === 'hat' ? 1 : 0), 9, dir * 2.2, dir * 0.5);
     });
-    add(px - 3, py + 1, 27.5, 94 + r() * 6, 10, -4, 2.5);
-    add(px - 4, py + 4, 33.5, 84 + r() * 5, 6, -3, 1.5, false);
-    add(px + 3, py + 1, 74, 92 + r() * 6, 9.5, 4, -2.5);
-    add(px + 4, py + 4, 67.5, 82 + r() * 5, 5.5, 3, -1.5, false);
+    if (u.cls === 'paladin' || u.cls === 'barbarian') {
+      // swept back from the temples, framing the face instead of crossing it (design sheets)
+      add(38, 30, 25.5, 96 + r() * 6, 10, -3, 2);
+      add(35.5, 37, 29.5, 86 + r() * 5, 6, -2, 1, false);
+      add(63.5, 30, 77, 94 + r() * 6, 9.5, 3, -2);
+      add(66, 37, 72.5, 84 + r() * 5, 5.5, 2, -1, false);
+    } else {
+      add(px - 3, py + 1, 27.5, 94 + r() * 6, 10, -4, 2.5);
+      add(px - 4, py + 4, 33.5, 84 + r() * 5, 6, -3, 1.5, false);
+      add(px + 3, py + 1, 74, 92 + r() * 6, 9.5, 4, -2.5);
+      add(px + 4, py + 4, 67.5, 82 + r() * 5, 5.5, 3, -1.5, false);
+    }
   } else {
     // short: tousled fringe with a slight sweep
     const px = P.fem ? 46 : 52, py = 26;

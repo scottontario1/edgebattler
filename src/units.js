@@ -7,9 +7,9 @@ export const UNITS = [
   { id: 'aldric', name: 'Aldric', title: 'Lord', cls: 'lord', faction: 'blue', c: 3, r: 9, lv: 3,
     hp: 22, maxHp: 22, str: 7, mag: 1, skl: 8, spd: 9, def: 6, res: 3, mov: 5, weapon: 'Silver Rapier',
     look: { skin: '#f2cda9', hair: '#d9a441', eyes: '#3b6ea8', style: 'swept' } },
-  { id: 'brenna', name: 'Brenna', title: 'Knight', cls: 'knight', faction: 'blue', c: 5, r: 9, lv: 4,
-    hp: 28, maxHp: 28, str: 9, mag: 0, skl: 5, spd: 3, def: 13, res: 1, mov: 4, weapon: 'Iron Lance',
-    look: { skin: '#e8b995', hair: '#b5462b', eyes: '#5a7a3a', style: 'short' } },
+  { id: 'brenna', name: 'Brenna', title: 'Paladin', cls: 'paladin', faction: 'blue', c: 5, r: 9, lv: 4,
+    hp: 28, maxHp: 28, str: 9, mag: 0, skl: 5, spd: 3, def: 13, res: 1, mov: 4, weapon: 'Iron Sword',
+    look: { skin: '#f0cdb4', hair: '#c9b6e6', eyes: '#5a64c8', style: 'long' } },
   { id: 'wren', name: 'Wren', title: 'Archer', cls: 'archer', faction: 'blue', c: 1, r: 9, lv: 2,
     hp: 18, maxHp: 19, str: 6, mag: 0, skl: 9, spd: 8, def: 4, res: 2, mov: 5, weapon: 'Longbow',
     look: { skin: '#d9a57c', hair: '#6b4226', eyes: '#3f7a4a', style: 'short' } },
@@ -23,9 +23,9 @@ export const UNITS = [
   { id: 'morvath', name: 'Morvath', title: 'Warlord', cls: 'warlord', faction: 'red', c: 12, r: 2, lv: 10, boss: true,
     hp: 38, maxHp: 38, str: 14, mag: 0, skl: 9, spd: 7, def: 11, res: 4, mov: 5, weapon: 'Great Axe',
     look: { skin: '#cf9d78', hair: '#1c1714', eyes: '#b83a2a', style: 'none', beard: true } },
-  { id: 'dreg', name: 'Dreg', title: 'Knight', cls: 'knight', faction: 'red', c: 10, r: 3, lv: 5,
-    hp: 27, maxHp: 27, str: 9, mag: 0, skl: 4, spd: 2, def: 12, res: 0, mov: 4, weapon: 'Iron Lance',
-    look: { skin: '#d8a98a', hair: '#2b2b2b', eyes: '#333', style: 'short' } },
+  { id: 'dreg', name: 'Dreg', title: 'Barbarian', cls: 'barbarian', faction: 'red', c: 10, r: 3, lv: 5,
+    hp: 27, maxHp: 27, str: 9, mag: 0, skl: 4, spd: 2, def: 12, res: 0, mov: 4, weapon: 'Steel Axe',
+    look: { skin: '#d8a98a', hair: '#9c4722', eyes: '#5b7088', style: 'long', beard: true } },
   { id: 'sable', name: 'Sable', title: 'Archer', cls: 'archer', faction: 'red', c: 12, r: 4, lv: 4,
     hp: 19, maxHp: 19, str: 7, mag: 0, skl: 8, spd: 7, def: 4, res: 1, mov: 5, weapon: 'Steel Bow',
     look: { skin: '#e9c2a0', hair: '#1f1a24', eyes: '#8a2f3a', style: 'long' } },
@@ -169,6 +169,20 @@ function buildFigure(u) {
       add(g, new THREE.TorusGeometry(0.083, 0.012, 5, 16), gold(), 0, 0.62, 0).rotation.x = Math.PI / 2 - 0.2;
       add(g, cyl(0.126, 0.126, 0.02), gold(), 0, 0.3, 0);
       sword(g, h.right);
+      break;
+    }
+    case 'paladin': {
+      const h = humanoid(g, { torso: 0xeae4d6, legs: 0xb9bec8, arms: 0xb9bec8, skin: L.skin, hair: L.hair, hairStyle: 'long', bulk: 1.2 });
+      cape(g, fc);
+      add(g, cyl(0.146, 0.146, 0.04), gold(), 0, 0.3, 0);
+      sword(g, h.right);
+      break;
+    }
+    case 'barbarian': {
+      const h = humanoid(g, { torso: 0x6f6a66, legs: 0x4a3a2a, arms: L.skin, skin: L.skin, hair: L.hair, hairStyle: 'long', bulk: 1.25 });
+      add(g, new THREE.TorusGeometry(0.13, 0.05, 6, 14), mat(0xd6c3a0), 0, 0.47, 0).rotation.x = Math.PI / 2;
+      add(g, boxG(0.12, 0.08, 0.05), mat(L.hair), 0, 0.53, 0.06);
+      axe(g, h.right, true);
       break;
     }
     case 'knight': {

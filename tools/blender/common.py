@@ -48,7 +48,7 @@ def material(name, color=(0.8, 0.8, 0.8), rough=0.9, vertex_colors=False):
     return m
 
 
-def export(name, objects, texcoords=True):
+def export(name, objects, texcoords=True, extras=False):
     path = os.path.join(OUT, name)
     bpy.ops.object.select_all(action='DESELECT')
     for o in objects:
@@ -56,7 +56,7 @@ def export(name, objects, texcoords=True):
     bpy.context.view_layer.objects.active = objects[0]
     bpy.ops.export_scene.gltf(
         filepath=path, export_format='GLB', use_selection=True, export_apply=True, export_yup=True,
-        export_texcoords=texcoords,
+        export_texcoords=texcoords, export_extras=extras,
     )
     print('wrote', path, os.path.getsize(path), 'bytes')
 
@@ -160,3 +160,110 @@ def finish(objects, uv_scale=2.0, bevel_width=0.006):
         if bevel_width:
             bevel(o, bevel_width)
         box_uv(o, uv_scale)
+
+
+# ---- modelling helpers shared by build_units.py and build_gear.py ----
+
+def activate(o):
+    bpy.ops.object.select_all(action='DESELECT')
+    o.select_set(True)
+    bpy.context.view_layer.objects.active = o
+
+
+def apply_modifiers(o):
+    activate(o)
+    for m in list(o.modifiers):
+        bpy.ops.object.modifier_apply(modifier=m.name)
+
+
+def skin_chain(name, pts, radii, mat, levels=1):
+    """Organic limb: a vertex chain wrapped by the Skin modifier, then subdivided.
+    `radii` are (across, up) per point; single floats mean round."""
+    me = bpy.data.meshes.new(name)
+    me.from_pydata(pts, [(i, i + 1) for i in range(len(pts) - 1)], [])
+    me.update()
+    o = bpy.data.objects.new(name, me)
+    bpy.context.collection.objects.link(o)
+    skin = o.modifiers.new('skin', 'SKIN')
+    skin.use_smooth_shade = True
+    data = o.data.skin_vertices[0].data
+    for i, r in enumerate(radii):
+        data[i].radius = r if isinstance(r, tuple) else (r, r)
+    data[0].use_root = True
+    sub = o.modifiers.new('sub', 'SUBSURF')
+    sub.levels = sub.render_levels = levels
+    apply_modifiers(o)
+    o.data.materials.append(mat)
+    return o
+
+
+def sphere(name, radii, loc, mat, segs=16, rings=10, rot=(0, 0, 0), smooth=True):
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=segs, ring_count=rings, radius=1, location=loc, rotation=rot)
+    o = bpy.context.active_object
+    o.name = name
+    o.scale = radii
+    bpy.ops.object.transform_apply(scale=True, rotation=True)
+    if smooth:
+        bpy.ops.object.shade_smooth()
+    o.data.materials.append(mat)
+    return o
+
+
+def hard(o, width=0.004):
+    """Bevel a hard-surface tack piece so its edges catch the light."""
+    bevel(o, width, 2)
+    apply_modifiers(o)
+    return o
+
+
+def rod(name, a, b, r, mat, verts=6):
+    """Cylinder from point a to point b (straps, reins)."""
+    from mathutils import Vector
+    a, b = Vector(a), Vector(b)
+    d = b - a
+    bpy.ops.mesh.primitive_cylinder_add(vertices=verts, radius=r, depth=d.length, location=(a + b) / 2)
+    o = bpy.context.active_object
+    o.name = name
+    o.rotation_mode = 'QUATERNION'
+    o.rotation_quaternion = d.to_track_quat('Z', 'Y')
+    bpy.ops.object.transform_apply(rotation=True)
+    o.data.materials.append(mat)
+    return o
+
+
+def snap(target, origin, direction, offset=0.0, reach=0.5):
+    """Point on target's surface seen from outside along direction (through origin), pushed
+    offset out along the surface normal. Casts from `reach` outside the origin against the
+    evaluated mesh, so it follows armature-posed KayKit bodies and subdivided skins alike.
+    `target` may be a list of objects; the first surface hit wins."""
+    from mathutils import Vector
+    o, d = Vector(origin), Vector(direction).normalized()
+    start = o + d * reach
+    dg = bpy.context.evaluated_depsgraph_get()
+    best = None
+    for t in (target if isinstance(target, (list, tuple)) else [target]):
+        inv = t.matrix_world.inverted()
+        hit, loc, nrm, _ = t.ray_cast(inv @ start, (inv.to_3x3() @ -d).normalized(), depsgraph=dg)
+        if hit:
+            w = t.matrix_world @ loc
+            n = (t.matrix_world.inverted().transposed().to_3x3() @ nrm).normalized()
+            dist = (w - start).length
+            if best is None or dist < best[0]:
+                best = (dist, w, n)
+    if best is None:
+        print('snap missed', origin)
+        return None
+    return tuple(best[1] + best[2] * offset)
+
+
+def join(name, objects, pivot):
+    bpy.ops.object.select_all(action='DESELECT')
+    for o in objects:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = objects[0]
+    bpy.ops.object.join()
+    o = bpy.context.active_object
+    o.name = name
+    bpy.context.scene.cursor.location = pivot
+    bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
+    return o

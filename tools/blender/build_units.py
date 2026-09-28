@@ -19,101 +19,12 @@ import sys
 import bpy
 
 sys.path.insert(0, os.path.dirname(__file__))
-from common import bevel, cone, cube, cylinder, export, material, mesh_from, reset  # noqa: E402
+from common import (  # noqa: E402
+    activate, apply_modifiers, cone, cube, cylinder, export, hard, join, material, mesh_from, reset, rod,
+    skin_chain, snap, sphere,
+)
 
 SADDLE_Y = 0.4  # keep in sync with HORSE_SADDLE_Y in src/models.js
-
-
-def activate(o):
-    bpy.ops.object.select_all(action='DESELECT')
-    o.select_set(True)
-    bpy.context.view_layer.objects.active = o
-
-
-def apply_modifiers(o):
-    activate(o)
-    for m in list(o.modifiers):
-        bpy.ops.object.modifier_apply(modifier=m.name)
-
-
-def skin_chain(name, pts, radii, mat, levels=1):
-    """Organic limb: a vertex chain wrapped by the Skin modifier, then subdivided.
-    `radii` are (across, up) per point; single floats mean round."""
-    me = bpy.data.meshes.new(name)
-    me.from_pydata(pts, [(i, i + 1) for i in range(len(pts) - 1)], [])
-    me.update()
-    o = bpy.data.objects.new(name, me)
-    bpy.context.collection.objects.link(o)
-    skin = o.modifiers.new('skin', 'SKIN')
-    skin.use_smooth_shade = True
-    data = o.data.skin_vertices[0].data
-    for i, r in enumerate(radii):
-        data[i].radius = r if isinstance(r, tuple) else (r, r)
-    data[0].use_root = True
-    sub = o.modifiers.new('sub', 'SUBSURF')
-    sub.levels = sub.render_levels = levels
-    apply_modifiers(o)
-    o.data.materials.append(mat)
-    return o
-
-
-def sphere(name, radii, loc, mat, segs=16, rings=10, rot=(0, 0, 0), smooth=True):
-    bpy.ops.mesh.primitive_uv_sphere_add(segments=segs, ring_count=rings, radius=1, location=loc, rotation=rot)
-    o = bpy.context.active_object
-    o.name = name
-    o.scale = radii
-    bpy.ops.object.transform_apply(scale=True, rotation=True)
-    if smooth:
-        bpy.ops.object.shade_smooth()
-    o.data.materials.append(mat)
-    return o
-
-
-def hard(o, width=0.004):
-    """Bevel a hard-surface tack piece so its edges catch the light."""
-    bevel(o, width, 2)
-    apply_modifiers(o)
-    return o
-
-
-def rod(name, a, b, r, mat, verts=6):
-    """Cylinder from point a to point b (straps, reins)."""
-    from mathutils import Vector
-    a, b = Vector(a), Vector(b)
-    d = b - a
-    bpy.ops.mesh.primitive_cylinder_add(vertices=verts, radius=r, depth=d.length, location=(a + b) / 2)
-    o = bpy.context.active_object
-    o.name = name
-    o.rotation_mode = 'QUATERNION'
-    o.rotation_quaternion = d.to_track_quat('Z', 'Y')
-    bpy.ops.object.transform_apply(rotation=True)
-    o.data.materials.append(mat)
-    return o
-
-
-def snap(target, origin, direction, offset=0.0):
-    """Point on target's surface seen from outside along direction (through origin), pushed
-    offset out along the surface normal. Keeps face details on the subdivided skin surface."""
-    from mathutils import Vector
-    o, d = Vector(origin), Vector(direction).normalized()
-    hit, loc, nrm, _ = target.ray_cast(o + d * 0.5, -d)
-    if not hit:
-        print('snap missed', target.name, origin)
-        return tuple(o)
-    return tuple(loc + nrm * offset)
-
-
-def join(name, objects, pivot):
-    bpy.ops.object.select_all(action='DESELECT')
-    for o in objects:
-        o.select_set(True)
-    bpy.context.view_layer.objects.active = objects[0]
-    bpy.ops.object.join()
-    o = bpy.context.active_object
-    o.name = name
-    bpy.context.scene.cursor.location = pivot
-    bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
-    return o
 
 
 def leg(parts, x, y, coat, points, hoof_mat, front):
