@@ -222,7 +222,7 @@ function house(parent, x, z, y, rand) {
   add(parent, box, woodMat, x, y + 0.06, z + 0.4).scale.set(0.74, 0.015, 0.015);
 }
 
-function castle(parent, x, z, y, faction, flags) {
+function castle(parent, x, z, y, faction) {
   const g = new THREE.Group();
   g.position.set(x, y, z);
   const roofMat = mat(FACTION_COLORS[faction], { flatShading: false, roughness: 0.6 });
@@ -245,12 +245,14 @@ function castle(parent, x, z, y, faction, flags) {
   add(g, box, mat(0xd4a93c, { metalness: 0.8, roughness: 0.3 }), 0, 0.3, 0.162).scale.set(0.08, 0.08, 0.01);
   add(g, new THREE.CylinderGeometry(0.008, 0.008, 0.36, 5), mat(0x3b2a1a), 0, 0.9, -0.02);
   parent.add(g);
+}
 
-  // The flag animates, so it stays out of the merged static geometry.
+// The flag animates, so it stays out of the merged static geometry.
+function makeFlag(x, y, z, faction, flags) {
   const flagGeo = new THREE.PlaneGeometry(0.24, 0.13, 16, 4);
   flagGeo.translate(0.12, 0, 0);
   const flag = new THREE.Mesh(flagGeo, new THREE.MeshStandardMaterial({ color: FACTION_COLORS[faction], side: THREE.DoubleSide, roughness: 0.7 }));
-  flag.position.set(x, y + 1.01, z - 0.02);
+  flag.position.set(x, y, z);
   flag.castShadow = true;
   flags.push({ mesh: flag, base: flagGeo.attributes.position.array.slice() });
 }
@@ -414,6 +416,105 @@ function plateauTrees(backdrop) {
   return mergeStatics(trees);
 }
 
+// Castles and cottages (tools/blender/build_buildings.py). Blender material names map to
+// game materials here, so faction colours and shared textures stay in one place.
+export const KEEP_POLE_TOP = 1.16; // matches build_buildings.py
+
+function buildingMaterials(faction) {
+  const fc = FACTION_COLORS[faction ?? 'blue'];
+  return {
+    stone: stoneMat,
+    wood: woodMat,
+    beam: mat(0x3e2616),
+    plaster: mat(0xeee3c8, { flatShading: false, side: THREE.DoubleSide }),
+    roof: mat(0x9a4a2c, { roughness: 0.8 }),
+    thatch: mat(0xc49a4c, { roughness: 1 }),
+    roof_faction: mat(fc, { flatShading: false, roughness: 0.55 }),
+    banner: mat(fc, { side: THREE.DoubleSide, roughness: 0.75 }),
+    gold: mat(0xd4a93c, { metalness: 0.8, roughness: 0.3 }),
+    window: mat(0xf2c86a, { emissive: 0xf2a040, emissiveIntensity: 0.9 }),
+  };
+}
+
+function placeModel(group, source, faction, x, y, z, turn = 0, scale = 1) {
+  const m = source.clone();
+  const mats = buildingMaterials(faction);
+  m.traverse((o) => {
+    if (!o.isMesh) return;
+    o.material = mats[o.material.name] ?? stoneMat;
+    o.castShadow = true;
+  });
+  m.position.set(x, y, z);
+  m.rotation.y = turn;
+  m.scale.setScalar(scale);
+  group.add(m);
+}
+
+// Village tile: two cottages along the back, wheat in the front corners, a fence along
+// the front edge, leaving the centre clear for a unit.
+function villageFence(group, v) {
+  for (let i = 0; i < 6; i++) add(group, box, woodMat, v.x - 0.44 + i * 0.176, v.y + 0.04, v.z + 0.45).scale.set(0.022, 0.08, 0.022);
+  for (const h of [0.035, 0.065]) add(group, box, woodMat, v.x, v.y + h, v.z + 0.45).scale.set(0.9, 0.014, 0.012);
+}
+
+function loadBuildings(scene, castles, villages) {
+  const load = (f) => gltfLoader.loadAsync(ENV + f).then((g) => g.scene);
+  Promise.all([load('castle.glb'), load('cottage_a.glb'), load('cottage_b.glb')]).then(([castleM, cotA, cotB]) => {
+    const group = new THREE.Group();
+    for (const c of castles) placeModel(group, castleM, c.faction, c.x, c.y, c.z);
+    for (const v of villages) {
+      placeModel(group, cotA, null, v.x - 0.2, v.y, v.z - 0.24, v.turn + 0.1, 0.95);
+      placeModel(group, cotB, null, v.x + 0.21, v.y, v.z - 0.2, v.turn - 0.12, 0.85);
+      villageFence(group, v);
+    }
+    scene.add(mergeStatics(group));
+  }).catch((err) => {
+    console.warn('building models missing, using procedural buildings', err);
+    const group = new THREE.Group();
+    const rand = rng(5);
+    for (const c of castles) castle(group, c.x, c.z, c.y, c.faction);
+    for (const v of villages) house(group, v.x - 0.06, v.z - 0.08, v.y, rand);
+    scene.add(mergeStatics(group));
+  });
+}
+
+// Swaying wheat in the village's front corners (instanced, same wind as the grass).
+function wheatPatches(villages, rand, time) {
+  const geo = new THREE.CylinderGeometry(0.004, 0.006, 0.12, 3, 1).translate(0, 0.06, 0);
+  const head = new THREE.ConeGeometry(0.012, 0.04, 4).translate(0, 0.13, 0);
+  const stalk = mergeGeometries([geo.toNonIndexed(), head.toNonIndexed()]);
+  const material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.85 });
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uTime = time;
+    shader.vertexShader = `uniform float uTime;\n${shader.vertexShader}`.replace(
+      '#include <begin_vertex>',
+      `#include <begin_vertex>
+       float h = position.y / 0.15;
+       transformed.x += sin(uTime * 1.5 + instanceMatrix[3].x * 3.0 + instanceMatrix[3].z * 2.0) * h * h * 0.025;`,
+    );
+  };
+  const perPatch = 70;
+  const mesh = new THREE.InstancedMesh(stalk, material, villages.length * 2 * perPatch);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), s = new THREE.Vector3(), p = new THREE.Vector3();
+  const color = new THREE.Color();
+  let i = 0;
+  for (const v of villages) {
+    for (const side of [-1, 1]) {
+      for (let k = 0; k < perPatch; k++) {
+        p.set(v.x + side * (0.25 + rand() * 0.18), v.y, v.z + 0.08 + rand() * 0.3);
+        e.set((rand() - 0.5) * 0.25, rand() * Math.PI, (rand() - 0.5) * 0.25);
+        const k2 = 0.85 + rand() * 0.35;
+        mesh.setMatrixAt(i, m.compose(p, q.setFromEuler(e), s.set(k2, k2, k2)));
+        mesh.setColorAt(i, color.setHSL(0.11 + rand() * 0.03, 0.65 + rand() * 0.2, 0.5 + rand() * 0.15));
+        i++;
+      }
+    }
+  }
+  return mesh;
+}
+
 // The river enters over the north cliff (column 7). The fall arcs out from the lip like a
 // thrown stream: horizontal travel grows with the square root of the drop.
 function buildWaterfall(scene, riverMat) {
@@ -483,6 +584,8 @@ export function buildMap(scene) {
 
   const waterGeos = [];
   const bridgeTiles = [];
+  const villages = [];
+  const castles = [];
   let mountainSeed = 0;
 
   for (let r = 0; r < H; r++) {
@@ -501,12 +604,12 @@ export function buildMap(scene) {
         for (let i = 0; i < n; i++) tree(statics, p.x + (rand() - 0.5) * 0.6, p.z + (rand() - 0.5) * 0.6, top, rand);
       }
       if (t === 'M') mountain(statics, p.x, p.z, top, rand, mountainSeed++);
-      if (t === 'V') {
-        house(statics, p.x - 0.06, p.z - 0.08, top, rand);
-        oak(statics, p.x + 0.3, p.z + 0.22, top, rand, 0.75);
+      if (t === 'V') villages.push({ x: p.x, z: p.z, y: top, turn: (rand() - 0.5) * 0.3 });
+      if (t === 'C' || t === 'K') {
+        const faction = t === 'C' ? 'blue' : 'red';
+        castles.push({ x: p.x, z: p.z, y: top, faction });
+        makeFlag(p.x, top + KEEP_POLE_TOP - 0.07, p.z - 0.08, faction, flags);
       }
-      if (t === 'C') castle(statics, p.x, p.z, top, 'blue', flags);
-      if (t === 'K') castle(statics, p.x, p.z, top, 'red', flags);
       if (t === 'B') bridgeTiles.push(p);
       if ((t === 'G' || t === 'R') && rand() < 0.25) {
         add(statics, new THREE.DodecahedronGeometry(0.03 + rand() * 0.025, 0), rockMat,
@@ -525,7 +628,9 @@ export function buildMap(scene) {
 
   scene.add(mergeStatics(statics));
   scene.add(grassBlades(grassTiles, rand, time));
+  scene.add(wheatPatches(villages, rand, time));
   for (const f of flags) scene.add(f.mesh);
+  loadBuildings(scene, castles, villages);
 
   const waterNormal = waterNormalTexture();
   const waterMat = new THREE.MeshPhysicalMaterial({

@@ -13,6 +13,9 @@ Scale: 1 Blender unit = 1 tile.
 import math
 import os
 import random
+import sys
+
+sys.path.insert(0, os.path.dirname(__file__))
 
 import bmesh
 import bpy
@@ -72,13 +75,7 @@ def bevel(o, width=0.012, segments=2):
     m.limit_method = 'ANGLE'
 
 
-def box_uv(o, scale=1.0):
-    """Cube-project UVs so the stone texture tiles at `scale` repeats per unit on every face."""
-    bpy.context.view_layer.objects.active = o
-    bpy.ops.object.mode_set(mode='EDIT')
-    bpy.ops.mesh.select_all(action='SELECT')
-    bpy.ops.uv.cube_project(cube_size=1.0 / scale)
-    bpy.ops.object.mode_set(mode='OBJECT')
+from common import box_uv  # noqa: E402
 
 
 # ---------------------------------------------------------------- stone bridge

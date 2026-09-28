@@ -16,5 +16,5 @@
 - `src/portraits.js`: SVG bust portraits generated from each unit's `look`
 - `src/ui.js`: cursor, hover/select, movement/attack range, unit card, terrain panel, roster
 - `src/camera.js`: ortho camera (40° tilt), wheel zoom, right-drag pan
-- `tools/blender/build_env.py`: headless Blender script that builds `public/models/env/*.glb` (stone bridge, cliff backdrop). Rebuild with `C:/Users/scott/tools/blender-5.2.1-windows-x64/blender.exe -b --factory-startup -P tools/blender/build_env.py`. Keep `LAND_TOP`/`WATER_Y` in sync with `src/map.js`.
+- `tools/blender/`: headless Blender scripts that build `public/models/env/*.glb`. `build_env.py` = stone bridge + cliff backdrop; `build_buildings.py` = castle + cottages; `common.py` = shared helpers. Blender material names (stone, roof_faction, banner, window…) are swapped for game materials in `buildingMaterials()` in `src/map.js`. Rebuild with `C:/Users/scott/tools/blender-5.2.1-windows-x64/blender.exe -b --factory-startup -P tools/blender/build_env.py`. Keep `LAND_TOP`/`WATER_Y` in sync with `src/map.js`.
 - Dev only: `window.__game` exposes `{ THREE, scene, camera, renderer, units }` for console inspection.
