@@ -80,6 +80,8 @@ Playing a unit card pays its recruitment cost and creates a unit on the reserve 
 
 Deployed units may withdraw through a controlled base or reinforcement point into reserves. Reserves can recover and accumulate energy. Eligible units can also be sold or recycled into a card of the same grade, preserving the existence of upgraded cards rather than breaking every unit back into 1-star copies.
 
+**Implemented (prototype defaults):** a deployed recruit standing on a controlled keep or village tile can Withdraw (W) to the bench with its HP, energy, cooldowns and statuses intact; it keeps its population slot. Benched units recover 4 HP and 1 energy per round (`RESERVE_HEAL`, `RESERVE_ENERGY` in `src/ui.js`) and tick cooldowns; redeploying restores exactly that state. Champions cannot be benched. Selling/recycling is not implemented.
+
 Reserve capacity, reserve population cost, recovery/energy rates, withdrawal timing, and any extra deployment charge are unresolved. Selling/recycling must define whether resources are refunded, whether the resulting card must be paid for again, and what happens to HP, energy, cooldowns, and statuses. Keep these rules explicit so the system does not accidentally grant an instant full heal or unlimited refunds. Spells, enchantments, and equipment need an explicit inventory model rather than silently being treated as reserve units.
 
 Prototype deployment rules:

@@ -218,6 +218,8 @@ export function createUI({ renderer, camera, scene, units, view }) {
   const turnNo = document.getElementById('turn-no');
   const phaseEl = document.getElementById('phase');
   const HERO_RESPAWN_DELAY = 2; // A lost planning/battle cycle, then return at the next planning stage.
+  const RESERVE_HEAL = 4;   // HP a benched unit recovers each round (prototype default, tune with pacing)
+  const RESERVE_ENERGY = 1; // extra energy a benched unit gains each round
   const HERO_RESPAWN_COST = 1; // Explicit prototype default; tune after match pacing tests.
 
   const feed = createFeed({ camera, units, phaseEl, turnEl: turnNo });
@@ -434,6 +436,7 @@ export function createUI({ renderer, camera, scene, units, view }) {
       html += btn('cancelCard', 'Clear card', '‹', 'Esc');
     } else {
       if (u) html += btn('inspect', 'Inspect', 'ⓘ', 'I');
+      if (canWithdraw(u)) html += btn('withdraw', 'Withdraw to reserve', '⇲', 'W');
       if (u?.faction === 'blue') {
         const st = u.stance || 'advance';
         html += btn('stance', `Stance · ${STANCE_LABEL[st] || st}${st === 'protect' ? ' Brenna' : ''}`, stanceIcon(st, 14), 'S', `stance-${st}`).replace('title="', `title="${STANCE_HINT[st] || ''} (S to change) · `);
@@ -671,6 +674,30 @@ export function createUI({ renderer, camera, scene, units, view }) {
     return `Enemy reinforcements: ${names.join(', ')}`;
   }
 
+  // Withdraw: a deployed recruit standing on a controlled deployment tile returns to the reserve bench
+  // with its HP, energy, cooldowns and statuses. It keeps its population slot (it is still paid for).
+  function canWithdraw(u) {
+    return !!u && u.faction === 'blue' && u.hp > 0 && u.cls !== 'paladin' && state.phase === 'player' && !state.busy && !state.over
+      && cardState.reserves.length < CARD_LIMITS.reserveCapacity
+      && deploymentTiles().some(([c, r]) => c === u.c && r === u.r);
+  }
+
+  function withdrawSelected() {
+    const u = selected();
+    if (!canWithdraw(u)) {
+      state.notice = u && u.cls === 'paladin' ? 'Champions cannot be benched.' : 'Withdraw from your keep or a captured village (or free a reserve slot).';
+      refresh();
+      return;
+    }
+    const reserve = { ...structuredClone(u), id: `reserve-${u.id}`, fieldId: u.id, unitId: u.cls, faction: 'blue', state: 'reserve' };
+    for (const k of ['c', 'r', 'planningMoved', 'done', 'moved']) delete reserve[k];
+    units.removeUnit(u.id);
+    cardState.reserves.push(reserve);
+    state.selectedId = null;
+    state.notice = `${u.name} withdrew to the reserve bench (recovers ${RESERVE_HEAL} HP and ${RESERVE_ENERGY} energy per round).`;
+    refresh();
+  }
+
   function deployReserveAt(c, r) {
     const reserve = cardState.reserves.find((unit) => unit.id === state.selectedReserveId);
     if (!reserve) return false;
@@ -687,7 +714,12 @@ export function createUI({ renderer, camera, scene, units, view }) {
       abilityOrder: reserve.abilityOrder ?? (reserve.unitId === 'pikeman' ? ['rally'] : []),
       stance: reserve.stance ?? UNIT_CARDS[reserve.unitId]?.defaultStance,
     });
+    // A reserve may carry more than the class template: combined stars and stats, hurt HP, stored energy.
+    const carried = Object.fromEntries(Object.entries(reserve).filter(([k, v]) => v != null && !['id', 'fieldId', 'state', 'faction', 'c', 'r', 'costPaid'].includes(k)));
+    Object.assign(unit, carried);
+    if (reserve.fieldId && !units.byId.has(reserve.fieldId)) unit.id = reserve.fieldId;
     Object.assign(unit, initializeAbilityState(unit));
+    unit.state = 'field';
     unit.planningMoved = false;
     cardState.reserves = cardState.reserves.filter((item) => item.id !== reserve.id);
     units.addUnit(unit);
@@ -932,6 +964,13 @@ export function createUI({ renderer, camera, scene, units, view }) {
       entry.data.done = false;
       entry.data.moved = false;
     }
+    // Benched units recover slowly: cooldowns tick, HP and energy rise by the reserve rates.
+    cardState.reserves = cardState.reserves.map((reserve) => {
+      const rested = advanceAbilityRound({ ...reserve, energy: reserve.energy ?? 0, maxEnergy: reserve.maxEnergy ?? 4 });
+      const energy = Math.min(rested.maxEnergy, rested.energy + RESERVE_ENERGY);
+      const hp = reserve.hp == null ? null : Math.min(reserve.maxHp, reserve.hp + RESERVE_HEAL);
+      return { ...reserve, cooldowns: rested.cooldowns, energy, maxEnergy: rested.maxEnergy, hp };
+    });
     tryHeroRespawn();
     const reinforcements = planEnemy();
     if (reinforcements) state.notice = [state.notice, reinforcements].filter(Boolean).join(' · ');
@@ -971,6 +1010,7 @@ export function createUI({ renderer, camera, scene, units, view }) {
       refresh();
     },
     targetSpell() { if (state.selectedCardId) { state.mode = 'spellTarget'; state.notice = 'Click a valid unit or tile to queue the spell.'; refresh(); } },
+    withdraw() { withdrawSelected(); },
     toggleTray() { state.trayCollapsed = !state.trayCollapsed; refresh(); },
     cancelCard() { state.selectedCardId = null; state.mode = 'idle'; state.notice = ''; refresh(); },
     cancelDeploy() { state.selectedReserveId = null; state.mode = 'idle'; refresh(); },
@@ -1092,6 +1132,7 @@ export function createUI({ renderer, camera, scene, units, view }) {
     else if (k === 'escape') commands.back();
     else if (k === 'i') (state.sheet ? commands.close : commands.inspect)();
     else if (k === 's') commands.stance();
+    else if (k === 'w') commands.withdraw();
     else if (k === 'd') commands.danger();
     else if (k === 'g') commands.grid();
   });
