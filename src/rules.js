@@ -1,4 +1,4 @@
-import { W, H, TERRAIN, inBounds, terrainAt } from './map.js';
+import { W, H, TERRAIN, inBounds, terrainAt } from './board.js';
 import { weaponOf } from './combat.js';
 
 // Movement and range rules, shared by the player UI (src/ui.js) and the enemy AI (src/ai.js).

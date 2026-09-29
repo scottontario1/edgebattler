@@ -1,6 +1,6 @@
 import { computeRange, dist } from './rules.js';
 import { forecast } from './combat.js';
-import { TERRAIN, terrainAt } from './map.js';
+import { TERRAIN, terrainAt } from './board.js';
 
 // Enemy behaviour, one unit at a time: strike the best target it can reach this turn, otherwise walk
 // toward the nearest player unit. Returns { path, attack } where `path` is the tiles to walk

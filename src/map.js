@@ -7,20 +7,13 @@ import {
   terrainAtlas, riverTextures, foamNoiseTexture, vnoise,
 } from './textures.js';
 
-import { TERRAIN, parseLayout } from './terrain.js';
-import MAP from './maps/river_ford.js';
-
-// The active map (src/maps/). Everything below reads its layout through terrainAt()/W/H.
-const GRID = parseLayout(MAP.layout);
-export const LAYOUT = GRID.rows;
-export const W = GRID.w;
-export const H = GRID.h;
-export { TERRAIN };
+// The active map's grid lives in src/board.js (pure data, also used by the Node simulator).
+// Everything below reads its layout through terrainAt()/W/H.
+import { MAP, LAYOUT, W, H, TERRAIN, inBounds, terrainAt } from './board.js';
+export { LAYOUT, W, H, TERRAIN, inBounds, terrainAt };
 
 export const FACTION_COLORS = { blue: 0x2f62c4, red: 0xc0392b };
 
-export const inBounds = (c, r) => c >= 0 && r >= 0 && c < W && r < H;
-export const terrainAt = (c, r) => LAYOUT[r][c];
 
 export function toWorld(c, r) {
   return new THREE.Vector3(c - (W - 1) / 2, 0, r - (H - 1) / 2);

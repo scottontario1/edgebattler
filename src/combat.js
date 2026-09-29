@@ -1,4 +1,4 @@
-import { TERRAIN, terrainAt } from './map.js';
+import { TERRAIN, terrainAt } from './board.js';
 
 // Weapon stats: might, hit, crit, min/max range, kind (weapon triangle) and whether it hits RES.
 export const WEAPONS = {
