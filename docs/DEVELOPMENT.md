@@ -43,7 +43,7 @@ Evaluate balance experiments on match completion, duration, faction viability, s
 
 ## Questions still requiring direction
 
-- What specific prototype active abilities, energy timing and shared/per-instance priority controls complete SYS-01?
+- SYS-01 confirmed: shared type-wide priority inherited by future recruits; ability enable/disable controls without an energy reserve threshold; Rally fires when healing or energy gain is useful; kits cover Pikeman, Archer and Cavalier. Scott approves a concrete kit before implementation. See ABILITY_PROPOSAL.md for the pending proposal; its numbers and timing are not approved defaults.
 - What observable outcomes define an acceptable match: expected duration, tolerable draw rate and meaningful choices at capacity?
 - Which selling/recycling and card repayment/state rules should SYS-02 implement?
 

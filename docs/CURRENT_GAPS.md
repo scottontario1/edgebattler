@@ -22,7 +22,7 @@ Acceptance: agree the attacking counterplay, run paired-seed/side-swapped experi
 
 Status: partially implemented; agreed player experience incomplete.
 No baseline energy accrues to field units; Rally costs zero and generates energy, while Barrier is an automatic passive reduction. No human ability-priority editor or energy-consuming active kit. Confirmed direction requires charging over turns and sustained engagement with cooldown/energy decisions.
-Acceptance: document gain/spend/timing and active/passive semantics, implement the chosen system, expose priority and cooldown state, demonstrate charge -> spend -> recover across rounds, and verify AI uses the same rules. Strategic kit details require elicitation; do not silently turn Barrier into an active ability.
+Acceptance: document gain/spend/timing and active/passive semantics, implement the chosen system, expose priority and cooldown state, demonstrate charge -> spend -> recover across rounds, and verify AI uses the same rules. Shared type-wide priorities, enable/disable controls without a reserve threshold, usefulness-based Rally and coverage of all three recruits are confirmed. Concrete kits require Scott's approval; ABILITY_PROPOSAL.md records the pending proposal. Do not silently turn Barrier into an active ability.
 
 ## SYS-02: Capacity, reserves and card circulation
 

@@ -146,7 +146,7 @@ Concrete design example supplied by the user:
 
 > **Pike — Rally:** restore 10 HP to the Pike; gain 1 energy this turn and next; cooldown 2 turns.
 
-Cooldown convention: using Rally in round 5 makes it unavailable in round 6 and ready in round 7. Recovery happens during the normal activation, including rounds without nearby enemies. Rally's energy cost, exact automatic trigger, and placement within simultaneous ability resolution still need definition. Whether cooldowns tick while stunned and how reserve cooldowns advance remain open. A cavalry flanking bonus is another intended example, with its trigger and reward to be specified. These examples express roles and timing, not implemented or fully balanced abilities.
+Cooldown convention: using Rally in round 5 makes it unavailable in round 6 and ready in round 7. Recovery happens during the normal activation, including rounds without nearby enemies. Rally triggers automatically when either healing or energy gain would be useful. Its energy cost, precise usefulness check, and placement within simultaneous ability resolution still need definition. Whether cooldowns tick while stunned and how reserve cooldowns advance remain open. A cavalry flanking bonus is another intended example, with its trigger and reward to be specified. These examples express roles and timing, not implemented or fully balanced abilities.
 
 ## Stances, objectives, and automatic abilities
 
@@ -162,9 +162,9 @@ Defaults should reflect roles: frontline melee advances, archers maintain useful
 
 Units may have several abilities, including active skills, passives, and toggles. Players arrange abilities in a visible left-to-right order, with the leftmost having highest priority during automatic resolution. The resolver must evaluate that order against costs, cooldowns, valid targets, and trigger conditions. During the activation, a unit may execute multiple eligible abilities in priority order, constrained by energy and cooldowns, and also make a basic attack. Exact timing relative to attacks, evaluation passes, and repeat-cast limits remain open; resolve a bounded sequence so energy-generating abilities cannot cause an infinite action loop.
 
-Passives and toggles need their own trigger/upkeep semantics instead of being implicitly treated as ordinary casts. Ability order persists between turns; changing it is optional planning work, not a required per-unit action. Trigger controls remain an experiment: test simpler built-in conditions on some units, such as Pikemen, and more configurable behavior on others, such as Cavaliers.
+Passives and toggles need their own trigger/upkeep semantics instead of being implicitly treated as ordinary casts. Ability priority is shared across each unit type and inherited by future recruits. Players can enable or disable abilities; there is no minimum-energy reserve threshold control in the initial prototype. Ability order persists between turns; changing it is optional planning work, not a required per-unit action. Trigger controls remain an experiment: test simpler built-in conditions on some units, such as Pikemen, and more configurable behavior on others, such as Cavaliers.
 
-Potential skill-card example: a Pike starts with Rally, and the player equips **Barrier: block f(x) damage** when the situation calls for it. Barrier's scaling formula, duration, cost, trigger, and stack behavior remain open. Equipped skills currently apply to all instances of a unit type rather than one particular soldier. Skill cards are transferable equipment. Owner/faction scope, whether all star levels and future recruits inherit the skill, shared versus per-instance priority, slot count, class restrictions, transfer costs, and cooldown handling on transfer remain open. More granular per-instance loadouts may come later.
+Potential skill-card example: a Pike starts with Rally, and the player equips **Barrier: block f(x) damage** when the situation calls for it. Barrier's scaling formula, duration, cost, trigger, and stack behavior remain open. Equipped skills currently apply to all instances of a unit type rather than one particular soldier. Skill cards are transferable equipment. Owner/faction scope, whether all star levels and future recruits inherit the skill, slot count, class restrictions, transfer costs, and cooldown handling on transfer remain open. More granular per-instance loadouts may come later.
 
 Expose ready/cooling-down status in inspection and show an ability label when it fires. Support applying a stance to a selected group or role later; do not require assigning it again to every unit every round.
 
@@ -260,7 +260,7 @@ The intended direction is fixed: random shared-pool cards, paid reserves, contro
 - Draw counts, pool weights, resource types and costs, banking, hand/bench limits, and population values.
 - Exact planning and automatic movement distances, simultaneous collision rules, and the usefulness of each stance.
 - Energy gain timing, ability trigger complexity by unit type, action/repeat-cast limits, passive/toggle rules, and reserve recovery rates.
-- Type-wide skill scope, shared priority versus per-instance priority, slots, costs, compatibility, and transfer/cooldown semantics; enchantment rules.
+- Type-wide skill scope, shared priority implementation, slots, costs, compatibility, and transfer/cooldown semantics; enchantment rules.
 - Exact star stat gains and per-instance HP/energy/status/cooldown inheritance during combinations.
 - Reserve withdrawal, selling/recycling refunds, same-grade card repayment and retained state, and inventory-capacity handling.
 - Simultaneous spell/ability/attack timing, reactions, follow-ups, lethal-action rules, target tracking, and mutual-victory outcomes.
