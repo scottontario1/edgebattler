@@ -224,6 +224,7 @@ html, body {
   color: #fff;
 }
 .tag.boss { background: var(--red); }
+.tag.stars { background: rgba(201, 162, 74, 0.25); color: var(--gold-bright); }
 .tag.side { margin-left: auto; }
 .blue .tag.side { background: rgba(79, 141, 255, 0.25); color: #b8d2ff; }
 .red .tag.side { background: rgba(255, 90, 74, 0.22); color: #ffc2bb; }
@@ -326,6 +327,77 @@ html, body {
 .fc-note b { color: var(--gold-bright); }
 @keyframes blink { 50% { opacity: 0.25; } }
 
+/* Planning dock: a field ledger that keeps cards, paid reserves, and Resolve in one glance. */
+.planning {
+  left: calc(var(--edge) + var(--safe-l));
+  right: calc(var(--edge) + var(--safe-r) + 168px);
+  bottom: calc(var(--edge) + var(--safe-b));
+  min-height: 130px;
+  max-height: 156px;
+  padding: 7px 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  overflow: hidden;
+  z-index: 4;
+}
+.planning-top { display: flex; align-items: center; gap: 12px; min-height: 21px; }
+.supply-readout, .population-readout { display: inline-flex; align-items: baseline; gap: 5px; white-space: nowrap; }
+.supply-readout b { color: var(--gold-bright); font: 700 18px var(--font-display); }
+.population-readout b { color: var(--ivory); font: 600 13px var(--font-ui); }
+.planning-top span, .bench-title { color: var(--muted); font-size: 10px; }
+.bench-title { white-space: nowrap; }
+.bench-title b { color: var(--ivory); font-weight: 600; }
+.plan-prompt { margin-left: auto; overflow: hidden; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.plan-row { display: flex; min-height: 66px; gap: 7px; overflow: hidden; }
+.hand-strip, .reserve-strip { display: flex; align-items: stretch; gap: 5px; overflow-x: auto; scrollbar-width: thin; scrollbar-color: var(--gold) transparent; }
+.hand-strip { flex: 1 1 auto; min-width: 0; }
+.reserve-strip { flex: 0 1 210px; min-width: 125px; border-left: 1px solid rgba(201, 162, 74, 0.28); padding-left: 6px; }
+.plan-card, .reserve-card {
+  position: relative; flex: 0 0 142px; min-width: 0; height: 64px; display: flex; align-items: center; gap: 6px;
+  border: 1px solid rgba(201, 162, 74, 0.3); border-radius: 3px; padding: 4px 5px; background: rgba(8, 14, 27, 0.9); color: var(--ivory); text-align: left; cursor: pointer;
+}
+.plan-card:hover, .reserve-card:hover { border-color: var(--gold-bright); background: var(--panel-raised); }
+.plan-card.selected, .reserve-card.selected { border-color: var(--cyan); box-shadow: inset 0 0 0 1px rgba(95, 212, 255, 0.42); }
+.plan-card.skill-card { border-color: rgba(201, 162, 74, 0.72); }
+.skill-equip-label { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: 9px; }
+.skill-equip-label select, .skill-entry select, .skill-entry button, .skill-equip {
+  border: 1px solid rgba(201, 162, 74, 0.42); border-radius: 3px; background: var(--panel-raised); color: var(--ivory); font: 9px var(--font-ui); padding: 3px 5px;
+}
+.skill-equip, .skill-entry button { flex: none; cursor: pointer; }
+.skill-equip:disabled { opacity: 0.45; cursor: default; }
+.skill-loadouts { display: flex; align-items: center; gap: 4px; min-width: 0; overflow-x: auto; }
+.skill-entry { display: flex; align-items: center; gap: 4px; flex: none; max-width: 320px; padding-left: 5px; border-left: 1px solid rgba(201, 162, 74, 0.3); }
+.skill-entry b { color: var(--gold-bright); font: 600 9px var(--font-display); }
+.skill-entry span { overflow: hidden; max-width: 145px; color: var(--muted); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.no-skills { color: var(--muted); font-size: 8px; white-space: nowrap; }
+.plan-face { display: block; flex: none; width: 32px; height: 48px; overflow: hidden; border-right: 1px solid rgba(201, 162, 74, 0.3); }
+.plan-face svg { width: 100%; height: 100%; }
+.plan-card-copy { min-width: 0; display: flex; flex: 1; flex-direction: column; gap: 2px; }
+.plan-card-copy b, .reserve-card b { overflow: hidden; font: 700 11px/1.1 var(--font-display); text-overflow: ellipsis; white-space: nowrap; }
+.plan-card-copy small, .reserve-card small { display: -webkit-box; overflow: hidden; color: var(--muted); font-size: 9px; line-height: 1.18; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.plan-cost { position: absolute; right: 4px; bottom: 2px; color: var(--gold-bright); font-size: 8px; }
+.unaffordable { position: absolute; right: 4px; top: 2px; color: var(--warm); font-size: 8px; }
+.reserve-card { flex-direction: column; align-items: flex-start; justify-content: center; flex-basis: 100px; }
+.empty-hand, .empty-reserve { align-self: center; color: var(--muted); font-size: 10px; white-space: nowrap; }
+.plan-foot { display: flex; align-items: center; gap: 7px; min-height: 20px; overflow: hidden; }
+.plan-detail { display: flex; align-items: baseline; gap: 6px; min-width: 0; overflow: hidden; white-space: nowrap; }
+.plan-detail b { color: var(--gold-bright); font: 600 10px var(--font-display); }
+.plan-detail span, .plan-detail small { overflow: hidden; color: var(--muted); font-size: 9px; text-overflow: ellipsis; }
+.queued-spells, .upgrade-prompts { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.queued-spell { display: flex; align-items: center; gap: 3px; color: #b8d2ff; font-size: 9px; white-space: nowrap; }
+.queue-cancel, .upgrade-prompt, .upgrade-confirm, .upgrade-cancel, .upgrade-choice select { border: 1px solid rgba(201, 162, 74, 0.4); border-radius: 3px; background: var(--panel-raised); color: var(--ivory); font: 10px var(--font-ui); }
+.queue-cancel { width: 17px; height: 17px; padding: 0; color: var(--warm); cursor: pointer; }
+.upgrade-prompt, .upgrade-confirm, .upgrade-cancel { flex: none; padding: 3px 6px; cursor: pointer; }
+.upgrade-prompt { color: var(--gold-bright); }
+.upgrade-choice { display: flex; align-items: center; gap: 4px; }
+.upgrade-choice label { display: flex; align-items: center; gap: 3px; color: var(--muted); font-size: 9px; }
+.upgrade-choice select { max-width: 110px; padding: 2px; }
+.upgrade-preview { overflow: hidden; color: var(--ivory); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.upgrade-confirm { border-color: var(--gold); }
+.plan-card:focus-visible, .reserve-card:focus-visible, .upgrade-prompt:focus-visible, .queue-cancel:focus-visible { outline: 2px solid var(--cyan); outline-offset: 1px; }
+.pop.heal { color: #9ee4c0; font-size: 20px; }
+
 /* ---------- Inspect sheet (full stats) ---------- */
 .sheet {
   left: calc(var(--edge) + var(--safe-l));
@@ -399,6 +471,10 @@ html, body {
   .actions .btn { width: var(--touch); padding: 0; justify-content: center; }
   .actions .btn .lbl, .actions .btn .key { display: none; }
   .actions .btn .ico { width: auto; font-size: 16px; }
+  .planning { left: calc(var(--edge) + var(--safe-l)); right: calc(var(--edge) + var(--safe-r) + 58px); bottom: calc(var(--edge) + var(--safe-b)); min-height: 116px; max-height: 130px; }
+  .dock { bottom: calc(var(--edge) + var(--safe-b) + 136px); }
+  .plan-card { flex-basis: 126px; }
+  .reserve-strip { flex-basis: 150px; }
   .sheet { max-height: calc(100% - 2 * var(--edge)); width: 320px; }
   .sheet .face { width: 96px; height: 112px; }
 }
@@ -435,6 +511,25 @@ html, body {
     bottom: calc(var(--edge) + var(--safe-b) + var(--touch) + 6px);
     align-items: stretch;
   }
+  .planning {
+    left: calc(var(--edge) + var(--safe-l));
+    right: calc(var(--edge) + var(--safe-r));
+    bottom: calc(var(--edge) + var(--safe-b) + var(--touch) + 5px);
+    min-height: 132px;
+    max-height: 142px;
+    padding: 6px;
+  }
+  .planning-top { gap: 8px; }
+  .plan-prompt { display: none; }
+  .plan-row { min-height: 62px; }
+  .plan-card { flex-basis: 122px; height: 60px; }
+  .reserve-strip { flex-basis: 128px; min-width: 100px; }
+  .reserve-card { flex-basis: 96px; }
+  .plan-foot { gap: 4px; }
+  .plan-detail small { display: none; }
+  .queued-spells { overflow-x: auto; }
+  .upgrade-choice label { font-size: 8px; }
+  .upgrade-choice select { max-width: 82px; }
   .chip { align-self: flex-start; }
   .card, .forecast { width: auto; }
   .card .face { width: 60px; height: 70px; }

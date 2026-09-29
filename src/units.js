@@ -13,8 +13,9 @@ const RECRUIT = {
 };
 const recruit = (cls, id, faction, c, r, look, over = {}) => {
   const t = { ...RECRUIT[cls], ...over };
-  return { id, cls, faction, c, r, name: t.name, title: t.title, lv: t.lv, hp: t.hp, maxHp: t.hp, str: t.str, mag: t.mag, skl: t.skl,
-    spd: t.spd, def: t.def, res: t.res, mov: t.mov, weapon: t.weapon, look };
+  return { id, cls, classId: cls, variantId: cls, faction, c, r, name: t.name, title: t.title, lv: t.lv, hp: t.hp, maxHp: t.hp, str: t.str, mag: t.mag, skl: t.skl,
+    spd: t.spd, def: t.def, res: t.res, mov: t.mov, weapon: t.weapon, look, stars: 1, population: 1, state: 'field', energy: 0, maxEnergy: 4,
+    abilityOrder: cls === 'pikeman' ? ['rally'] : [], stance: cls === 'cavalier' ? 'advance' : 'hold', cooldowns: {}, statuses: {} };
 };
 
 export const UNITS = [
@@ -36,6 +37,26 @@ export const UNITS = [
 ];
 
 const matCache = new Map();
+const defaultLook = (cls) => UNITS.find((u) => u.cls === cls)?.look
+  || { skin: '#d8a98a', hair: '#4a3524', eyes: '#3f7a4a', style: 'short' };
+
+/** Build a persistent recruit record from the same class template used by the starting roster. */
+export function createRecruitUnit(cls, id, faction, c, r, over = {}) {
+  if (!RECRUIT[cls]) throw new Error(`Unknown recruit class: ${cls}`);
+  return recruit(cls, id, faction, c, r, defaultLook(cls), over);
+}
+
+/** Prototype champion respawn: rebuild the named hero at full HP and empty combat resources. */
+export function createHeroRespawnData(id, c, r) {
+  const hero = UNITS.find((unit) => unit.id === id && unit.faction === 'blue' && unit.cls === 'paladin');
+  if (!hero) throw new Error(`Unknown hero champion: ${id}`);
+  return {
+    ...structuredClone(hero), c, r, hp: hero.maxHp, energy: 0, maxEnergy: 4,
+    cooldowns: {}, statuses: {}, abilityOrder: [], stance: 'advance', state: 'field', population: 1,
+    planningMoved: false, done: false, moved: false,
+  };
+}
+
 function mat(color, opts = {}) {
   const key = String(color) + JSON.stringify(opts);
   if (!matCache.has(key)) {
@@ -300,7 +321,18 @@ export function createUnits(scene) {
   const tweens = [];
   const tween = (duration, fn) => new Promise((resolve) => tweens.push({ duration, fn, t: 0, resolve }));
   const overlay = new THREE.Scene();
-  const list = UNITS.map((data, i) => {
+  const list = [];
+  const byId = new Map();
+  let useModels = true;
+  let lastT = 0;
+
+  function applyStyle(u) {
+    const on = useModels && !!u.model;
+    if (u.model) u.model.root.visible = on;
+    u.figure.visible = !on;
+  }
+
+  function createUnit(data, i = list.length) {
     const group = new THREE.Group();
     const p = toWorld(data.c, data.r);
     group.position.set(p.x, tileTop(data.c, data.r), p.z);
@@ -344,24 +376,38 @@ export function createUnits(scene) {
       u.model = m;
       applyStyle(u);
     }).catch((err) => console.warn(`model for ${data.id} failed, keeping procedural figure`, err));
+    list.push(u);
+    byId.set(data.id, u);
     return u;
-  });
-
-  // M flips between the illustrated models and the original procedural figures.
-  let useModels = true;
-  function applyStyle(u) {
-    const on = useModels && !!u.model;
-    if (u.model) u.model.root.visible = on;
-    u.figure.visible = !on;
   }
-
-  const byId = new Map(list.map((u) => [u.data.id, u]));
-  let lastT = 0;
+  UNITS.forEach((data) => createUnit(data));
 
   return {
     list,
     byId,
     overlay,
+    addUnit(data) {
+      if (!data?.id || byId.has(data.id)) throw new Error(`Unit id must be unique: ${data?.id}`);
+      return createUnit(data);
+    },
+    removeUnit(id) {
+      const unit = byId.get(id);
+      if (!unit) return null;
+      scene.remove(unit.group);
+      overlay.remove(unit.hp.bar);
+      list.splice(list.indexOf(unit), 1);
+      byId.delete(id);
+      return unit.data;
+    },
+    setPosition(id, c, r) {
+      const unit = byId.get(id);
+      if (!unit) return false;
+      const p = toWorld(c, r);
+      unit.group.position.set(p.x, tileTop(c, r), p.z);
+      unit.data.c = c;
+      unit.data.r = r;
+      return true;
+    },
     unitAt: (c, r) => list.find((u) => u.data.hp > 0 && u.data.c === c && u.data.r === r),
     alive: (faction) => list.filter((u) => u.data.hp > 0 && (!faction || u.data.faction === faction)),
 
