@@ -33,8 +33,8 @@ Low-poly, flat-shaded procedural models; warm sunlight; parchment and gold UI; p
 
 ## Milestones (vertical slices)
 1. ✅ Visual demo: map, units, portraits, hover card, range preview
-2. Select, move and animate a unit along the path; end turn
-3. Combat forecast + combat resolution (hit/crit/damage), HP changes, unit death
-4. Simple enemy AI (charge nearest target in range)
-5. Win/lose conditions, chapter intro/outro dialogue with portraits
+2. ✅ Select, move and animate a unit along the path (click a blue tile), Wait, End turn
+3. ✅ Combat forecast + resolution (hit/crit/damage, counters, doubling), HP changes, unit death
+4. ✅ Simple enemy AI (strike the best reachable target, otherwise advance)
+5. Win/lose conditions ✅ (rout the enemy or hold the keep / lose Brenna); chapter intro/outro dialogue with portraits still to do
 6. Polish: sound, battle animation zoom-in, particle effects

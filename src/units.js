@@ -293,7 +293,12 @@ function hpBar(overlay, data) {
   };
 }
 
+const STEP_TIME = 0.16; // seconds per tile walked
+
 export function createUnits(scene) {
+  // Tiny tween runner driven by update(): fn(k) with k running 0..1 over `duration` seconds.
+  const tweens = [];
+  const tween = (duration, fn) => new Promise((resolve) => tweens.push({ duration, fn, t: 0, resolve }));
   const overlay = new THREE.Scene();
   const list = UNITS.map((data, i) => {
     const group = new THREE.Group();
@@ -357,7 +362,51 @@ export function createUnits(scene) {
     list,
     byId,
     overlay,
-    unitAt: (c, r) => list.find((u) => u.data.c === c && u.data.r === r),
+    unitAt: (c, r) => list.find((u) => u.data.hp > 0 && u.data.c === c && u.data.r === r),
+    alive: (faction) => list.filter((u) => u.data.hp > 0 && (!faction || u.data.faction === faction)),
+
+    // ---- animation: each returns a promise that resolves when it finishes ----
+    /** Walk along tiles [[c, r], ...] (excluding the start), hopping between them. */
+    async moveAlong(id, tiles) {
+      const u = byId.get(id);
+      const at = (c, r) => { const p = toWorld(c, r); return new THREE.Vector3(p.x, tileTop(c, r), p.z); };
+      let from = u.group.position.clone();
+      for (const [c, r] of tiles) {
+        const to = at(c, r);
+        const start = from;
+        await tween(STEP_TIME, (k) => {
+          u.group.position.lerpVectors(start, to, k);
+          u.group.position.y += Math.sin(Math.PI * k) * 0.05;
+        });
+        from = to;
+        u.data.c = c; u.data.r = r;
+      }
+      u.group.position.copy(from);
+    },
+    /** Lunge toward a tile and back (an attack swing). */
+    async lunge(id, [c, r]) {
+      const u = byId.get(id);
+      const base = u.group.position.clone();
+      const p = toWorld(c, r);
+      const dir = new THREE.Vector3(p.x - base.x, 0, p.z - base.z).normalize().multiplyScalar(0.28);
+      await tween(0.26, (k) => u.group.position.copy(base).addScaledVector(dir, Math.sin(Math.PI * k)));
+      u.group.position.copy(base);
+    },
+    /** Recoil shake when struck. */
+    async shake(id) {
+      const u = byId.get(id);
+      const base = u.group.position.clone();
+      await tween(0.22, (k) => { u.group.position.x = base.x + Math.sin(k * 40) * 0.05 * (1 - k); });
+      u.group.position.copy(base);
+    },
+    /** Shrink away when defeated. */
+    async die(id) {
+      const u = byId.get(id);
+      await tween(0.5, (k) => u.group.scale.setScalar(Math.max(0.001, 1 - k * k)));
+      u.group.visible = false;
+    },
+    /** World position above a unit's head, for floating text. */
+    headPos: (id) => byId.get(id).group.position.clone().add(new THREE.Vector3(0, 1.2, 0)),
     // Sprite quads are rectangles to the depth/normal pass; the ambient-occlusion pass hides them
     // (main.js) so the terrain around a sprite is not left as an un-occluded rectangle.
     spriteMeshes: () => list.filter((u) => u.model?.mesh).map((u) => u.model.mesh),
@@ -369,10 +418,17 @@ export function createUnits(scene) {
     update(t, activeId) {
       const dt = Math.min(t - lastT, 0.1);
       lastT = t;
+      for (const tw of [...tweens]) {
+        tw.t += dt;
+        const k = Math.min(1, tw.t / tw.duration);
+        tw.fn(k);
+        if (k >= 1) { tweens.splice(tweens.indexOf(tw), 1); tw.resolve(); }
+      }
       for (const u of list) {
         const active = u.data.id === activeId;
         if (u.model) {
           u.model.setActive(active);
+          u.model.setDone?.(!!u.data.done);
           u.model.update(dt, t);
         }
         u.hp.set(u.data.hp / u.data.maxHp);

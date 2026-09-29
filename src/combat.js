@@ -52,3 +52,31 @@ export function forecast(a, d, from) {
     def: side(d, a, dist, [d.c, d.r], from),
   };
 }
+
+/**
+ * Play out an exchange with dice. `a` attacks `d` from tile `from`; returns the strikes in order as
+ * { by: 'a' | 'd', hit, crit, dmg }. Order follows Fire Emblem: attacker, defender's counter (if in
+ * range), then a follow-up by whoever is 4+ speed ahead. Stops as soon as either unit would fall.
+ * Nothing is mutated: the caller applies each strike's dmg to `hp` as it animates it. `rand` returns
+ * [0, 1) and can be seeded for tests.
+ */
+export function resolve(a, d, from, rand = Math.random) {
+  const f = forecast(a, d, from);
+  const order = ['a'];
+  if (f.def.can) order.push('d');
+  if (f.atk.double) order.push('a');
+  else if (f.def.double && f.def.can) order.push('d');
+  const hp = { a: a.hp, d: d.hp };
+  const strikes = [];
+  for (const who of order) {
+    if (hp.a <= 0 || hp.d <= 0) break;
+    const s = who === 'a' ? f.atk : f.def;
+    const victim = who === 'a' ? 'd' : 'a';
+    const hit = rand() * 100 < s.hit;
+    const crit = hit && rand() * 100 < s.crit;
+    const dmg = hit ? Math.min(hp[victim], s.dmg * (crit ? 3 : 1)) : 0;
+    hp[victim] -= dmg;
+    strikes.push({ by: who, hit, crit, dmg });
+  }
+  return strikes;
+}

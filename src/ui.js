@@ -1,76 +1,14 @@
 import * as THREE from 'three';
 import { W, H, TERRAIN, inBounds, terrainAt, toWorld, tileTop } from './map.js';
 import { portraitSVG } from './portraits.js';
-import { forecast, weaponOf } from './combat.js';
+import { forecast, resolve, weaponOf } from './combat.js';
+import { MOVE_COST, MOVE_TYPE, key, unkey, computeRange } from './rules.js';
+import { chooseAction } from './ai.js';
 
-const MOVE_COST = {
-  foot: { G: 1, R: 1, B: 1, V: 1, C: 1, K: 1, F: 2, M: 3 },
-  armor: { G: 1, R: 1, B: 1, V: 1, C: 1, K: 1, F: 2 },
-  mounted: { G: 1, R: 1, B: 1, V: 1, C: 1, K: 1, F: 3 },
-};
-const MOVE_TYPE = { knight: 'armor', paladin: 'armor', barbarian: 'armor', warlord: 'armor', cavalier: 'mounted' };
-const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
-const key = (c, r) => r * W + c;
-const unkey = (k) => [k % W, Math.floor(k / W)];
-const dist = (a, b) => Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Overlay palette (hex). Reachable = cyan, attack = warm orange-red, enemy threat = amber.
 const COL = { move: 0x5fd4ff, moveEnemy: 0xb48cff, attack: 0xff6a3d, danger: 0xffa13d, grid: 0xf3ead6 };
-
-// Fire Emblem style range: tiles you can reach, tiles you can hit from there, and the
-// enemies you could actually strike (from an unoccupied reachable tile).
-function computeRange(unit, units) {
-  const costs = MOVE_COST[MOVE_TYPE[unit.cls] || 'foot'];
-  const best = new Map([[key(unit.c, unit.r), 0]]);
-  const queue = [[unit.c, unit.r, 0]];
-  while (queue.length) {
-    queue.sort((a, b) => a[2] - b[2]);
-    const [c, r, spent] = queue.shift();
-    for (const [dc, dr] of DIRS) {
-      const nc = c + dc, nr = r + dr;
-      if (!inBounds(nc, nr)) continue;
-      const cost = costs[terrainAt(nc, nr)];
-      if (cost === undefined) continue;
-      const occupant = units.unitAt(nc, nr);
-      if (occupant && occupant.data.faction !== unit.faction) continue;
-      const total = spent + cost;
-      if (total > unit.mov) continue;
-      const k = key(nc, nr);
-      if (best.has(k) && best.get(k) <= total) continue;
-      best.set(k, total);
-      queue.push([nc, nr, total]);
-    }
-  }
-  const move = [...best.keys()].map(unkey);
-  const [minR, maxR] = weaponOf(unit).rng;
-  const attack = new Set();
-  const stand = move.filter(([c, r]) => {
-    const o = units.unitAt(c, r);
-    return !o || o.data === unit;
-  });
-  for (const [c, r] of move) {
-    for (let dc = -maxR; dc <= maxR; dc++) {
-      for (let dr = -maxR; dr <= maxR; dr++) {
-        const d = Math.abs(dc) + Math.abs(dr);
-        if (d < minR || d > maxR) continue;
-        const nc = c + dc, nr = r + dr;
-        if (inBounds(nc, nr) && !best.has(key(nc, nr))) attack.add(key(nc, nr));
-      }
-    }
-  }
-  // For each enemy in reach, the stand tile with the best terrain defence (then closest).
-  const targets = new Map();
-  for (const o of units.list) {
-    if (o.data.faction === unit.faction) continue;
-    const pos = [o.data.c, o.data.r];
-    const from = stand
-      .filter((t) => { const d = dist(t, pos); return d >= minR && d <= maxR; })
-      .sort((a, b) => TERRAIN[terrainAt(...b)].def - TERRAIN[terrainAt(...a)].def
-        || dist(a, [unit.c, unit.r]) - dist(b, [unit.c, unit.r]))[0];
-    if (from) targets.set(o.data.id, from);
-  }
-  return { move, attack: [...attack].map(unkey), targets };
-}
 
 // ---------- Overlay art: crisp canvas-drawn cells so terrain stays visible underneath ----------
 
@@ -270,6 +208,8 @@ export function createUI({ renderer, camera, scene, units, view }) {
   const roster = document.getElementById('roster');
   const actions = document.getElementById('actions');
   const sheet = document.getElementById('sheet');
+  const turnNo = document.getElementById('turn-no');
+  const phaseEl = document.getElementById('phase');
 
   const layers = {
     danger: cellLayer(scene, 'danger', COL.danger, 0.45, 0.012),
@@ -292,12 +232,18 @@ export function createUI({ renderer, camera, scene, units, view }) {
     danger: false,
     sheet: false,
     selectedAt: 0,
+    phase: 'player', // 'player' | 'enemy'
+    turn: 1,
+    busy: false, // an animation or the enemy phase is running: input is ignored
+    over: false, // victory or defeat reached
   };
   let range = null;
 
   const portraits = new Map(units.list.map((u) => [u.data.id, portraitSVG(u.data)]));
   const data = (id) => units.byId.get(id).data;
   const selected = () => (state.selectedId ? data(state.selectedId) : null);
+  // A player unit that can still act this turn.
+  const canAct = (u) => !!u && u.faction === 'blue' && !u.done && u.hp > 0 && state.phase === 'player' && !state.busy && !state.over;
 
   // ---------- Panels ----------
 
@@ -400,14 +346,19 @@ export function createUI({ renderer, camera, scene, units, view }) {
     const u = selected();
     let html = '';
     if (state.sheet) html = btn('close', 'Back', '‹', 'Esc');
-    else if (state.mode === 'target') html = btn('cancel', 'Cancel', '‹', 'Esc');
-    else {
-      if (u && u.faction === 'blue') {
+    else if (state.busy || state.over) html = '';
+    else if (state.mode === 'target') {
+      html = btn('cancel', 'Cancel', '‹', 'Esc');
+      if (state.targetId) html += btn('confirm', 'Attack', '⚔', '↵', 'primary attack');
+    } else {
+      if (canAct(u)) {
         const n = range ? range.targets.size : 0;
         html += btn('attack', n ? `Attack · ${n}` : 'Attack', '⚔', 'A', 'primary attack', !n);
+        html += btn('wait', 'Wait', '⏳', 'W');
       }
       if (u) html += btn('inspect', 'Inspect', 'ⓘ', 'I');
       html += btn('danger', 'Danger zone', '◈', 'D', state.danger ? 'on' : '');
+      html += btn('endTurn', 'End turn', '⏭', 'E');
     }
     actions.innerHTML = html;
   }
@@ -425,7 +376,7 @@ export function createUI({ renderer, camera, scene, units, view }) {
   function dangerTiles() {
     const set = new Set();
     for (const o of units.list) {
-      if (o.data.faction !== 'red') continue;
+      if (o.data.faction !== 'red' || o.data.hp <= 0) continue;
       const rr = computeRange(o.data, units);
       for (const [c, r] of [...rr.move, ...rr.attack]) set.add(key(c, r));
     }
@@ -435,7 +386,8 @@ export function createUI({ renderer, camera, scene, units, view }) {
   function renderOverlays() {
     // Ranges follow the selected unit; with nothing selected, the hovered one (preview).
     const id = state.selectedId || state.hoverId;
-    range = id ? computeRange(data(id), units) : null;
+    // A unit that has already moved or acted can no longer walk: only its attack reach remains.
+    range = id && !state.busy ? computeRange(data(id), units, data(id).moved || data(id).done ? 0 : data(id).mov) : null;
     const u = id ? data(id) : null;
     layers.move.set(range ? range.move : []);
     layers.move.mesh.material.color.set(u && u.faction === 'red' ? COL.moveEnemy : COL.move);
@@ -462,7 +414,15 @@ export function createUI({ renderer, camera, scene, units, view }) {
     renderCard();
     renderSheet();
     renderActions();
-    for (const el of roster.children) el.classList.toggle('active', el.dataset.id === state.selectedId);
+    for (const el of roster.children) {
+      const d = data(el.dataset.id);
+      el.classList.toggle('active', el.dataset.id === state.selectedId);
+      el.classList.toggle('done', !!d.done);
+      el.classList.toggle('dead', d.hp <= 0);
+    }
+    turnNo.textContent = state.turn;
+    phaseEl.textContent = state.phase === 'player' ? 'Player Phase' : 'Enemy Phase';
+    phaseEl.className = `phase ${state.phase === 'player' ? 'blue' : 'red'}`;
   }
 
   // ---------- Commands ----------
@@ -476,10 +436,137 @@ export function createUI({ renderer, camera, scene, units, view }) {
     refresh();
   }
 
+  // ---------- Turn flow: move, act, enemy phase ----------
+
+  // Floating text over a unit (damage numbers, MISS).
+  function pop(text, id, cls = '') {
+    const v = units.headPos(id).project(camera);
+    const el = document.createElement('div');
+    el.className = `pop ${cls}`;
+    el.textContent = text;
+    el.style.left = `${(v.x * 0.5 + 0.5) * innerWidth}px`;
+    el.style.top = `${(-v.y * 0.5 + 0.5) * innerHeight}px`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1000);
+  }
+
+  // Big centred message; resolves after `ms` (use ms = 0 for one that stays).
+  let bannerEl = null;
+  async function banner(text, sub = '', ms = 1100) {
+    bannerEl?.remove();
+    bannerEl = document.createElement('div');
+    bannerEl.className = 'banner';
+    bannerEl.innerHTML = `<b>${esc(text)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}`;
+    document.body.appendChild(bannerEl);
+    if (!ms) return;
+    await sleep(ms);
+    bannerEl.remove();
+    bannerEl = null;
+  }
+
+  // Victory: the enemy is routed or a player unit holds the keep. Defeat: Brenna or the whole army falls.
+  function checkEnd() {
+    if (state.over) return true;
+    const won = !units.alive('red').length || units.alive('blue').some((u) => terrainAt(u.data.c, u.data.r) === 'K');
+    const lost = data('brenna').hp <= 0 || !units.alive('blue').length;
+    if (!won && !lost) return false;
+    state.over = true;
+    state.busy = false;
+    state.mode = 'idle';
+    refresh();
+    banner(won ? 'Victory' : 'Defeat', 'Press R to play again', 0);
+    return true;
+  }
+
+  // One exchange of blows, animated strike by strike; damage lands as each hit connects.
+  async function runCombat(a, d) {
+    for (const s of resolve(a, d, [a.c, a.r])) {
+      const att = s.by === 'a' ? a : d, def = s.by === 'a' ? d : a;
+      await units.lunge(att.id, [def.c, def.r]);
+      if (s.hit) {
+        def.hp -= s.dmg;
+        pop(s.crit ? `${s.dmg}!` : `${s.dmg}`, def.id, s.crit ? 'crit' : '');
+        refresh();
+        if (s.dmg) await units.shake(def.id);
+        if (def.hp <= 0) { await units.die(def.id); refresh(); break; }
+      } else {
+        pop('MISS', def.id, 'miss');
+      }
+      await sleep(140);
+    }
+  }
+
+  async function doMove(u, [c, r]) {
+    const path = range.pathTo(c, r);
+    if (!path.length) return;
+    state.busy = true;
+    state.mode = 'idle';
+    refresh();
+    await units.moveAlong(u.id, path);
+    u.moved = true;
+    state.busy = false;
+    refresh();
+  }
+
+  function finish(u) {
+    u.done = true;
+    u.moved = true;
+    state.busy = false;
+    state.mode = 'idle';
+    state.targetId = null;
+    select(null);
+    if (checkEnd()) return;
+    if (units.alive('blue').every((b) => b.data.done)) enemyPhase();
+  }
+
+  async function confirmAttack() {
+    const a = selected(), d = state.targetId && data(state.targetId);
+    if (!canAct(a) || !d || !range.targets.has(d.id)) return;
+    const from = range.targets.get(d.id);
+    const path = range.pathTo(...from);
+    state.busy = true;
+    state.mode = 'idle';
+    refresh();
+    if (path.length) await units.moveAlong(a.id, path);
+    await runCombat(a, d);
+    finish(a);
+  }
+
+  async function enemyPhase() {
+    state.busy = true;
+    state.phase = 'enemy';
+    state.selectedId = null;
+    state.mode = 'idle';
+    refresh();
+    await banner('Enemy Phase');
+    for (const u of units.alive('red')) {
+      if (u.data.hp <= 0) continue;
+      const act = chooseAction(u.data, units);
+      if (act?.path.length) await units.moveAlong(u.data.id, act.path);
+      if (act?.attack && act.attack.hp > 0) await runCombat(u.data, act.attack);
+      if (checkEnd()) return;
+      await sleep(160);
+    }
+    if (checkEnd()) return;
+    state.turn++;
+    state.phase = 'player';
+    for (const u of units.list) { u.data.done = false; u.data.moved = false; }
+    refresh();
+    await banner('Player Phase');
+    state.busy = false;
+    refresh();
+  }
+
   const commands = {
+    wait() {
+      const u = selected();
+      if (canAct(u)) finish(u);
+    },
+    endTurn() { if (state.phase === 'player' && !state.busy && !state.over) enemyPhase(); },
+    confirm() { if (state.mode === 'target') confirmAttack(); },
     attack() {
       const u = selected();
-      if (!u || u.faction !== 'blue' || !range || !range.targets.size) return;
+      if (!canAct(u) || !range || !range.targets.size) return;
       state.mode = 'target';
       state.targetId = range.targets.size === 1 ? [...range.targets.keys()][0] : null;
       refresh();
@@ -506,7 +593,12 @@ export function createUI({ renderer, camera, scene, units, view }) {
   addEventListener('keydown', (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     const k = e.key.toLowerCase();
-    if (k === 'escape') commands.back();
+    if (state.over && k === 'r') location.reload();
+    else if (state.busy) return;
+    else if (k === 'w') commands.wait();
+    else if (k === 'e') commands.endTurn();
+    else if (k === 'enter') commands.confirm();
+    else if (k === 'escape') commands.back();
     else if (k === 'a') commands.attack();
     else if (k === 'i') (state.sheet ? commands.close : commands.inspect)();
     else if (k === 'd') commands.danger();
@@ -531,6 +623,7 @@ export function createUI({ renderer, camera, scene, units, view }) {
     b.addEventListener('mouseenter', () => { state.hoverId = u.data.id; setCursor(u.data.c, u.data.r); refresh(); });
     b.addEventListener('mouseleave', () => { state.hoverId = null; refresh(); });
     b.addEventListener('click', () => {
+      if (state.busy) return;
       if (state.mode === 'target' && range.targets.has(u.data.id)) { state.targetId = u.data.id; refresh(); return; }
       select(u.data.id);
     });
@@ -585,12 +678,23 @@ export function createUI({ renderer, camera, scene, units, view }) {
   });
   canvas.addEventListener('click', (e) => {
     if (view.consumeDrag()) return; // that press was a pan
+    if (state.busy) return;
     const tile = pick(e);
     if (!tile) return;
     setCursor(...tile);
     const u = units.unitAt(...tile);
     if (state.mode === 'target') {
-      if (u && range.targets.has(u.data.id)) { state.targetId = u.data.id; refresh(); }
+      // First click on a marked enemy shows its forecast; clicking it again attacks.
+      if (u && range.targets.has(u.data.id)) {
+        if (state.targetId === u.data.id) confirmAttack();
+        else { state.targetId = u.data.id; refresh(); }
+      }
+      return;
+    }
+    // A free tile inside the selected unit's move range: walk there.
+    const s = selected();
+    if (!u && canAct(s) && !s.moved && range?.move.some(([c, r]) => c === tile[0] && r === tile[1])) {
+      doMove(s, tile);
       return;
     }
     if (e.pointerType === 'touch' || e.pointerType === 'pen') state.hoverId = null;

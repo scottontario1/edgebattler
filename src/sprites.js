@@ -138,6 +138,8 @@ export async function buildSprite(cls, faction, { flip = false } = {}) {
     billboard: true,
     mesh,
     setActive(a) { target = a ? 1 : 0; },
+    // Units that have acted this turn are greyed out.
+    setDone(done) { const g = done ? 0.5 : GAIN; mat.color.setRGB(g, g, g); },
     update(dt, t) {
       active += (target - active) * Math.min(1, dt * 8);
       const cos = Math.cos(isPortrait() ? TILT.portrait : TILT.landscape);
