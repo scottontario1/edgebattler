@@ -48,6 +48,24 @@ function alphaMask(img) {
   };
 }
 
+// Soft elliptical contact shadow, one shared radial-gradient texture.
+let shadowTex;
+function shadowTexture() {
+  if (shadowTex) return shadowTex;
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const g = c.getContext('2d');
+  const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  grad.addColorStop(0, 'rgba(8,10,20,0.85)');
+  grad.addColorStop(0.55, 'rgba(8,10,20,0.5)');
+  grad.addColorStop(1, 'rgba(8,10,20,0)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 128, 128);
+  shadowTex = new THREE.CanvasTexture(c);
+  shadowTex.colorSpace = THREE.SRGBColorSpace;
+  return shadowTex;
+}
+
 export const hasSprite = (cls) => cls in SPRITE_FOR;
 
 // Same interface as buildHero() in models.js: { root, setActive(bool), update(dt, t) }.
@@ -90,6 +108,15 @@ export async function buildSprite(cls, faction, { flip = false } = {}) {
 
   const root = new THREE.Group();
   root.add(mesh);
+  // Contact shadow under the feet/hooves, sized from the drawing's own foot span (manifest footWidth)
+  // so boots and hooves sit in a dark pool instead of hovering above the faction ring.
+  const sw = Math.max(0.55, info.footWidth * 1.35);
+  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(sw, sw * 0.55).rotateX(-Math.PI / 2),
+    new THREE.MeshBasicMaterial({ map: shadowTexture(), transparent: true, opacity: 0.9, depthWrite: false,
+      polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+  shadow.position.set(0, 0.018, 0.03);
+  shadow.renderOrder = 2;
+  root.add(shadow);
   let active = 0;
   let target = 0;
   return {
