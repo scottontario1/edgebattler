@@ -253,7 +253,8 @@ export function createUI({ renderer, camera, scene, units, view }) {
     selectedReserveId: null,
     upgradeChoice: null,
     queuedSpellCards: {},
-    trayCollapsed: false,
+    // Short landscape (phone on its side) has no room for an open tray: start collapsed, one tap opens it.
+    trayCollapsed: matchMedia('(max-height: 500px) and (min-aspect-ratio: 1/1) and (min-width: 561px)').matches,
     notice: '',
   };
   let cardState = createCardState({ population: units.alive('blue').length });
@@ -564,7 +565,7 @@ export function createUI({ renderer, camera, scene, units, view }) {
     state.busy = false;
     state.mode = 'idle';
     refresh();
-    banner(winner ? 'Victory' : 'Defeat', winner ? 'The enemy keep has fallen · Press R to restart' : 'Your army has fallen · Press R to restart', 0);
+    banner(winner ? 'Victory' : 'Defeat', winner ? 'The enemy keep has fallen' : 'Your army has fallen', 0);
     return true;
   }
 
@@ -693,6 +694,7 @@ export function createUI({ renderer, camera, scene, units, view }) {
     const canReserve = records.some((unit) => unit.state === 'reserve');
     const canField = records.some((unit) => unit.state !== 'reserve');
     state.upgradeChoice = { ids, survivorId: ids[0], destination: canReserve ? 'reserve' : canField ? 'field' : 'reserve' };
+    state.trayCollapsed = false; // the dialog lives in the tray body
     refresh();
   }
 
@@ -1010,6 +1012,9 @@ export function createUI({ renderer, camera, scene, units, view }) {
   addEventListener('keydown', (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     const k = e.key.toLowerCase();
+    // Keys typed into a form control, or Enter on a focused button, belong to that control.
+    const t = e.target;
+    if (t?.closest?.('select, input, textarea') || (k === 'enter' && t?.closest?.('button'))) return;
     if ((state.over && k === 'r') || (state.over && k === 'enter')) commands.restart();
     else if (state.busy) return;
     else if (k === 'enter') {

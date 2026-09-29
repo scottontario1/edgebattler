@@ -1,0 +1,52 @@
+/* On-map plates and ownership pennants. Purely visual: never receives pointer events. */
+.hud > .plates {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.plates .plate, .plates .pennant {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+.plates .plate {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 8px;
+  border-bottom: 2px solid var(--blue);
+  background: rgba(11, 18, 34, 0.82);
+  box-shadow: 0 0 0 1px rgba(201, 162, 74, 0.5), 0 2px 5px rgba(0, 0, 0, 0.5);
+  color: var(--ivory);
+  transition: opacity 0.15s;
+}
+.plates .plate[data-faction="red"] { border-bottom-color: var(--red); }
+.plates .plate.selected { box-shadow: 0 0 0 1px var(--gold-bright), 0 0 8px rgba(242, 207, 107, 0.6), 0 2px 5px rgba(0, 0, 0, 0.5); }
+.plates .plate.faded { opacity: 0.25; }
+.plates .plate > span { display: inline-flex; align-items: center; line-height: 0; }
+.plates .plate svg { display: block; }
+.plates .pl-stars { color: var(--gold-bright); }
+.plates .pips .pip.off { opacity: 0.3; }
+.plates .pl-stance { color: #b8d2ff; }
+.plates .plate[data-faction="red"] .pl-stance { color: #ffc2bb; }
+.plates .pl-energy { color: var(--cyan); }
+.plates .pl-status.barrier { color: var(--gold-bright); }
+.plates .pl-status.ward { color: var(--cyan); }
+
+/* Pennants: owner colour on the cloth; neutral is a dashed grey outline. */
+.plates .pennant .cloth { fill: var(--muted); }
+.plates .pennant.blue .cloth { fill: var(--blue); stroke: #dbe8ff; stroke-width: 0.8; }
+.plates .pennant.red .cloth { fill: var(--red); stroke: #ffd9d4; stroke-width: 0.8; }
+.plates .pennant.neutral .cloth { fill: rgba(154, 166, 189, 0.35); stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 1.6; }
+.plates .pennant svg { display: block; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7)); }
+.plates .pennant.changed svg { animation: pennant-in 0.4s ease-out; transform-origin: 50% 100%; }
+@keyframes pennant-in { from { transform: scale(0.3); } 60% { transform: scale(1.25); } }
+@media (prefers-reduced-motion: reduce) {
+  .plates .pennant.changed svg { animation: none; }
+  .plates .plate { transition: none; }
+}

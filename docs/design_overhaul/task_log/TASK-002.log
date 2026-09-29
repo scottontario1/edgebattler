@@ -1,1 +1,4 @@
 2026-09-29T15:42:31Z root: Created TASK-002 brief (DES-003 (tray), DES-006 (locked state), DES-011); exclusive ownership: src/ui/tray.js, src/ui/tray.css.
+2026-09-29T15:45:12Z TASK-002: rewrote src/ui/tray.js (ledger, toggle, #planning-body, ResizeObserver, trayInset) and tray.css (L/S/P layouts, lock, budgets); starting verification
+2026-09-29T16:00:52Z TASK-002: verified L/S/P: heights 168/148/188 expanded, 42/40/44 collapsed; --tray-h matches; lock opacity 0.5; meter fill exact; toggle 36/36/44; trayInset matches; build passes; no page errors. Added Enter/Space stopPropagation on toggle. Integration request: ui.js window Enter handler should ignore events from buttons/selects
+2026-09-29T16:03:09Z root: TASK-002 verified (L/S/P heights 168/148/188, collapsed 42/40/44, overflow visible, --tray-h in sync); TASK-005 unblocked.

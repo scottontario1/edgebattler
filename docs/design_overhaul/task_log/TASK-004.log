@@ -1,1 +1,7 @@
 2026-09-29T15:42:31Z root: Created TASK-004 brief (DES-006); exclusive ownership: src/ui/feed.js, src/ui/feed.css.
+2026-09-29T15:44:50Z TASK-004: read brief, backlog, feed.js/css, ui.js call sites (sync/pop/banner/notice); starting implementation
+2026-09-29T15:46:49Z TASK-004: wrote feed.js (feed log, pill states, banner kinds, pop stagger/clamp) and feed.css; node --check ok; starting screenshots
+2026-09-29T15:54:33Z TASK-004: L/S/P feed screenshots + rect checks done (no overlaps); banners tuned (icons both sides, width:max-content)
+2026-09-29T15:57:29Z TASK-004: fixed expiry to use real elapsed time (interval throttled in headless); D3 verified (3->0 at 8s, hover pause, reduced-motion persist)
+2026-09-29T16:14:29Z TASK-004: D1-D7 verified (L/S/P shots after-TASK-004-*.png, rect checks no overlaps, 7s expiry, 4 banner kinds, restart dispatches keydown r, pops staggered 14px + clamped, no page errors, npm run build ok). Integration requests: none required.
+2026-09-29T16:16:28Z root: TASK-004 verified independently (3 entries/3 distinct icons, no overlap with objective/turn/roster/card/tray at L, pops 450/464, Victory banner 48px + 44px restart). Feed overlays a transient strip of the top-right map (accepted). Follow-up for root: drop 'Press R to restart' from the ui.js end-banner subtitle.

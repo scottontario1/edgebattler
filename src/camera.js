@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { W, H } from './map.js';
+import { trayInset } from './ui/tray.js';
 
 // Orthographic camera tilted 40° from horizontal so cliffs, the river gorge and the
 // backdrop read as terrain height, while unit models still face the viewer.
@@ -24,10 +25,13 @@ const mapVC = () => 0.45 * COS; // centre of that box, in view-space v, relative
 // column on the right, so the map takes the full height between them.
 export const isPortrait = () => innerWidth <= 820 && innerHeight >= innerWidth || innerWidth <= 560;
 const isShort = () => !isPortrait() && innerHeight <= 500;
+// The bottom inset follows the measured planning tray (src/ui/tray.js), so collapsing it gives the
+// map the space back. Portrait adds the unit card and terrain chip that sit above the tray.
 function insets() {
-  if (isPortrait()) return { top: 118, bottom: 190, left: 8, right: 8 };
-  if (isShort()) return { top: 40, bottom: 10, left: 206, right: 60 };
-  return { top: 24, bottom: 118, left: 16, right: 16 };
+  const tray = trayInset();
+  if (isPortrait()) return { top: 126, bottom: (tray || 142) + 118, left: 8, right: 8 };
+  if (isShort()) return { top: 40, bottom: (tray || 0) + 6, left: 206, right: 60 };
+  return { top: 24, bottom: (tray || 118) + 8, left: 16, right: 16 };
 }
 
 export function createCamera(dom) {
@@ -130,6 +134,12 @@ export function createCamera(dom) {
   dom.addEventListener('pointercancel', release);
 
   resize();
+  // Re-frame when the tray changes height (collapse, layout switch).
+  const trayEl = document.getElementById('planning');
+  if (trayEl && typeof ResizeObserver !== 'undefined') {
+    let lastH = trayEl.offsetHeight;
+    new ResizeObserver(() => { if (trayEl.offsetHeight !== lastH) { lastH = trayEl.offsetHeight; resize(); } }).observe(trayEl);
+  }
   // ?zoom=2&focus=12,2 for screenshots and debugging.
   const q = new URLSearchParams(location.search);
   if (q.has('zoom')) setZoom(+q.get('zoom'));

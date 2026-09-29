@@ -6,20 +6,22 @@ Evidence lives in `docs/design_overhaul/evidence/` (`before-*.png` were captured
 
 Severity: Critical = blocks play or use, High = core flow is hard to read or use, Medium = works but poor, Low = polish.
 
-| ID | Sev | Gap | Task |
-|---|---|---|---|
-| DES-001 | Critical | UI crashes on load (`canAfford` never imported) | root, fixed |
-| DES-002 | High | Hand cards are tiny, clipped and look identical | TASK-001 |
-| DES-003 | High | Tray, unit card, sheet and camera framing collide | TASK-002, TASK-003, root |
-| DES-004 | High | New persistent state is invisible on the map | TASK-006 |
-| DES-005 | High | Inspect sheet is half hidden and omits the new state | TASK-003 |
-| DES-006 | Medium | Battle has no readable results and the tray never reflects it | TASK-004, TASK-002 |
-| DES-007 | Medium | Roster strip carries no state | TASK-003 |
-| DES-008 | Medium | Combine, spell queue and skill loadouts are inline micro-controls | TASK-005, TASK-001 |
-| DES-009 | Medium | Type below 10px and touch targets below 36px | TASK-001, 003, 005 |
-| DES-010 | Low | Stale wording and hint bar hidden behind the tray | root |
-| DES-011 | Low | Layout numbers hard-coded and out of sync | root, TASK-002 |
-| DES-012 | Low | Stance control has no state affordance | root |
+| ID | Sev | Gap | Task | Status |
+|---|---|---|---|---|
+| DES-001 | Critical | UI crashes on load (`canAfford` never imported) | root | fixed |
+| DES-002 | High | Hand cards are tiny, clipped and look identical | TASK-001 | fixed |
+| DES-003 | High | Tray, unit card, sheet and camera framing collide | TASK-002, TASK-003, root | fixed (S starts with the tray collapsed) |
+| DES-004 | High | New persistent state is invisible on the map | TASK-006 | fixed (plates + pennants); deploy/spell tile colours still reuse move-cyan |
+| DES-005 | High | Inspect sheet is half hidden and omits the new state | TASK-003 | fixed |
+| DES-006 | Medium | Battle has no readable results and the tray never reflects it | TASK-004, TASK-002 | fixed |
+| DES-007 | Medium | Roster strip carries no state | TASK-003 | fixed (reserves still not shown) |
+| DES-008 | Medium | Combine, spell queue and skill loadouts are inline micro-controls | TASK-005, TASK-001 | fixed |
+| DES-009 | Medium | Type below 10px and touch targets below 36px | TASK-001, 003, 005 | fixed (measured; see task logs) |
+| DES-010 | Low | Stale wording and hint bar hidden behind the tray | root | fixed ("Round", hint above the tray) |
+| DES-011 | Low | Layout numbers hard-coded and out of sync | root, TASK-002 | fixed (`--tray-h`, `trayInset()`) |
+| DES-012 | Low | Stance control has no state affordance | root | open |
+
+Remaining after this pass: DES-012; deploy-target and spell-target overlays still use the movement cyan; the hand row is cramped at P when a skill loadout chip is showing; reserve cards use a glyph, not the unit portrait; the roster has no strip at S; no Protect stance UI (gameplay); enemy phase has no camera follow.
 
 ---
 

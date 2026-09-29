@@ -143,6 +143,10 @@ html, body {
 }
 .dock > * { pointer-events: auto; }
 .dock .panel { position: relative; }
+/* Landscape: the unit card sits bottom-right above the tray, clear of the army's start area. */
+@media (min-aspect-ratio: 1/1) and (min-height: 501px) and (min-width: 561px) {
+  .dock { left: auto; right: calc(var(--edge) + var(--safe-r)); align-items: flex-end; }
+}
 
 /* ---------- Actions (lower right) ---------- */
 .actions {
@@ -191,9 +195,8 @@ html, body {
 
 .hint {
   position: absolute;
-  left: 50%;
-  bottom: calc(var(--edge) + var(--safe-b) + 2px);
-  transform: translateX(-50%);
+  left: calc(var(--edge) + var(--safe-l));
+  bottom: calc(var(--edge) + var(--safe-b) + var(--tray-h, 150px) + 6px);
   color: rgba(243, 234, 214, 0.55);
   font-size: 11px;
   text-shadow: 0 1px 3px #000;
