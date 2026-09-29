@@ -249,6 +249,8 @@ Upgraded units need an obvious star badge and a restrained visual accent. The fi
 5. **Territory and pacing:** captured deployment locations, resource/draw/population balance, reserve recovery and recycling, champion respawn, and readable battle summaries. Confirm positioning and energy accumulation matter alongside card luck; ordinary casualties remain permanent.
 6. **Presentation and expansion:** group orders, mobile dock polish, matching portraits, sound, dialogue, additional classes, and multiple maps. Save/load and campaign progression follow once the core match loop is stable.
 
+**Implemented: match controller, AI and data.** `src/match.js` now owns all match state and rules for both the browser and the headless simulator; `src/ai/commander.js` provides passive, greedy and heuristic commanders for either side; every game (browser or simulated) is logged as JSON Lines and can be replayed from its seed and actions (`src/log.js`, `tools/sim/`). First simulation findings (100 games, heuristic vs greedy, 30-round cap, both side assignments): 96% of games hit the round cap. Causes to tune: a champion standing on its own keep takes 0 damage from recruits (13 DEF + 3 castle DEF against 16 attack), so keeps are almost never taken; hands fill with unplayable cards once population reaches the cap (65-80 blocked draws per game); Supply sits at the 6 cap most of the game.
+
 Keep card/inventory, orders, and battle state independent of DOM handlers. The current turn flow in `src/ui.js` should move into a dedicated game-state controller as automatic resolution is introduced. Reuse `src/rules.js` and `src/combat.js`; adapt `src/ai.js` for both stance-driven friendly decisions and enemy planning.
 
 ## Decisions to tune through the prototype
