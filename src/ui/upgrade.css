@@ -1,0 +1,19 @@
+/* Queued spells and the combine dialog. Owned by TASK-005. */
+.queued-spells, .upgrade-prompts { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.queued-spell { display: flex; align-items: center; gap: 3px; color: #b8d2ff; font-size: 9px; white-space: nowrap; }
+.queue-cancel, .upgrade-prompt, .upgrade-confirm, .upgrade-cancel, .upgrade-choice select { border: 1px solid rgba(201, 162, 74, 0.4); border-radius: 3px; background: var(--panel-raised); color: var(--ivory); font: 10px var(--font-ui); }
+.queue-cancel { width: 17px; height: 17px; padding: 0; color: var(--warm); cursor: pointer; }
+.upgrade-prompt, .upgrade-confirm, .upgrade-cancel { flex: none; padding: 3px 6px; cursor: pointer; }
+.upgrade-prompt { color: var(--gold-bright); }
+.upgrade-choice { display: flex; align-items: center; gap: 4px; }
+.upgrade-choice label { display: flex; align-items: center; gap: 3px; color: var(--muted); font-size: 9px; }
+.upgrade-choice select { max-width: 110px; padding: 2px; }
+.upgrade-preview { overflow: hidden; color: var(--ivory); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.upgrade-confirm { border-color: var(--gold); }
+
+@media (max-aspect-ratio: 1/1) and (max-width: 820px), (max-width: 560px) {
+  .queued-spells { overflow-x: auto; }
+  .upgrade-choice label { font-size: 8px; }
+  .upgrade-choice select { max-width: 82px; }
+}
+.upgrade-prompt:focus-visible, .queue-cancel:focus-visible { outline: 2px solid var(--cyan); outline-offset: 1px; }
