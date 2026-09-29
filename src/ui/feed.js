@@ -29,6 +29,7 @@ const ICONS = {
 
 /** Pick an icon + tone for one notice fragment by keyword. */
 function classify(text) {
+  if (/reinforce/i.test(text)) return { icon: 'flag', tone: 'bad' };
   if (/lost village/i.test(text)) return { icon: 'flag', tone: 'bad' };
   if (/captured|village/i.test(text)) return { icon: 'flag', tone: 'good' };
   if (/fallen|slain|killed|dies|defeated/i.test(text)) return { icon: 'skull', tone: 'bad' };

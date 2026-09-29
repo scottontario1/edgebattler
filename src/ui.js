@@ -7,6 +7,7 @@ import { CARD_LIMITS, UNIT_CARDS, SPELL_CARDS, SKILL_CARDS, createCardState, dra
 import { advanceAbilityRound, initializeAbilityState, queueSpell, cancelSpell, resolveAbilityActivation, resolveQueuedSpells, equipTypeSkill, transferTypeSkill, skillsForUnitType } from './abilities.js';
 import { findUpgradeMatches, previewUpgrade, combineUnits } from './upgrades.js';
 import { resolveBattleRound } from './battle.js';
+import { createEnemyCards, refreshEnemyCards, planEnemyReinforcements } from './enemy.js';
 import { createRecruitUnit, createHeroRespawnData } from './units.js';
 import { esc } from './ui/util.js';
 import { handHTML, reservesHTML, detailHTML, loadoutsHTML } from './ui/hand.js';
@@ -628,6 +629,44 @@ export function createUI({ renderer, camera, scene, units, view }) {
     refresh();
   }
 
+  // ---------- Enemy commander: recruits and deploys under the same card rules ----------
+  let enemy = null;
+  let enemySeq = 0;
+  const redPopulation = () => units.alive('red').reduce((sum, entry) => sum + (entry.data.population || 1), 0);
+
+  function enemyDeploymentTiles() {
+    const out = new Map();
+    for (const [location, owner] of territory) {
+      if (owner !== 'red') continue;
+      const [c, r] = location.split(',').map(Number);
+      for (const [dc, dr] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) if (inBounds(c + dc, r + dr)) out.set(`${c + dc},${r + dr}`, [c + dc, r + dr]);
+    }
+    return [...out.values()];
+  }
+
+  /** Grant the enemy its round's Supply and cards (after round 1), then recruit and deploy. Returns a notice or ''. */
+  function planEnemy(first = false) {
+    enemy = first ? createEnemyCards({ population: redPopulation() }) : refreshEnemyCards(enemy, redPopulation());
+    const foes = units.alive('blue').map((entry) => entry.data);
+    const plan = planEnemyReinforcements(enemy, {
+      tiles: enemyDeploymentTiles(),
+      canStand: (unitId, c, r) => !units.unitAt(c, r) && MOVE_COST[MOVE_TYPE[unitId] || 'foot'][terrainAt(c, r)] !== undefined,
+      threat: (c, r) => foes.reduce((best, f) => Math.min(best, Math.abs(f.c - c) + Math.abs(f.r - r)), 99),
+    });
+    enemy = plan.enemy;
+    for (const d of plan.deployments) {
+      enemySeq += 1;
+      const unit = createRecruitUnit(d.unitId, `enemy-${enemySeq}-${d.unitId}`, 'red', d.c, d.r);
+      Object.assign(unit, initializeAbilityState(unit, { stance: UNIT_CARDS[d.unitId]?.defaultStance }));
+      unit.state = 'field';
+      unit.planningMoved = false;
+      units.addUnit(unit);
+    }
+    if (!plan.deployments.length) return '';
+    const names = plan.deployments.map((d) => d.name);
+    return `Enemy reinforcements: ${names.join(', ')}`;
+  }
+
   function deployReserveAt(c, r) {
     const reserve = cardState.reserves.find((unit) => unit.id === state.selectedReserveId);
     if (!reserve) return false;
@@ -884,6 +923,8 @@ export function createUI({ renderer, camera, scene, units, view }) {
       entry.data.moved = false;
     }
     tryHeroRespawn();
+    const reinforcements = planEnemy();
+    if (reinforcements) state.notice = [state.notice, reinforcements].filter(Boolean).join(' · ');
     refresh();
     await banner('Planning', 'Cards, Supply, and unit state carry forward', 650);
     state.busy = false;
@@ -1043,6 +1084,7 @@ export function createUI({ renderer, camera, scene, units, view }) {
   }
 
   units.list.forEach((entry) => addRosterUnit(entry.data));
+  state.notice = planEnemy(true);
 
   // ---------- Picking ----------
 

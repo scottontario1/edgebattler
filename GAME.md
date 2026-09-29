@@ -48,7 +48,7 @@ A round has four stages:
 
 There is no requirement to mark every friendly unit as finished. A unit without a new order uses its existing stance and objective. An army with no cards or resources available can still resolve its battle.
 
-The first version is single-player against an enemy commander. Proposed fairness baseline: the enemy recruits and plans under the same core rules. Enemy recruitment and orders lock before battle begins. Shared combat replaces the current sequence of manually ordered player attacks followed by an enemy-only action phase. Competitive multiplayer is outside the first implementation slice.
+The first version is single-player against an enemy commander. Implemented: the enemy draws from its own seeded hand, gains Supply each round, and recruits and deploys unit cards (most expensive affordable first) at its keep and any red-held village, subject to the same population cap; it does not yet cast spells or equip skills. Proposed fairness baseline: the enemy recruits and plans under the same core rules. Enemy recruitment and orders lock before battle begins. Shared combat replaces the current sequence of manually ordered player attacks followed by an enemy-only action phase. Competitive multiplayer is outside the first implementation slice.
 
 ## Cards, hand, and resources
 
