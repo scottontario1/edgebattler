@@ -340,6 +340,8 @@ export function createUI({ renderer, camera, scene, units, view }) {
         options: chosen.map((unit) => ({ id: unit.id, name: unit.name })),
         canReserve: chosen.some((unit) => unit.state === 'reserve'),
         canField: chosen.some((unit) => unit.state !== 'reserve'),
+        records: chosen,
+        preview: upgradePreview,
         ok: upgradePreview.ok,
         summary: upgradePreview.ok ? `${upgradePreview.stars.to}★ · HP ${upgradePreview.unit.hp}/${upgradePreview.unit.maxHp} · STR ${upgradePreview.unit.str} · Population ${upgradePreview.population.before} → ${upgradePreview.population.after}` : upgradePreview.reason,
       };
@@ -1117,6 +1119,14 @@ export function createUI({ renderer, camera, scene, units, view }) {
 
   setCursor(...state.cursorTile);
   cursor.visible = false;
+  // Dev only: lets design checks drive UI states without playing to them (see docs/design_overhaul/tasks).
+  if (import.meta.env.DEV) {
+    window.__ui = {
+      state, feed, plates, commands, refresh, territory, units,
+      get cardState() { return cardState; }, set cardState(v) { cardState = v; },
+      get skillLoadouts() { return skillLoadouts; }, set skillLoadouts(v) { skillLoadouts = v; },
+    };
+  }
   // ?select=brenna&act=attack|inspect|danger|grid — reproducible states for screenshots.
   const q = new URLSearchParams(location.search);
   for (const spec of (q.get('place') || '').split(';').filter(Boolean)) { // place=pike_r1:7,6
