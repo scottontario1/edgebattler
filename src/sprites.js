@@ -122,6 +122,7 @@ export async function buildSprite(cls, faction, { flip = false } = {}) {
   return {
     root,
     billboard: true,
+    mesh,
     setActive(a) { target = a ? 1 : 0; },
     update(dt, t) {
       active += (target - active) * Math.min(1, dt * 8);

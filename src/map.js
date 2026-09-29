@@ -156,7 +156,7 @@ function tint(geo, hex, dark = 0.6, light = 1.2) {
   return geo;
 }
 
-const PINE_GREENS = [0x1d4a2a, 0x22532e, 0x285c30, 0x1a4430, 0x2f6434];
+const PINE_GREENS = [0x2a6a3c, 0x2f7440, 0x357c44, 0x27633c, 0x3a7a46];
 
 function pine(parent, x, z, y, rand, scale = 1) {
   const s = scale * (0.8 + rand() * 0.45);
@@ -168,7 +168,7 @@ function pine(parent, x, z, y, rand, scale = 1) {
   const tiers = [[0.19, 0.2, 0.17], [0.155, 0.19, 0.27], [0.115, 0.17, 0.36], [0.07, 0.15, 0.45]];
   for (const [r, h, ty] of tiers) {
     const cone = new THREE.ConeGeometry(r * (0.92 + rand() * 0.16), h, 8);
-    add(g, tint(cone, jitterHex(green, rand, 0.05), 0.55, 1.25), foliageMat, 0, ty, 0).rotation.y = rand() * 3;
+    add(g, tint(cone, jitterHex(green, rand, 0.05), 0.7, 1.2), foliageMat, 0, ty, 0).rotation.y = rand() * 3;
   }
   parent.add(g);
 }
@@ -179,8 +179,8 @@ function oak(parent, x, z, y, rand, scale = 1) {
   g.position.set(x, y, z);
   g.scale.setScalar(s);
   add(g, new THREE.CylinderGeometry(0.025, 0.04, 0.18, 6), trunkMat, 0, 0.09, 0);
-  const palette = [0x4c8a2c, 0x5a9632, 0x3f7a2a, 0x6c9a2e, 0xb0772a];
-  const base = palette[Math.floor(rand() * (rand() < 0.1 ? 5 : 4))];
+  const palette = [0x4f8a34, 0x5a9438, 0x437c32, 0x639a34, 0xb0772a];
+  const base = palette[Math.floor(rand() * (rand() < 0.04 ? 5 : 4))];
   for (let i = 0; i < 5; i++) {
     const r = 0.09 + rand() * 0.05;
     add(g, tint(new THREE.IcosahedronGeometry(r, 1), jitterHex(base, rand, 0.1), 0.6, 1.2), foliageMat,
@@ -566,7 +566,7 @@ function grassBlades(tiles, rand, time) {
        transformed.z += sway * 0.01;`,
     );
   };
-  const perTile = { G: 55, V: 30, F: 25 };
+  const perTile = { G: 30, V: 20, F: 18 };
   const total = tiles.reduce((n, t) => n + (perTile[t.t] || 0), 0);
   const mesh = new THREE.InstancedMesh(geo, material, total);
   mesh.receiveShadow = true;
@@ -1271,8 +1271,8 @@ export function buildMap(scene) {
   const mapPlane = (y) => new THREE.PlaneGeometry(W, H).rotateX(-Math.PI / 2).translate(0, y, 0);
   const waterNormal = waterNormalTexture();
   const waterMat = new THREE.MeshPhysicalMaterial({
-    color: 0xffffff, map: river.color, roughness: 0.08, metalness: 0, transparent: true, opacity: 0.93, envMapIntensity: 0.5,
-    normalMap: waterNormal, normalScale: new THREE.Vector2(0.18, 0.18), clearcoat: 0.6, clearcoatRoughness: 0.1,
+    color: 0xffffff, map: river.color, roughness: 0.2, metalness: 0, transparent: true, opacity: 0.94, envMapIntensity: 0.25,
+    normalMap: waterNormal, normalScale: new THREE.Vector2(0.07, 0.07), clearcoat: 0.15, clearcoatRoughness: 0.35,
   });
   waterNormal.repeat.set(20, 15);
   const water = new THREE.Mesh(mapPlane(WATER_Y), waterMat);

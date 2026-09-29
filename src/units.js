@@ -358,6 +358,9 @@ export function createUnits(scene) {
     byId,
     overlay,
     unitAt: (c, r) => list.find((u) => u.data.c === c && u.data.r === r),
+    // Sprite quads are rectangles to the depth/normal pass; the ambient-occlusion pass hides them
+    // (main.js) so the terrain around a sprite is not left as an un-occluded rectangle.
+    spriteMeshes: () => list.filter((u) => u.model?.mesh).map((u) => u.model.mesh),
     toggleModels() {
       useModels = !useModels;
       list.forEach(applyStyle);

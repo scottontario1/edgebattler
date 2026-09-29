@@ -408,11 +408,11 @@ function strokes(g, s, rand, count, color, len, width) {
 
 // Seamless pattern tiles (512 px = 4 tiles in the atlas).
 const meadowTile = (seed) => paintCanvas(512, seed, (g, s, rand) => {
-  g.fillStyle = hsl(90, 52, 38);
+  g.fillStyle = hsl(92, 40, 40);
   g.fillRect(0, 0, s, s);
-  blotches(g, s, rand, 30, hsl(80, 60, 48, 0.3), hsl(104, 50, 26, 0.25));
-  strokes(g, s, rand, 5200, (r) => hsl(82 + r() * 24, 46 + r() * 18, 30 + r() * 16, 0.7), [3, 6], [1, 1.2]);
-  strokes(g, s, rand, 500, (r) => hsl(76 + r() * 12, 58, 50 + r() * 8, 0.45), [2, 4], [0.8, 0.8]);
+  blotches(g, s, rand, 30, hsl(84, 46, 48, 0.24), hsl(104, 42, 30, 0.2));
+  strokes(g, s, rand, 2600, (r) => hsl(86 + r() * 16, 38 + r() * 10, 34 + r() * 9, 0.42), [3, 5], [1, 1]);
+  strokes(g, s, rand, 260, (r) => hsl(80 + r() * 10, 46, 47 + r() * 6, 0.3), [2, 3], [0.8, 0.6]);
   speckle(g, s, rand, 70, (r) => (r() < 0.45 ? '#f6e27a' : r() < 0.6 ? '#f0f0ff' : '#e6a0c8'));
 });
 
@@ -529,22 +529,22 @@ export function terrainAtlas({ cols, rows, px = 128, cellClass, roads = [], fiel
 
   // Meadow with broad sunny and shady drifts.
   fillWith(meadowTile(seed + 1))(g, w, h);
-  paintThrough(g, makeMask(w, h, noise, everywhere, 0, (a, n) => smooth(0.56, 0.76, n) * 0.4), fillWith(hsl(70, 78, 60)));
-  paintThrough(g, makeMask(w, h, noise, everywhere, 0, (a, n) => smooth(0.44, 0.24, n) * 0.4), fillWith(hsl(112, 55, 24)));
+  paintThrough(g, makeMask(w, h, noise, everywhere, 0, (a, n) => smooth(0.56, 0.76, n) * 0.26), fillWith(hsl(76, 60, 58)));
+  paintThrough(g, makeMask(w, h, noise, everywhere, 0, (a, n) => smooth(0.44, 0.24, n) * 0.28), fillWith(hsl(112, 46, 28)));
 
   // Macro variation: broad warm (sunlit, golden) and cool (lush, blue-green) regions a few tiles
   // across, so the meadow pattern never reads as a repeat.
   const macro = noiseField(w, h, rand, [[cols * 0.28, 1], [cols * 0.6, 0.4]]);
-  paintThrough(g, makeMask(w, h, macro, everywhere, 0, (a, n) => smooth(0.55, 0.8, n) * 0.28), fillWith(hsl(52, 70, 62)));
-  paintThrough(g, makeMask(w, h, macro, everywhere, 0, (a, n) => smooth(0.45, 0.2, n) * 0.3), fillWith(hsl(128, 45, 26)));
+  paintThrough(g, makeMask(w, h, macro, everywhere, 0, (a, n) => smooth(0.55, 0.8, n) * 0.18), fillWith(hsl(56, 58, 60)));
+  paintThrough(g, makeMask(w, h, macro, everywhere, 0, (a, n) => smooth(0.45, 0.2, n) * 0.2), fillWith(hsl(128, 38, 30)));
 
   // Canopy shade and leaf litter spill a little beyond the forest edge, and damp, lusher grass
   // lines the river gorge, so the boundaries blend over neighbouring tiles.
-  paintThrough(g, makeMask(w, h, noise, cellsOf('forest'), px * 0.35, (a, n) => smooth(0.05, 0.6, a + (n - 0.5) * 0.3) * 0.45), fillWith(hsl(110, 45, 16)));
+  paintThrough(g, makeMask(w, h, noise, cellsOf('forest'), px * 0.6, (a, n) => smooth(0.05, 0.7, a + (n - 0.5) * 0.5) * 0.32), fillWith(hsl(112, 40, 20)));
   paintThrough(g, makeMask(w, h, noise, cellsOf('bed'), px * 0.3, (a, n) => smooth(0.02, 0.4, a + (n - 0.5) * 0.2) * 0.35), fillWith(hsl(120, 50, 24)));
   paintThrough(g, makeMask(w, h, noise, cellsOf('rock'), px * 0.3, (a, n) => smooth(0.1, 0.5, a + (n - 0.5) * 0.5) * 0.5), fillWith(rockyTile(seed + 8)));
 
-  paintThrough(g, makeMask(w, h, noise, cellsOf('forest'), px * 0.16, ragged(0.7)), fillWith(forestFloorTile(seed + 2)));
+  paintThrough(g, makeMask(w, h, noise, cellsOf('forest'), px * 0.26, ragged(1.0, 0.38, 0.62)), fillWith(forestFloorTile(seed + 2)));
   paintThrough(g, makeMask(w, h, noise, cellsOf('rock'), px * 0.2, ragged(0.7, 0.45, 0.62)), fillWith(rockyTile(seed + 3)));
   paintThrough(g, makeMask(w, h, noise, cellsOf('stone'), px * 0.05, ragged(0.3)), fillWith(pavingTile(seed + 4)));
 
@@ -639,7 +639,7 @@ export function riverTextures({ cols, rows, px = 64, isWater, rocks = [], spots 
       const n = fbm(tx * 2.5, ty * 2.5, seed), n2 = fbm(tx * 9, ty * 9, seed + 7);
       const depth = smooth(0.02, 0.5, d + (n - 0.5) * 0.2);
       const k1 = smooth(0, 0.5, depth), k2 = smooth(0.5, 1, depth);
-      const streak = (vnoise(tx * 16, ty * 2.5, 0, seed + 3) - 0.5) * 10;
+      const streak = (vnoise(tx * 16, ty * 2.5, 0, seed + 3) - 0.5) * 4;
       for (let ch = 0; ch < 3; ch++) {
         ci.data[i + ch] = shallow[ch] + (mid[ch] - shallow[ch]) * k1 + (deep[ch] - mid[ch]) * k2 + streak;
       }
@@ -648,11 +648,11 @@ export function riverTextures({ cols, rows, px = 64, isWater, rocks = [], spots 
       let f = 1 - smooth(0.012, 0.06 + n2 * 0.08, d);
       for (const k of near.get(`${c},${r}`) ?? []) {
         const dx = tx - k.x, dy = ty - k.y, rd = Math.hypot(dx, dy) - k.r;
-        f = Math.max(f, 1 - smooth(0, 0.045 + n2 * 0.06 + (k.wake ? 0 : k.r * 0.6), rd));
+        f = Math.max(f, (1 - smooth(0, 0.03 + n2 * 0.04 + (k.wake ? 0 : k.r * 0.6), rd)) * (k.wake ? 0.6 : 1));
         if (k.wake && dy > 0 && dy < 0.45) {
           const spread = k.r * (0.9 + dy * 1.6);
           const wake = (1 - smooth(spread * 0.5, spread, Math.abs(dx))) * (1 - dy / 0.45);
-          f = Math.max(f, wake * smooth(0.3, 0.7, vnoise(tx * 30, ty * 8, 0, seed + 5)));
+          f = Math.max(f, wake * 0.45 * smooth(0.3, 0.7, vnoise(tx * 30, ty * 8, 0, seed + 5)));
         }
       }
       f *= 0.6 + 0.4 * n2;

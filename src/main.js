@@ -61,6 +61,15 @@ gtao.updateGtaoMaterial({ radius: 0.35, distanceExponent: 1, thickness: 1, scale
 gtao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 16 });
 gtao.blendIntensity = 0.85;
 composer.addPass(gtao);
+// The AO pass sees every sprite as a solid rectangle (its depth/normal override ignores alpha),
+// leaving an un-occluded box of ground around each unit. Hide the quads for that pass only.
+const gtaoRender = gtao.render.bind(gtao);
+gtao.render = (...args) => {
+  const quads = units.spriteMeshes();
+  quads.forEach((m) => { m.visible = false; });
+  gtaoRender(...args);
+  quads.forEach((m) => { m.visible = true; });
+};
 const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.35, 0.5, 1.0);
 composer.addPass(bloom);
 composer.addPass(new OutputPass());
