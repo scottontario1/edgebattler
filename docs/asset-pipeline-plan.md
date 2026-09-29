@@ -1,10 +1,52 @@
 # Character and environment asset pipeline proposal
 
-Updated 28 September 2026 to prioritize sprites, following review of the new `brenna_sprite.png` and `dreg_sprite.png` alongside the original three design references. This is a plan; the sprites have not yet been integrated into the game. The original 3D research is retained below as an optional fallback.
+Originally written 28 September 2026 as a plan; revised 29 September 2026 with what was built and learned (see **As built**). The sprite direction is now the game's production path for all five unit classes, and the terrain has a painted pass. The original 3D research is retained further down as an optional fallback.
 
-**Recommendation:** try the supplied illustrated sprites directly on the existing 3D map first. Start with static Brenna and Dreg, approve their appearance at gameplay size, then add consistent directional images and a small animation test. No 3D character generation, Blender rig, Meshy subscription, or Rodin subscription is required for this first milestone.
+**Decision record:** the illustrated 3D humanoid (Blender-built Brenna, Dreg and recruits) was replaced by supplied 2D sprites on the 3D map. No Meshy/Rodin subscription, Blender rig or local image generation was needed. The 3D models still load with `?sprites=0` for comparison and as a fallback.
 
 Approved transparent artwork → consistent scale and foot anchor → sprite renderer on the 3D map → desktop/mobile review → directional artwork → short animation loops → shared sprite library.
+
+## As built (29 September 2026)
+
+### Sprites
+| Piece | Where | What it does |
+| --- | --- | --- |
+| Source art | `design_assets/{brenna,dreg,pikeman,archer,cavalier}_sprite.png` | Supplied, transparent, roughly 1122-1182 x 1330-1402. Never edited. |
+| Prep script | `tools/assets/prep_sprites.py` | Trims to the alpha bounding box, sizes by anatomy, Lanczos-downscales to 300 px per world unit, writes `public/sprites/<name>.png`, a `_red` variant for recruits, and `manifest.json`. |
+| Manifest | `public/sprites/manifest.json` | Per sprite: files by faction, crop box, scale, foot anchor (fraction of the image), world `height`, `footWidth`, `headTop`. The renderer reads everything from here. |
+| Renderer | `src/sprites.js` | Upright camera-facing plane, alpha-tested (0.5), unlit `MeshBasicMaterial`, stretched by 1/cos(tilt) so the drawing keeps its proportions, contact shadow, alpha-mask picking, subtle breathing stretch. |
+| Wiring | `src/units.js` | Every class routes through `buildSprite(cls, faction, {flip})`; red mirrors to face the blue army; `?sprites=0` uses the 3D models. |
+
+### Lessons that changed the plan
+- **The supplied art is not on a clean pixel grid.** Grid detection found no consistent block size (AI-made pixel-style art, resampled), so smooth Lanczos minification is the right treatment; nearest filtering was not needed.
+- **Scale by anatomy, never by image bounds.** Sizing every sprite to the same bounding-box height shrank the pikeman (halberd) and made the cavalier look small. Each entry now gives the head-top row (source px) and a world foot-to-head height: recruits share `STAND_RECRUIT` (1.05), Brenna is 1.25, Dreg 1.3. The cavalier has no visible feet, so his rider's head size is matched to the infantry's; horses and weapons come out at their drawn size. Adjacent occupied tiles were tested (`docs/redesign/scale-row.png`).
+- **Foot anchor:** x is the centroid of the lowest opaque band (both boots), y the lowest opaque row. Where a weapon butt pollutes the band (pikeman) an explicit `feet` x-range overrides it.
+- **Ground contact needs a shadow.** A soft radial contact shadow sized from the drawing's own foot span (`footWidth`) removed the "hovering above the ring" look. A more elevated drawing angle needs new art.
+- **Faction colours without new art:** recruit sprites are drawn in blue; the prep script hue-shifts only saturated blue pixels (hue 0.52-0.74, saturation > 0.35) to crimson, leaving steel, leather and skin. Side effect: blue eyes become red. Heroes keep fixed palettes and rely on the faction ring.
+- **Post-processing interactions.** The ambient-occlusion pass renders every sprite as a solid rectangle (its depth/normal override ignores alpha), leaving a light box of unoccluded ground around each unit; the quads are hidden for that pass only. ACES tone mapping dulls unlit sprites slightly, so the material has a 1.08 gain.
+- **Picking follows the drawing:** the plane's `raycast` samples the texture alpha, so clicks pass through transparent cape and weapon areas.
+- **The style mismatch is an art problem, not a code problem.** Brenna and Dreg are long-limbed with fine detail; the three recruit sprites are chibi (about 3.6 heads, heavy outlines). The fix is regenerating the recruits in Brenna's style (6-7 heads, slender limbs, fine outlines, simplified armour), same canvas, transparent, feet on the bottom row.
+
+### Terrain (painted pass)
+| Piece | Where | What it does |
+| --- | --- | --- |
+| Watercolor source | `art/textures/watercolor/` (16 x 1024 px, CC0, Jonas Voland / Voxel Core Lab) | Kept out of `public/`. Credited in `CREDITS.md`. |
+| Detail-map prep | `tools/assets/prep_terrain_textures.py` | The washes are too dark and flat to replace our colours, so each becomes a neutral grey (0.5) detail map: per-channel mean removed, contrast normalised to a target luminance std (gain capped at 5), 512 px JPEG in `public/textures/painted/`. |
+| Loader | `src/paint.js` | `PAINT_SETS` (grass/dirt/stone/water x 4), `loadPaint()` (never rejects), `paintTile(set, n)`. |
+| Blending | `src/textures.js` `paintDetail()` | `soft-light` over the meadow (two scales, offset), roads (dirt), rock, paving, forest floor and the river colour. Adds brushy variation without changing the base palette or lighting. |
+| Painterly filter | `src/painterly.js` | Kuwahara (radius 2, 4 quadrants) after bloom. Sprites are masked out: the mask pass renders the scene flat black (filling depth), then the sprites on `MASK_LAYER` through a cutout material, so trees in front of a unit still hide it. P toggles it; `?paint=0` starts with it off. |
+| Earlier tone-down | `src/map.js`, `src/textures.js` | Fewer, softer grass strokes; water normal, clearcoat and rock foam reduced; pine palette lifted out of near-black; orange oaks rare; softer forest shade. |
+
+Not done yet: ink outlines on trees and rocks, painted cliff and building textures, a warmer and brighter light pass, castle-to-unit scale.
+
+### Map building foundation
+- `src/terrain.js`: the `TERRAIN` registry (stats, block height, atlas `ground` class, props) and `parseLayout()` validation.
+- `src/maps/river_ford.js`: a map as plain data (ASCII layout plus `hills`); `src/map.js` builds from it.
+- `src/main.js`: preloading bootstrap (`loadPaint()`; add tilesets and atlases here), then imports `src/game.js`.
+- Still hard-coded in `map.js`: roads, the river island, rocks, village plots and unit spawn positions. Move these into the map files before adding a second map.
+
+### Verification practice that worked
+Fixed-camera captures with `node tools/shot.mjs` (`zoom`, `focus`, `select`, `place=id:c,r` for adjacency tests), before/after pairs in `docs/redesign/`, a click test on a sprite, the mobile viewport, and `npm run build`. The GPU cost of the mask pass and the filter has not been profiled (rAF counts in headless Chrome are not a GPU measure).
 
 ## What is causing the current mismatch
 
@@ -70,7 +112,7 @@ Brenna preserves lavender hair, blue cape, ivory/gold armor, sword, and staff. D
 6. Use a separate ground shadow and the existing faction/selection markers. The drawing should contain no baked ground plane or large cast shadow. Keep foot position fixed if adding a small idle motion; avoid whole-body bobbing that reintroduces the toy appearance.
 7. Test normal zoom, maximum zoom, desktop, and mobile. First compare the supplied artwork as-is. Only request simpler detail or a different viewing angle when an actual screenshot demonstrates the need.
 
-**Gate:** both sprites look preferable to the old models at normal gameplay size; transparent edges are clean; feet are grounded; no serious terrain occlusion or selection errors; class/faction remain readable; no console errors. A still-image prototype is sufficient for this decision.
+**Status: passed on 29 September 2026, for all five classes.** **Gate:** both sprites look preferable to the old models at normal gameplay size; transparent edges are clean; feet are grounded; no serious terrain occlusion or selection errors; class/faction remain readable; no console errors. A still-image prototype is sufficient for this decision.
 
 The current map camera is 40 degrees above horizontal on desktop and 52 degrees in portrait. The new drawings read as three-quarter character illustrations rather than exact renders from those elevations. This can be an intentional illustrated presentation. Try the same sprites in both layouts first. If they appear pasted on, compare an elevated-view revision or a common camera elevation. Change framing separately; do not demand two complete angle libraries before the first test. Free camera orbit is outside the first sprite milestone.
 
@@ -97,7 +139,7 @@ For subtle motion, test a layered cape/hair pass with painted overlap regions. F
 
 ### Production order and initial cost
 
-1. Static Brenna and Dreg using the two existing images.
+1. ✅ Static Brenna and Dreg using the two existing images. ✅ Pikeman, archer and cavalier from supplied sprites (proportion mismatch pending regenerated art).
 2. One consistent directional/animation pilot, then matching treatment for the second hero.
 3. Pikeman and archer sharing the established image style and frame conventions.
 4. Cavalier as a combined horse/rider sprite per frame; review the pair together for contact and silhouette.
@@ -325,4 +367,4 @@ Reviewed `GAME.md`, `CLAUDE.md`, character generation helpers, runtime models/ma
 - `docs/redesign/pipeline-baseline-landscape.png`: fresh 1280×800 map capture with Brenna selected.
 - `docs/redesign/pipeline-baseline-closeup.png`: fresh close view for proportions/material review.
 
-This revision changes the plan to start with direct sprites and adds current free-plan information. The baseline screenshots show the existing 3D game; no sprite integration or animation test has been performed yet. Game code and source images are unchanged.
+The baseline screenshots show the 3D-model game before the sprite work. Sprite integration, anatomical scaling, contact shadows, the terrain tone-down and the painted pass are recorded under **As built**; no animation test has been performed yet.
