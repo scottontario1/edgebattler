@@ -1,0 +1,6 @@
+---
+description: Preserve the agreed game direction and system-first development process across prompts
+alwaysApply: true
+---
+
+Read AGENTS.md, GAME.md, docs/DEVELOPMENT.md and docs/CURRENT_GAPS.md before planning changes. Follow their decision authority, integration, verification and handoff rules. Historical overhaul task tables describe earlier passes, not the current backlog. Explicit user changes take precedence and must be recorded in the affected source of truth.

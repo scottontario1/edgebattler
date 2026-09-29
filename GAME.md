@@ -10,9 +10,9 @@ Presentation: an illustrated fantasy army on a readable square-grid battlefield,
 
 ## Design status
 
-The card system, upgrades, stances, abilities, and shared automatic battle phase below are the intended direction. They are not implemented yet. Rules marked as **prototype defaults** are starting points for testing, not final balance decisions.
+The current prototype implements seeded cards, paid reserves, deployment, optional upgrades, queued spells, shared skills, stances, automatic rounds, enemy recruitment, reserve recovery and champion respawn. Energy-driven ability management and persistent human orders remain incomplete. Rules marked as **prototype defaults** are starting points for testing, not final balance decisions. See `docs/CURRENT_GAPS.md` for current implementation and verification gaps, and `docs/DEVELOPMENT.md` for the confirmed development process.
 
-The current demo already supports manual tile movement, attack forecasts, resolved exchanges with counters and follow-ups, Wait, End turn, enemy movement and attacks, unit death, and victory/defeat. Those systems provide a foundation for the new loop. Individual manual attacks and waits must stop being required as the primary way to play.
+The primary loop is planning followed by one Resolve battle action. The shared match controller drives browser and simulator behavior; manual exchanges remain legacy foundations rather than the required player flow. The sections below include intended rules and provisional details that must be reconciled against the current gap register before implementation.
 
 ## Confirmed direction from design elicitation
 
