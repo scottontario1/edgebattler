@@ -106,10 +106,12 @@ export function resolveBattleRound({
     } else if (stance === 'protect' && protect) {
       // Protect only repositions to an adjacent tile, and only when currently
       // farther than one tile from its living friendly subject.
-      if (currentDistance > 1 && eligible.length) {
-        eligible.sort((a, b) => manhattan(a, protect) - manhattan(b, protect) || a.r - b.r || a.c - b.c);
-        if (manhattan(eligible[0], protect) < currentDistance) {
-          destination = eligible[0];
+      // Occupied tiles (the subject's own included) can never be the destination.
+      const free = eligible.filter((p) => !start.some((o) => o.hp > 0 && o.c === p.c && o.r === p.r));
+      if (currentDistance > 1 && free.length) {
+        free.sort((a, b) => manhattan(a, protect) - manhattan(b, protect) || a.r - b.r || a.c - b.c);
+        if (manhattan(free[0], protect) < currentDistance) {
+          destination = free[0];
           reason = 'closing to protect subject';
         } else reason = 'no legal move closer to protect subject';
       } else reason = protect ? 'protect subject is already adjacent' : 'invalid protect subject';

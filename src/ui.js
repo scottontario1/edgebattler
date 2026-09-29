@@ -7,6 +7,7 @@ import { CARD_LIMITS, UNIT_CARDS, SPELL_CARDS, SKILL_CARDS, createCardState, dra
 import { advanceAbilityRound, initializeAbilityState, queueSpell, cancelSpell, resolveAbilityActivation, resolveQueuedSpells, equipTypeSkill, transferTypeSkill, skillsForUnitType } from './abilities.js';
 import { findUpgradeMatches, previewUpgrade, combineUnits } from './upgrades.js';
 import { resolveBattleRound } from './battle.js';
+import { stanceIcon, STANCE_LABEL, STANCE_HINT } from './ui/icons.js';
 import { createEnemyCards, refreshEnemyCards, planEnemyReinforcements } from './enemy.js';
 import { createRecruitUnit, createHeroRespawnData } from './units.js';
 import { esc } from './ui/util.js';
@@ -433,7 +434,10 @@ export function createUI({ renderer, camera, scene, units, view }) {
       html += btn('cancelCard', 'Clear card', '‹', 'Esc');
     } else {
       if (u) html += btn('inspect', 'Inspect', 'ⓘ', 'I');
-      if (u?.faction === 'blue') html += btn('stance', `Stance · ${u.stance || 'advance'}`, '⚑', 'S');
+      if (u?.faction === 'blue') {
+        const st = u.stance || 'advance';
+        html += btn('stance', `Stance · ${STANCE_LABEL[st] || st}${st === 'protect' ? ' Brenna' : ''}`, stanceIcon(st, 14), 'S', `stance-${st}`).replace('title="', `title="${STANCE_HINT[st] || ''} (S to change) · `);
+      }
       html += btn('danger', 'Danger zone', '◈', 'D', state.danger ? 'on' : '');
       html += btn('resolve', 'Resolve battle', '⚔', '↵', 'primary');
     }
@@ -862,7 +866,13 @@ export function createUI({ renderer, camera, scene, units, view }) {
       if (barrier) unit.statuses.barrier = { amount: barrier.blockDamage, duration: 'upcoming-battle' };
     }
     const legalMoves = (unit, shared) => computeRange(unit, unitBoard(shared), unit.mov).move.map(([c, r]) => ({ c, r }));
-    const orders = Object.fromEntries(snapshot.map((unit) => [unit.id, { stance: unit.stance || 'advance', range: weaponOf(unit).rng, objective: unit.objective }]));
+    // A Protect order whose subject has fallen (or was never valid) reverts to the class default (GAME.md, Stances).
+    const alive = new Set(snapshot.map((unit) => unit.id));
+    const orders = Object.fromEntries(snapshot.map((unit) => {
+      let stance = unit.stance || 'advance';
+      if (stance === 'protect' && !(unit.objective?.type === 'protect' && alive.has(unit.objective.targetId))) stance = UNIT_CARDS[unit.cls]?.defaultStance || 'advance';
+      return [unit.id, { stance, range: weaponOf(unit).rng, objective: unit.objective }];
+    }));
     const battle = resolveBattleRound({
       units: snapshot,
       orders,
@@ -948,7 +958,18 @@ export function createUI({ renderer, camera, scene, units, view }) {
     resolve() { resolveBattle(); },
     recruit() { recruitSelectedCard(); },
     equipSkill() { equipSelectedSkill(); },
-    stance() { const u = selected(); if (u?.faction === 'blue') { u.stance = u.stance === 'hold' ? 'advance' : 'hold'; refresh(); } },
+    // Advance -> Hold -> Protect (Brenna) -> Advance. Brenna herself has no one to protect.
+    stance() {
+      const u = selected();
+      if (!u || u.faction !== 'blue' || state.busy || state.phase !== 'player') return;
+      const cycle = u.id === 'brenna' ? ['advance', 'hold'] : ['advance', 'hold', 'protect'];
+      const next = cycle[(cycle.indexOf(u.stance || 'advance') + 1) % cycle.length];
+      u.stance = next;
+      if (next === 'protect') u.objective = { type: 'protect', targetId: 'brenna' };
+      else delete u.objective;
+      state.notice = `${u.name}: ${STANCE_LABEL[next]} — ${STANCE_HINT[next]}.`;
+      refresh();
+    },
     targetSpell() { if (state.selectedCardId) { state.mode = 'spellTarget'; state.notice = 'Click a valid unit or tile to queue the spell.'; refresh(); } },
     toggleTray() { state.trayCollapsed = !state.trayCollapsed; refresh(); },
     cancelCard() { state.selectedCardId = null; state.mode = 'idle'; state.notice = ''; refresh(); },
