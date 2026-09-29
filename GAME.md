@@ -2,7 +2,7 @@
 
 ## Pitch
 
-A fantasy tactics game combining Advance Wars-style territory, terrain, and army positioning with a random card recruitment system inspired by Teamfight Tactics. Players build an army by drawing unit cards, recruiting into a paid reserve bench, deploying near controlled locations, and optionally combining three matching units to upgrade them. Spell cards support the formation, and potential skill cards let players customize unit abilities. Units fight automatically according to their stances and abilities.
+A fantasy tactics game combining Advance Wars-style territory, terrain, and army positioning with a random card recruitment system inspired by Teamfight Tactics. Players build an army by drawing unit cards, recruiting into a paid reserve bench, deploying near controlled locations, and optionally combining three matching units to upgrade them. Spell cards support the formation, and transferable skill cards can customize the shared loadout of a unit type. Units fight automatically according to their stances and abilities.
 
 The main decisions are what to deploy, where to deploy it, what to combine, how to arrange the army, and when to spend a spell. A player should be able to command an army of 10 or more units without individually selecting Move, Attack, and Wait for every unit. One **Resolve battle** action commits the plan and runs the combat phase for both armies.
 
@@ -18,13 +18,15 @@ The current demo already supports manual tile movement, attack forecasts, resolv
 
 - First version: single player against an AI commander, on a persistent tactical map.
 - Primary objective: capture or destroy the enemy keep; other maps may later define different objectives.
-- Each round gives units one automatic activation. Players may reposition units within their movement allowance during planning; stances govern behavior once battle begins and can permit further movement. The budget shared by planning and battle movement still needs definition.
+- Each round gives units one automatic activation, which may execute several eligible abilities plus a basic attack. Planning repositioning and automatic stance-driven movement have separate full movement allowances. Resolve both armies' movement together, then their combat together.
 - Energy accumulates across turns. Several positioning and charging rounds can lead into a sustained engagement with energy and cooldown management.
 - Cards come from a shared recruitment pool. Resource costs and a population limit gate army building; exact amounts remain balance decisions.
 - Ordinary unit deaths are permanent for the match. Hero champions can respawn at base; delay, resource cost, and respawn state remain open.
 - Paid reserve units and deployed units can participate in combinations. Combining is optional: three ordinary Pikemen may be preferable to one upgraded Pikeman.
-- Players arrange a unit's abilities left to right, with the leftmost having highest priority. Units may have several abilities, including passives or toggles.
-- HP, energy, cooldowns, and statuses persist across rounds. Recovery needs a defined ability, spell, or other recovery mechanism.
+- Players arrange abilities left to right, with the leftmost having highest priority. Units may have several active abilities, passives, or toggles. Equipped skills currently apply to all instances of a unit type; more granular loadouts may come later.
+- HP, energy, cooldowns, and statuses persist across rounds. Recovery abilities run during normal activations, even without a nearby enemy. A two-turn cooldown used in round 5 is ready again in round 7.
+- Units may withdraw through controlled reinforcement locations into recovering/charging reserves and may be sold or recycled into a card of the same grade. Refunds, card repayment, and preserved state remain open.
+- Spell cards are queued during planning and resolve when battle starts. Skill cards are transferable equipment; their type-wide scope is distinct from one-shot spells.
 - Enemy information and potential fog of war will be tested; full visibility is not a settled rule.
 
 ## Design pillars
@@ -40,8 +42,8 @@ The current demo already supports manual tile movement, attack forecasts, resolv
 A round has four stages:
 
 1. **Refresh and draw.** Grant the round's deployment resource, draw cards into the hand, and refresh round-based actions. Show the incoming cards and current resource total.
-2. **Planning.** Recruit reserve units, deploy units, optionally combine duplicates, cast spells, and optionally change positions, stances, objectives, or ability priority. Existing orders remain in effect. The player may finish immediately if the current plan is satisfactory.
-3. **Automatic battle.** Press **Resolve battle** once. Lock card play and orders, then resolve movement, attacks, automatic abilities, counters, and deaths for both armies. The player can inspect, pause presentation, change playback speed, or skip animations without changing the result.
+2. **Planning.** Recruit reserve units, deploy or withdraw units, optionally combine duplicates, queue spells, equip or transfer skills, and optionally change positions, stances, objectives, or ability priority. Existing orders remain in effect. The player may finish immediately if the current plan is satisfactory.
+3. **Automatic battle.** Press **Resolve battle** once. Lock card play and orders, resolve queued spells at battle start, resolve both armies' movement together, then resolve both armies' combat together. Evaluate prioritized abilities, attacks, reactions, and deaths under explicit simultaneous-resolution rules. The player can inspect, pause presentation, change playback speed, or skip animations without changing the result.
 4. **Results and next round.** Apply captures and rewards, report losses and upgrades, and check victory conditions. If the match continues, advance the round and return to planning.
 
 There is no requirement to mark every friendly unit as finished. A unit without a new order uses its existing stance and objective. An army with no cards or resources available can still resolve its battle.
@@ -55,9 +57,10 @@ The first version is single-player against an enemy commander. Proposed fairness
 | Type | Played onto | Result | Upgrade rule |
 |---|---|---|---|
 | Unit | Paid reserve bench, then a legal deployment tile | Creates a persistent unit that can be deployed | Three matching paid reserve/deployed units at the same star level may combine |
-| Spell | A valid unit, tile, or area | Applies the described one-use effect | Never combines or gains stars |
+| Spell | A valid unit, tile, or area | Queues a one-use effect for battle start | Never combines or gains stars |
+| Skill | A compatible unit-type loadout | Equips a transferable ability shared by its instances | No combination rule specified; do not assume three-of-a-kind applies |
 
-Cards must identify their name, type, cost, and effect. Unit cards also show class, star level, attack range, default stance, and a short ability description. Spell cards show target restrictions and duration. The card art should match the battlefield sprite and portrait. Skill and enchantment cards are additional possibilities under consideration: skill cards equip abilities, while enchantments would apply persistent modifications. Their storage, costs, and inheritance rules need definition.
+Cards must identify their name, type, cost, and effect. Unit cards also show class, star level, attack range, default stance, and a short ability description. Spell cards show target restrictions and duration. The card art should match the battlefield sprite and portrait. Skill cards equip transferable abilities, currently shared by instances of a unit type. Enchantment cards could apply persistent modifications. Storage, costs, compatibility, slot limits, and exact ownership/grade scope still need definition.
 
 Draws come from a defined recruitment pool for the match. Start with a small, weighted pool of the existing recruit classes and a few spells. Randomness should offer useful choices without requiring a matching triple to survive the first rounds. There is no paid shop, reroll system, or deck-building screen required for the first prototype.
 
@@ -75,7 +78,9 @@ Retaining cards and Supply lets the player save for combinations or expensive re
 
 Playing a unit card pays its recruitment cost and creates a unit on the reserve bench. The bench holds paid units; it is distinct from the hand of unplayed cards. Deploying a reserve unit places it on a legal field tile, with its sprite, occupied tile, and initial threat range previewed before commitment. Whether direct hand-to-field recruitment is also offered as a shortcut remains a UI choice. Invalid or cancelled recruitment/deployment consumes nothing.
 
-Reserve capacity, whether bench units consume population, whether they regenerate energy or HP, and any extra deployment charge are unresolved. Spells, enchantments, and equipment need an explicit inventory model rather than silently being treated as reserve units.
+Deployed units may withdraw through a controlled base or reinforcement point into reserves. Reserves can recover and accumulate energy. Eligible units can also be sold or recycled into a card of the same grade, preserving the existence of upgraded cards rather than breaking every unit back into 1-star copies.
+
+Reserve capacity, reserve population cost, recovery/energy rates, withdrawal timing, and any extra deployment charge are unresolved. Selling/recycling must define whether resources are refunded, whether the resulting card must be paid for again, and what happens to HP, energy, cooldowns, and statuses. Keep these rules explicit so the system does not accidentally grant an instant full heal or unlimited refunds. Spells, enchantments, and equipment need an explicit inventory model rather than silently being treated as reserve units.
 
 Prototype deployment rules:
 
@@ -86,7 +91,7 @@ Prototype deployment rules:
 - A newly deployed unit can act in that round's automatic battle.
 - Use a population limit with higher-star units costing more population. Exact star costs, class variation, commander cost, and the population cap remain open. Show the projected population change for recruitment, deployment, and combinations; do not assume every upgrade frees exactly two slots.
 
-One unit occupies one tile. Friendly units may pass through allies when movement rules permit, but may not finish on an occupied tile. During planning, players can move units immediately within their movement allowance to arrange the formation. When battle begins, stances can cause units to advance, retreat, or maintain range automatically. How much allowance is left for automatic movement after manual repositioning must be settled before implementation; avoid accidental unlimited movement through repeated planning drags.
+One unit occupies one tile. Friendly units may pass through allies when movement rules permit, but may not finish on an occupied tile. During planning, players can move units immediately within their movement allowance to arrange the formation. When battle begins, stances can cause units to advance, retreat, or maintain range automatically. Planning repositioning and automatic movement each have their own full movement allowance. Track both allowances independently so repeated planning moves cannot reset that phase's budget. A unit that spends its planning allowance can still use its automatic allowance once resolution begins.
 
 Deployment and movement must share the map's terrain registry and movement rules. Roads and bridges are fast routes, forests provide cover and slow movement, and mountains restrict heavy or mounted troops. A captured reinforcement point creates a meaningful new front.
 
@@ -107,7 +112,7 @@ Combining is always the player's choice. Having three matches highlights an avai
 
 Preview the consumed copies, resulting stars/stats, and population change. The player chooses the survivor or reserve destination. Proposed location rule: preserve one participating field unit's tile and orders, or keep a reserve result on the bench; moving a result from the bench to the field still requires a legal controlled deployment location. Exact bench/field destination restrictions remain open.
 
-Upgrades improve a defined class stat table and may strengthen existing abilities. A star upgrade should create a stronger specialist, not simply triple every statistic. Proposed health inheritance: apply the inputs' combined current-HP/max-HP ratio to the upgraded maximum HP. Energy, skills, enchantments, cooldowns, statuses, and ability-order inheritance require explicit rules; do not assume an upgrade heals, refills energy, resets cooldowns, or cleanses effects for free.
+Upgrades improve a defined class stat table and may strengthen existing abilities. A star upgrade should create a stronger specialist, not simply triple every statistic. Proposed health inheritance: apply the inputs' combined current-HP/max-HP ratio to the upgraded maximum HP. The result uses the shared skill loadout for its unit type, so merging differently equipped individual copies is not a required feature yet. Exact scope across star levels, ability-priority scope, and enchantment inheritance remain open. Per-instance HP, energy, cooldowns, and statuses still require inheritance rules; do not assume an upgrade heals, refills energy, resets cooldowns, or cleanses effects for free.
 
 Hero champions are distinct from ordinary recruits and can respawn at base after death. Automatic respawn after a delay and paid respawn are both candidates; their star progression, resource penalty, and reset state remain undecided. The current demo's immediate defeat on losing Brenna is a legacy rule, not the intended normal outcome of champion death.
 
@@ -121,7 +126,9 @@ Initial examples, with values to be tuned:
 - **Ward:** protect one friendly unit during the upcoming battle phase.
 - **Fireburst:** damage enemies in a clearly previewed tile area.
 
-Prototype timing: spells resolve when confirmed during planning. Persistent effects such as Ward explicitly last through the next battle phase. Preview affected tiles and targets; cancelling leaves the card and Supply intact. After confirmation, apply the effect and consume the card once. Spells cannot be cast during automatic resolution. A lethal spell removes its victim and triggers the same victory checks as other deaths.
+Spells are queued during planning and resolve when battle starts. Preview affected tiles and targets and show pending casts in the dock. Persistent effects such as Ward explicitly last through the upcoming battle phase. Spells are not cast interactively during automatic resolution.
+
+Define precisely when card/resource payment becomes committed and whether queued spells can be cancelled or retargeted before Resolve battle. Also define whether a spell tracks a selected unit or a fixed tile and how simultaneous healing, protection, and damage interact. Consuming a card and paying its cost must happen exactly once. Deaths and victory checks follow the agreed batch-resolution timing, not the order of animation playback.
 
 Spells provide direct intervention without introducing a per-unit manual action queue. More complex effects such as displacement, summons, or terrain creation come after the initial targeting and duration rules work.
 
@@ -131,13 +138,13 @@ Every unit has its own persistent energy pool. The typical maximum is around 3â€
 
 Ordinary movement and basic attacks are normally available without an energy cost. Enhanced actions, abilities, and some stance effects can spend energy. Each effect needs an explicit cost, legal trigger, and cooldown. Energy does not reset between battle phases, so a formation may spend several rounds moving and charging before a sustained fight.
 
-HP, cooldowns, statuses, and energy persist across rounds. Recovery abilities matter between engagements; there is no assumed automatic full heal. Units can use their priorities to recover or prepare even when enemies are not in range.
+HP, cooldowns, statuses, and energy persist across rounds. Recovery abilities matter between engagements; there is no assumed automatic full heal. Recovery skills run as part of normal activations, even when no enemy is nearby, and reserves can recover and charge under rates still to be specified.
 
 Concrete design example supplied by the user:
 
 > **Pike â€” Rally:** restore 10 HP to the Pike; gain 1 energy this turn and next; cooldown 2 turns.
 
-Rally's energy cost, automatic trigger, activation timing, and the exact two-turn cooldown convention still need definition. A cavalry flanking bonus is another intended example, with its trigger and reward to be specified. These examples express roles and timing, not implemented or fully balanced abilities.
+Cooldown convention: using Rally in round 5 makes it unavailable in round 6 and ready in round 7. Recovery happens during the normal activation, including rounds without nearby enemies. Rally's energy cost, exact automatic trigger, and placement within simultaneous ability resolution still need definition. Whether cooldowns tick while stunned and how reserve cooldowns advance remain open. A cavalry flanking bonus is another intended example, with its trigger and reward to be specified. These examples express roles and timing, not implemented or fully balanced abilities.
 
 ## Stances, objectives, and automatic abilities
 
@@ -151,11 +158,11 @@ Stances are persistent behavioral orders. Each class has a sensible default, so 
 
 Defaults should reflect roles: frontline melee advances, archers maintain useful firing range, and an objective defender holds. Orders may name a tile, objective, or ally; losing an assigned target falls back to the class default. Stances never bypass occupation, movement costs, or attack range.
 
-Units may have several abilities, including active skills, passives, and toggles. Players arrange abilities in a visible left-to-right order, with the leftmost having highest priority during automatic resolution. The resolver must evaluate that order against costs, cooldowns, valid targets, and trigger conditions. Whether it executes only the first eligible active ability, multiple affordable abilities, or an ability plus a basic attack is still open.
+Units may have several abilities, including active skills, passives, and toggles. Players arrange abilities in a visible left-to-right order, with the leftmost having highest priority during automatic resolution. The resolver must evaluate that order against costs, cooldowns, valid targets, and trigger conditions. During the activation, a unit may execute multiple eligible abilities in priority order, constrained by energy and cooldowns, and also make a basic attack. Exact timing relative to attacks, evaluation passes, and repeat-cast limits remain open; resolve a bounded sequence so energy-generating abilities cannot cause an infinite action loop.
 
-Passives and toggles need their own trigger/upkeep semantics instead of being implicitly treated as ordinary casts. Ability order persists between turns; changing it is optional planning work, not a required per-unit action.
+Passives and toggles need their own trigger/upkeep semantics instead of being implicitly treated as ordinary casts. Ability order persists between turns; changing it is optional planning work, not a required per-unit action. Trigger controls remain an experiment: test simpler built-in conditions on some units, such as Pikemen, and more configurable behavior on others, such as Cavaliers.
 
-Potential skill-card example: a Pike starts with Rally, and the player equips **Barrier: block f(x) damage** when the situation calls for it. Barrier's scaling formula, duration, cost, trigger, and stack behavior remain open. Skill cards would customize a particular unit's loadout; slot count, class restrictions, transferability, and loss on death or combination must be decided before implementation.
+Potential skill-card example: a Pike starts with Rally, and the player equips **Barrier: block f(x) damage** when the situation calls for it. Barrier's scaling formula, duration, cost, trigger, and stack behavior remain open. Equipped skills currently apply to all instances of a unit type rather than one particular soldier. Skill cards are transferable equipment. Owner/faction scope, whether all star levels and future recruits inherit the skill, shared versus per-instance priority, slot count, class restrictions, transfer costs, and cooldown handling on transfer remain open. More granular per-instance loadouts may come later.
 
 Expose ready/cooling-down status in inspection and show an ability label when it fires. Support applying a stance to a selected group or role later; do not require assigning it again to every unit every round.
 
@@ -163,19 +170,19 @@ Expose ready/cooling-down status in inspection and show an ability label when it
 
 Resolve one bounded tactical exchange per round on the persistent map, rather than fighting until one army disappears. Survivors retain their resulting position, HP, energy, cooldowns, statuses, and ability configuration for the next planning stage. Repeated rounds of positioning and charging transition into sustained engagement; battle resolution does not reset either army.
 
-**Prototype resolution contract:**
+**Resolution contract:**
 
-1. Lock deployment, spells, and orders; snapshot both sides' plans and establish a stable initiative order.
-2. Each living unit gets one scheduled activation: evaluate stance-driven movement, then evaluate abilities in the player's chosen priority order and perform eligible combat actions. The movement budget shared with planning and the number of active skills/basic attacks within that activation remain open. If nothing is legal, hold automatically.
-3. Alternate faction priority for ties each round; never give the player army the entire first-action advantage by default. Movement contention is settled in this documented order, and actions use the current board after previous events.
-4. Apply damage, reactions, status changes, and deaths before the next activation. A defeated unit loses its pending activation. Every event has stable tie-breaking so the same seed and orders produce the same result.
-5. Finish when all scheduled activations are handled, then resolve objective ownership and round results. Counters and abilities must have finite limits and cannot generate an endless reaction chain.
+1. Lock plans and queued cards for both armies. Resolve queued spells at battle start using explicitly defined batching and target rules.
+2. Resolve automatic movement for both armies together. Units follow their stances using their separate automatic movement allowance. Movement intentions come from a shared board snapshot; contested destinations, crossing paths, and occupied cells need explicit collision rules.
+3. Resolve combat for both armies together. Each unit has one bounded activation opportunity with multiple eligible prioritized abilities and a basic attack. Partition preparation, healing, protection, attacks, and reactions into defined simultaneous batches or timing windows; their exact ordering remains open.
+4. Apply each batch consistently to authoritative state, then handle deaths, objective ownership, and victory at the defined boundaries. Decide explicitly whether a lethally hit unit's already-declared action still resolves. Code iteration order and animation order must not decide this implicitly.
+5. Finish after the round's bounded action opportunities. Preserve survivors' state and return to planning. Abilities and reactions need finite limits and cannot generate an endless chain.
 
-Reuse weapon range, terrain defense, the weapon triangle, hit/critical calculations, counters, and speed follow-ups from the current demo where they fit. An attack exchange may include its permitted follow-up strikes; those are part of the activation, not another movement turn. Prototype limit: one counter reaction per unit per round, separate from its scheduled activation. Recheck legal range and living targets as the board changes.
+Reuse weapon range, terrain defense, the weapon triangle, and hit/critical calculations where they fit. The demo's sequential attacker-counter-follow-up exchange is a foundation, not the settled timing rule for simultaneous combat. Decide how speed, follow-ups, counters, and energy earned from incoming damage interact with simultaneous actions before adapting that resolver. Proposed reaction limits remain balance candidates.
 
 Target choice must respect stance before optimizing damage. Keep deterministic priorities for kills, class matchups, terrain, and protecting the assigned subject. Do not let every unit blindly chase the weakest enemy across the map.
 
-Battle logic produces an ordered event stream independently of animation. Presentation consumes movement, attack, ability, damage, and death events. Faster playback and skipping must lead to the same authoritative final state. A seeded random source makes draws and combat reproducible for debugging.
+Battle logic computes authoritative simultaneous batches independently of animation, then produces events with explicit batch membership for presentation. Events may be shown sequentially for readability, but playback order cannot change the simultaneous outcome. Presentation consumes movement, attack, ability, damage, and death events. Faster playback and skipping must lead to the same authoritative final state. A seeded random source makes draws and combat reproducible for debugging.
 
 ## Card dock and battlefield UI
 
@@ -184,8 +191,10 @@ The card dock is a core part of the planning interface, not an inspect-only popu
 - **Bottom hand dock:** visible card faces, card count, costs, Supply total, affordability, and combination indicators. Reserve space for it when framing the map.
 - **Play interactions:** drag a card onto a target on desktop; also support click/tap a card, then click/tap the destination. Show legal tiles, an effect preview, and a clear cancel action. Keyboard equivalents should be available.
 - **Selected card detail:** readable effect text, stats or spell duration, and the reason a target is invalid. A card must not be consumed by a failed drop.
-- **Paid reserve bench:** distinguish recruited units from unplayed hand cards; show available field/bench triples without forcing a combination. Provide an explicit upgrade preview and survivor choice.
-- **Army controls:** a compact stance/objective panel for the selected unit, population use, visible stars, current/max energy, and a reorderable ability row with costs and cooldowns. Inspection remains available without requiring orders for every unit.
+- **Paid reserve bench:** distinguish recruited units from unplayed hand cards; show recovery/energy state, withdrawal and recycle options, and available field/bench triples without forcing a combination. Provide an explicit upgrade preview, survivor choice, and recycling cost/refund preview.
+- **Queued spells:** show committed targets, effects, and resource reservations clearly, with cancel/retarget controls if those rules permit.
+- **Type-wide skill equipment:** show which unit types inherit an equipped skill, its slots/compatibility, and the effect of transferring it. Keep this distinct from one-shot spell targeting.
+- **Army controls:** a compact stance/objective panel for the selected unit, population use, visible stars, current/max energy, and a reorderable ability row with costs and per-instance cooldowns; shared skill loadouts must be clearly identified. Inspection remains available without requiring orders for every unit.
 - **Primary action:** one prominent **Resolve battle** button, with optional confirmation when important cards or Supply remain unused. Do not block it because units lack manual orders.
 - **Battle presentation:** collapse the hand into a compact summary, identify the acting unit in the roster and on the map, and keep action labels and damage readable. Pan only when needed to reveal the action; offer playback controls.
 - **Results:** show captures, losses, and the reason for victory or defeat. Provide a clickable/tappable restart button as well as the keyboard shortcut.
@@ -232,24 +241,25 @@ Upgraded units need an obvious star badge and a restrained visual accent. The fi
 ### New direction: build one playable slice at a time
 
 1. **Hand, reserves, and deployment:** card data, seeded draw, resource costs, paid reserves, population, the bottom dock, placement previews, and dynamic unit creation. Start with the three existing recruit classes and legal starting deployment tiles.
-2. **Automatic round and energy:** one Resolve battle command, planning repositioning, persistent default stances, per-unit energy/cooldowns, bounded activations for both armies, enemy planning, and event-driven playback. Complete a match without manually issuing attacks or waits.
+2. **Simultaneous round and energy:** one Resolve battle command, separate planning/automatic movement allowances, persistent stances, per-unit energy/cooldowns, simultaneous movement and combat batches, enemy planning, and event-driven playback. Complete a match without manually issuing attacks or waits.
 3. **Optional combinations:** matching across paid reserves and the field, survivor/destination choices, star stats, population changes, inheritance rules, and visible upgrade markers. Verify that available triples can be kept separate and each upgrade requires an explicit choice.
-4. **Spells and ability loadouts:** planning spells, several automatic abilities per unit, reorderable priorities, passives/toggles, Rally-style recovery, and the potential skill-card system. Include explicit targeting, duration, energy costs, cooldowns, and reaction limits.
-5. **Territory and pacing:** captured deployment locations, resource/draw/population balance, reserve limits, champion respawn, and readable battle summaries. Confirm positioning and energy accumulation matter alongside card luck; ordinary casualties remain permanent.
+4. **Spells and ability loadouts:** queued battle-start spells, multiple automatic abilities plus attacks, reorderable priorities, passives/toggles, Rally-style recovery, and transferable type-wide skill cards. Include explicit targeting, duration, energy costs, cooldowns, and reaction limits.
+5. **Territory and pacing:** captured deployment locations, resource/draw/population balance, reserve recovery and recycling, champion respawn, and readable battle summaries. Confirm positioning and energy accumulation matter alongside card luck; ordinary casualties remain permanent.
 6. **Presentation and expansion:** group orders, mobile dock polish, matching portraits, sound, dialogue, additional classes, and multiple maps. Save/load and campaign progression follow once the core match loop is stable.
 
 Keep card/inventory, orders, and battle state independent of DOM handlers. The current turn flow in `src/ui.js` should move into a dedicated game-state controller as automatic resolution is introduced. Reuse `src/rules.js` and `src/combat.js`; adapt `src/ai.js` for both stance-driven friendly decisions and enemy planning.
 
 ## Decisions to tune through the prototype
 
-The intended direction is fixed: random shared-pool cards, paid reserves, controlled-location deployment, optional three-of-a-kind unit upgrades, weighted population, persistent energy and ability priorities, and one automatic activation per unit per round. Ordinary deaths are permanent; hero champions can respawn. The following remain adjustable:
+The intended direction is fixed: random shared-pool cards, paid reserves, controlled-location deployment, optional three-of-a-kind unit upgrades, weighted population, persistent energy and ability priorities, and one bounded automatic activation per unit per round, with separate planning/automatic movement budgets and simultaneous movement then combat. Ordinary deaths are permanent; hero champions can respawn. The following remain adjustable:
 
 - Draw counts, pool weights, resource types and costs, banking, hand/bench limits, and population values.
-- Movement allowance shared between immediate planning moves and stance-driven battle movement.
-- Energy gain timing, ability triggers/action limits, cooldown tick convention, passive/toggle rules, and recovery timing.
-- Skill/enchantment cards: inventory, equipment slots, costs, transferability, and loss/inheritance rules.
-- Exact star stat gains and HP/energy/status/cooldown/loadout inheritance during combinations.
-- Initiative speed rules, reaction limits, and the usefulness of each stance.
+- Exact planning and automatic movement distances, simultaneous collision rules, and the usefulness of each stance.
+- Energy gain timing, ability trigger complexity by unit type, action/repeat-cast limits, passive/toggle rules, and reserve recovery rates.
+- Type-wide skill scope, shared priority versus per-instance priority, slots, costs, compatibility, and transfer/cooldown semantics; enchantment rules.
+- Exact star stat gains and per-instance HP/energy/status/cooldown inheritance during combinations.
+- Reserve withdrawal, selling/recycling refunds, same-grade card repayment and retained state, and inventory-capacity handling.
+- Simultaneous spell/ability/attack timing, reactions, follow-ups, lethal-action rules, target tracking, and mutual-victory outcomes.
 - Whether territory later produces resources, additional draws, or only deployment access.
 - Champion count, respawn delay/cost/reset state, and base-defeat rules.
 - Enemy information, projected actions, and possible fog of war; compare visibility treatments through playtests.
