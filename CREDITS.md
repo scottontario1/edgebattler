@@ -5,3 +5,6 @@
   Blender scripts in `tools/blender/` (the named heroes Brenna and Dreg, the recruit classes
   pikeman / archer / cavalier, terrain props, buildings). No third-party character assets remain.
 - Character art direction follows the design sheets in `design_assets/` (Brenna, Dreg).
+
+## Textures
+- `art/textures/watercolor/`: Hand-Painted Watercolor Terrain Texture Pack (16 x 1024 px: grass, dirt, stone, water) by Jonas Voland, distributed by Voxel Core Lab GmbH, CC0 1.0 (attribution not required). https://voxelcorelab.itch.io/watercolor-terrain-textures. Source images only; runtime copies will be derived from them.
