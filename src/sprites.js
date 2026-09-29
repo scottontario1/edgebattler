@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { isPortrait } from './camera.js';
+import { MASK_LAYER } from './painterly.js';
 
 // Illustrated 2D sprites standing on the 3D map (docs/asset-pipeline-plan.md, milestone 1).
 // The runtime PNGs and their foot anchors come from tools/assets/prep_sprites.py; the supplied
@@ -46,6 +47,16 @@ function alphaMask(img) {
     const y = Math.min(c.height - 1, Math.max(0, Math.floor((1 - v) * c.height)));
     return d[(y * c.width + x) * 4 + 3] / 255;
   };
+}
+
+// White wherever the sprite is opaque, for the painterly filter's mask.
+function maskMaterial(map) {
+  return new THREE.ShaderMaterial({
+    uniforms: { map: { value: map } },
+    side: THREE.DoubleSide,
+    vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: 'uniform sampler2D map; varying vec2 vUv; void main() { if (texture2D(map, vUv).a < 0.5) discard; gl_FragColor = vec4(1.0); }',
+  });
 }
 
 // Soft elliptical contact shadow, one shared radial-gradient texture.
@@ -105,6 +116,9 @@ export async function buildSprite(cls, faction, { flip = false } = {}) {
   };
   mesh.castShadow = false;
   mesh.receiveShadow = false;
+  // Kept crisp by the painterly filter (src/painterly.js): drawn into its mask through this cutout.
+  mesh.layers.enable(MASK_LAYER);
+  mesh.userData.maskMaterial = maskMaterial(tex);
 
   const root = new THREE.Group();
   root.add(mesh);

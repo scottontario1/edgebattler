@@ -7,4 +7,4 @@
 - Character art direction follows the design sheets in `design_assets/` (Brenna, Dreg).
 
 ## Textures
-- `art/textures/watercolor/`: Hand-Painted Watercolor Terrain Texture Pack (16 x 1024 px: grass, dirt, stone, water) by Jonas Voland, distributed by Voxel Core Lab GmbH, CC0 1.0 (attribution not required). https://voxelcorelab.itch.io/watercolor-terrain-textures. Source images only; runtime copies will be derived from them.
+- `art/textures/watercolor/`: Hand-Painted Watercolor Terrain Texture Pack (16 x 1024 px: grass, dirt, stone, water) by Jonas Voland, distributed by Voxel Core Lab GmbH, CC0 1.0 (attribution not required). https://voxelcorelab.itch.io/watercolor-terrain-textures. Source images; `public/textures/painted/` holds neutral detail maps derived from them by `tools/assets/prep_terrain_textures.py`.

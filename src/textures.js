@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { paintTile } from './paint.js';
 
 // High-res procedural textures painted on canvases at startup.
 
@@ -376,15 +377,42 @@ function makeMask(w, h, noise, draw, blur, fn) {
   return { canvas: c, alpha };
 }
 
-function paintThrough(g, mask, fill, opacity = 1) {
+// Fully opaque mask (paint everywhere).
+function solidMask(w, h) {
+  const c = makeCanvas(w, h), g = c.getContext('2d');
+  g.fillStyle = '#fff';
+  g.fillRect(0, 0, w, h);
+  return { canvas: c };
+}
+
+function paintThrough(g, mask, fill, opacity = 1, blend = 'source-over') {
   const { width: w, height: h } = g.canvas;
   const l = makeCanvas(w, h), lg = l.getContext('2d');
   fill(lg, w, h);
   lg.globalCompositeOperation = 'destination-in';
   lg.drawImage(mask.canvas, 0, 0);
   g.globalAlpha = opacity;
+  g.globalCompositeOperation = blend;
   g.drawImage(l, 0, 0);
+  g.globalCompositeOperation = 'source-over';
   g.globalAlpha = 1;
+}
+
+/**
+ * Blend a painted detail map (src/paint.js) over the canvas through `mask`. `tile` repeats once every
+ * `span` world tiles (`px` canvas pixels per tile), shifted by `offset` tiles so two layers of the
+ * same set never line up. The maps are neutral grey, so soft-light adds brush variation without
+ * changing the base colour. No-ops when the texture is not loaded.
+ */
+function paintDetail(g, mask, tile, { px, span = 4, offset = [0, 0], opacity = 0.8, blend = 'soft-light' }) {
+  if (!tile) return;
+  const k = (span * px) / tile.width;
+  paintThrough(g, mask, (lg, lw, lh) => {
+    const pat = lg.createPattern(tile, 'repeat');
+    pat.setTransform(new DOMMatrix().translate(offset[0] * px, offset[1] * px).scale(k));
+    lg.fillStyle = pat;
+    lg.fillRect(0, 0, lw, lh);
+  }, opacity, blend);
 }
 
 const fillWith = (style) => (g, w, h) => {
@@ -538,6 +566,11 @@ export function terrainAtlas({ cols, rows, px = 128, cellClass, roads = [], fiel
   paintThrough(g, makeMask(w, h, macro, everywhere, 0, (a, n) => smooth(0.55, 0.8, n) * 0.18), fillWith(hsl(56, 58, 60)));
   paintThrough(g, makeMask(w, h, macro, everywhere, 0, (a, n) => smooth(0.45, 0.2, n) * 0.2), fillWith(hsl(128, 38, 30)));
 
+  // Painted grass: two detail maps at different scales give the whole meadow brushy variation.
+  const whole = makeMask(w, h, noise, everywhere, 0, () => 1);
+  paintDetail(g, whole, paintTile('grass', 1), { px, span: 5, opacity: 0.9 });
+  paintDetail(g, whole, paintTile('grass', 3), { px, span: 3, offset: [0.4, 0.7], opacity: 0.6 });
+
   // Canopy shade and leaf litter spill a little beyond the forest edge, and damp, lusher grass
   // lines the river gorge, so the boundaries blend over neighbouring tiles.
   paintThrough(g, makeMask(w, h, noise, cellsOf('forest'), px * 0.6, (a, n) => smooth(0.05, 0.7, a + (n - 0.5) * 0.5) * 0.32), fillWith(hsl(112, 40, 20)));
@@ -545,8 +578,13 @@ export function terrainAtlas({ cols, rows, px = 128, cellClass, roads = [], fiel
   paintThrough(g, makeMask(w, h, noise, cellsOf('rock'), px * 0.3, (a, n) => smooth(0.1, 0.5, a + (n - 0.5) * 0.5) * 0.5), fillWith(rockyTile(seed + 8)));
 
   paintThrough(g, makeMask(w, h, noise, cellsOf('forest'), px * 0.26, ragged(1.0, 0.38, 0.62)), fillWith(forestFloorTile(seed + 2)));
-  paintThrough(g, makeMask(w, h, noise, cellsOf('rock'), px * 0.2, ragged(0.7, 0.45, 0.62)), fillWith(rockyTile(seed + 3)));
-  paintThrough(g, makeMask(w, h, noise, cellsOf('stone'), px * 0.05, ragged(0.3)), fillWith(pavingTile(seed + 4)));
+  paintDetail(g, makeMask(w, h, noise, cellsOf('forest'), px * 0.26, ragged(1.0, 0.38, 0.62)), paintTile('grass', 2), { px, span: 3, offset: [0.2, 0.3], opacity: 0.8 });
+  const rockMask = makeMask(w, h, noise, cellsOf('rock'), px * 0.2, ragged(0.7, 0.45, 0.62));
+  paintThrough(g, rockMask, fillWith(rockyTile(seed + 3)));
+  paintDetail(g, rockMask, paintTile('stone', 1), { px, span: 2.5, opacity: 0.9 });
+  const stoneMask = makeMask(w, h, noise, cellsOf('stone'), px * 0.05, ragged(0.3));
+  paintThrough(g, stoneMask, fillWith(pavingTile(seed + 4)));
+  paintDetail(g, stoneMask, paintTile('stone', 4), { px, span: 2, opacity: 0.7 });
 
   // Village yards and tilled plots under the wheat.
   const dirt = dirtTile(seed + 5);
@@ -569,6 +607,7 @@ export function terrainAtlas({ cols, rows, px = 128, cellClass, roads = [], fiel
   paintThrough(g, makeMask(w, h, noise, roadShape(0.74), px * 0.1, (a, n) => smooth(0.3, 0.6, a + (n - 0.5) * 0.6) * 0.5), fillWith(hsl(48, 38, 36)));
   const road = makeMask(w, h, noise, roadShape(0.52), px * 0.06, ragged(0.55));
   paintThrough(g, road, fillWith(dirt));
+  paintDetail(g, road, paintTile('dirt', 2), { px, span: 3, opacity: 0.9 });
   paintThrough(g, makeMask(w, h, noise, roadShape(0.22), px * 0.08, (a, n) => a * (0.2 + n * 0.3)), fillWith(hsl(40, 50, 74)));
   // Cobbled approaches where the road meets a bridge or gate (paved: circles { x, y, r }).
   if (paved.length) {
@@ -662,6 +701,8 @@ export function riverTextures({ cols, rows, px = 64, isWater, rocks = [], spots 
   }
   cg.putImageData(ci, 0, 0);
   fg.putImageData(fi, 0, 0);
+  // Painted wash over the river colour (kept subtle: the foam and normals carry the motion).
+  paintDetail(cg, solidMask(w, h), paintTile('water', 1), { px, span: 3, opacity: 0.8 });
   return { color: finishTexture(colorC), foam: finishTexture(foamC) };
 }
 

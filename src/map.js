@@ -7,42 +7,15 @@ import {
   terrainAtlas, riverTextures, foamNoiseTexture, vnoise,
 } from './textures.js';
 
-// 16 x 12 battlefield. Row 0 is the far (north) edge, row 11 the near edge.
-// G plains, F forest, M mountain, W river, B bridge, R road, V village,
-// C blue castle, K red castle.
-export const LAYOUT = [
-  'MMMFGGGWGGGFFMMM',
-  'MMFFGGGWGGRRKGMM',
-  'MFFGGVGWGGRGGGFM',
-  'FFGGGGGWWGRGFFFM',
-  'FGGGFFGGWGRGGVFF',
-  'GGRRRRRRBRRGGGFF',
-  'GGRGFFGGWGGGFFGG',
-  'FGRGGGGWWGGMMGGF',
-  'FGRGVGGWGGGMMMGF',
-  'MGRRGGWWGGFFGGFM',
-  'MMCRGGWGGFFFGGMM',
-  'MMMGGFWGGFFGMMMM',
-];
+import { TERRAIN, parseLayout } from './terrain.js';
+import MAP from './maps/river_ford.js';
 
-export const W = 16;
-export const H = 12;
-
-LAYOUT.forEach((row, r) => {
-  if (row.length !== W) throw new Error(`map row ${r} has ${row.length} tiles, expected ${W}`);
-});
-
-export const TERRAIN = {
-  G: { name: 'Plains', def: 0, avo: 0, h: 0.22 },
-  F: { name: 'Forest', def: 1, avo: 20, h: 0.22 },
-  M: { name: 'Mountain', def: 2, avo: 30, h: 0.3 },
-  W: { name: 'River', def: 0, avo: 0, h: 0.05 },
-  R: { name: 'Road', def: 0, avo: 0, h: 0.22 },
-  B: { name: 'Bridge', def: 0, avo: 0, h: 0.05 },
-  V: { name: 'Village', def: 0, avo: 10, h: 0.22 },
-  C: { name: 'Castle', def: 3, avo: 30, h: 0.24 },
-  K: { name: 'Castle', def: 3, avo: 30, h: 0.24 },
-};
+// The active map (src/maps/). Everything below reads its layout through terrainAt()/W/H.
+const GRID = parseLayout(MAP.layout);
+export const LAYOUT = GRID.rows;
+export const W = GRID.w;
+export const H = GRID.h;
+export { TERRAIN };
 
 export const FACTION_COLORS = { blue: 0x2f62c4, red: 0xc0392b };
 
@@ -56,7 +29,7 @@ export function toWorld(c, r) {
 // Elevation: the river runs in a gorge (level 0), land sits at level 1, and mountains
 // plus a few wooded hills rise to level 2. Each level adds LEVEL world units of height.
 export const LEVEL = 0.3;
-const HILLS = new Set(['1,2', '2,2', '1,3', '2,1', '10,9', '11,9', '9,10', '10,10', '11,10']);
+const HILLS = new Set(MAP.hills.map(([c, r]) => `${c},${r}`));
 export const LAND_TOP = TERRAIN.G.h + LEVEL; // 0.52; tools/blender/build_env.py matches this
 export const WATER_Y = 0.16;
 
@@ -1123,7 +1096,7 @@ function groundMaterial(atlas) {
 const SUB = 8;
 
 function buildGround(scene, rand) {
-  const cellClass = (c, r) => ({ G: 'grass', R: 'grass', F: 'forest', V: 'village', M: 'rock', C: 'stone', K: 'stone', W: 'bed', B: 'bed' })[terrainAt(c, r)];
+  const cellClass = (c, r) => TERRAIN[terrainAt(c, r)].ground;
   const yards = [], fields = [];
   for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
     if (terrainAt(c, r) !== 'V') continue;
