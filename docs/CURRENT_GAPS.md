@@ -56,4 +56,4 @@ Acceptance: GAME.md consistently distinguishes current behavior, intended rules 
 
 ## Recommended next task
 
-Fix CORE-01 as a contained correctness slice before selecting the next full gameplay system. Acceptance criteria are above. Then elicit the remaining SYS-01/SYS-02 strategic rules and prioritize one system under the durable process. Do not start unrelated expansion while CORE-02 or SYS-02 still blocks a meaningful match.
+Fix CORE-01 as a contained correctness prerequisite using the acceptance criteria above. The confirmed active system is then SYS-01 energy/abilities/priorities, followed by SYS-02 card circulation/capacity. Complete necessary dependencies in the same system pass; elicit unresolved strategic choices before implementing them. Every task names this roadmap position and its acceptance criteria. See DEVELOPMENT.md for the current roadmap; do not start unrelated expansion while core match blockers persist.

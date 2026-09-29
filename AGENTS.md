@@ -6,7 +6,7 @@ Applies to the whole repository. These decisions were confirmed by Scott on 2026
 - GAME.md owns gameplay direction; docs/DEVELOPMENT.md owns the development process; docs/CURRENT_GAPS.md is the single current gap register. Historical overhaul briefs and task logs are evidence, not the current backlog.
 - Continue the recorded direction across prompts. A narrower task or new agent is not a redesign. Honor explicit user changes and update the affected source of truth in the same working slice.
 - Ask about unspecified decisions that change player strategy; choose and document routine prototype defaults independently.
-- Develop one gameplay system at a time, then integrate and verify it before calling it complete. Keep other systems' unfinished work explicit.
+- Follow the roadmap in docs/DEVELOPMENT.md: correctness prerequisites, then energy/abilities/priorities, then card circulation/capacity. Each task names its system and acceptance criteria; identify departures before starting them. Complete the agreed prototype, integrate and verify it, and leave expansion ideas explicit in the backlog. Implement discovered dependencies within the same pass while preserving strategic-decision and balance authority.
 - Fix confirmed correctness bugs and core match blockers before unrelated feature expansion. Experiments needed to resolve blockers may proceed.
 - Agents may experiment with balance and recommend values; Scott selects changes to shipped defaults.
 - Use one implementing agent for shared engine/UI changes. Delegate only when the user authorizes it and tasks are independent, such as changes to separate character assets; one root owns integration.

@@ -13,7 +13,7 @@ Later prompts refine the current objective. They do not silently replace the gam
 
 ## System-first execution
 
-Complete one system, then integrate it. Start each pass by naming the system, relevant confirmed decisions, remaining strategic questions, dependencies and acceptance criteria. A module existing is an implementation milestone, not proof the system is complete. Small commits are useful within the system; do not substitute disconnected feature slices for system completion.
+Complete one system, then integrate it. Completion means the agreed prototype scope works and is verified; expansion ideas remain backlog items, rather than requiring every related future feature. Implement dependencies discovered during the pass as part of that same pass. Record added scope and preserve the existing authority boundary: dependencies do not authorize changing strategic design or default balance without Scott. Start each pass by naming the system, relevant confirmed decisions, remaining strategic questions, dependencies and acceptance criteria. A module existing is an implementation milestone, not proof the system is complete. Small commits are useful within the system; do not substitute disconnected feature slices for system completion.
 
 One agent owns coupled engine and UI work. Parallel subagents are appropriate only when authorized and useful for independent work, such as separate character or portrait assets. Define file ownership and contracts first; the root integrates and verifies the result.
 
@@ -27,12 +27,24 @@ Confirmed correctness bugs and core match problems block unrelated feature expan
 
 Require appropriate build/rule checks, demonstrated browser interaction and screenshots for visible changes, and seeded simulations/replay checks for balance or AI changes. Use separate labels for implemented, verified, provisional and blocked. Record evidence with its commit/date and scope; old screenshots do not verify a newer change. Documentation-only changes need consistency and diff checks, not a game server.
 
-Each handoff states what changed, evidence and practical limitations, updates CURRENT_GAPS.md, and recommends one next task with acceptance criteria. Stop verification servers. Preserve historical logs and unrelated working-tree changes.
+Each implementation task names the active roadmap system and its acceptance criteria. Each handoff states what changed, evidence and practical limitations, updates CURRENT_GAPS.md and this roadmap, and recommends one next task with acceptance criteria. Identify proposed departures from the roadmap before starting them; explicit user redirection takes precedence. Stop verification servers. Preserve historical logs and unrelated working-tree changes.
+
+## Active roadmap
+
+Confirmed order from elicitation answers 11A then B, 12A, 13A, 14B and 15C:
+
+1. **Correctness prerequisite:** fix CORE-01 eligible ranged targeting. Scope is the targeting failure, deterministic behavior and integrated verification.
+2. **Active system: SYS-01 energy, abilities, cooldowns and priority controls.** Complete the agreed prototype, including needed dependencies, before advancing to the next system. Acceptance: define gain/spend/activation timing and chosen active/passive behavior; implement persistent energy and cooldowns; let the player order eligible abilities; demonstrate charge -> spend -> recover over multiple rounds in the browser; verify both factions use the same rules through meaningful rule checks and seeded AI/replay runs. Strategic ability-kit choices remain open and must be elicited. Existing persistent tile orders are dependencies only where this scope requires them.
+3. **Next system: SYS-02 card circulation, capacity, reserves and recycling.** Acceptance: confirm return/repayment/state rules; implement useful choices at population and hand limits; preserve optional combinations and weighted population; verify the browser flow and report blocked draws, resource use and strategic alternatives in seeded simulations.
+4. **Core match pacing:** CORE-02 and CORE-03 remain blockers to unrelated expansion. Investigate and resolve them within the relevant system where necessary; experiments can proceed throughout. Scott selects changes to default balance.
+5. **Deferred:** remaining persistent-order UI, art/readability polish, new classes, campaign and multiplayer expansion. Move a deferred item into the active system when it is a necessary dependency and record why.
+
+Evaluate balance experiments on match completion, duration, faction viability, success of different strategies and meaningful decisions at capacity. A lower draw rate alone is not enough. Numerical targets and test coverage thresholds remain to be defined; do not fabricate them as confirmed requirements.
 
 ## Questions still requiring direction
 
-- Which gameplay system should be completed first after confirmed correctness fixes: energy/abilities/orders or the card economy/capacity loop?
+- What specific prototype active abilities, energy timing and shared/per-instance priority controls complete SYS-01?
 - What observable outcomes define an acceptable match: expected duration, tolerable draw rate and meaningful choices at capacity?
-- Where should players be able to configure shared ability priorities and per-unit objectives without recurring action micromanagement?
+- Which selling/recycling and card repayment/state rules should SYS-02 implement?
 
 These are open decisions, not permission to invent new gameplay direction.
