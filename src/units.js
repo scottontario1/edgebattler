@@ -267,7 +267,8 @@ function hpBar(overlay, data) {
 
 const STEP_TIME = 0.16; // seconds per tile walked
 
-export function createUnits(scene) {
+// `records` are the match controller's unit records (src/match.js); the scene holds them by reference.
+export function createUnits(scene, records = UNITS) {
   // Tiny tween runner driven by update(): fn(k) with k running 0..1 over `duration` seconds.
   const tweens = [];
   const tween = (duration, fn) => new Promise((resolve) => tweens.push({ duration, fn, t: 0, resolve }));
@@ -331,7 +332,7 @@ export function createUnits(scene) {
     byId.set(data.id, u);
     return u;
   }
-  UNITS.forEach((data) => createUnit(data));
+  records.forEach((data) => createUnit(data));
 
   return {
     list,
@@ -428,7 +429,8 @@ export function createUnits(scene) {
           u.model.setDone?.(!!u.data.done);
           u.model.update(dt, t);
         }
-        u.hp.set(u.data.hp / u.data.maxHp);
+        // During battle playback the bar shows `displayHp` (the HP as of the animation so far).
+        u.hp.set((u.displayHp ?? u.data.hp) / u.data.maxHp);
         u.hp.bar.position.copy(u.group.position).add(HP_OFFSET);
         u.hp.bar.visible = u.group.visible;
         const amp = active ? 0.05 : 0.012;

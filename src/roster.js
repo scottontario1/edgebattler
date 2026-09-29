@@ -13,7 +13,7 @@ const recruit = (cls, id, faction, c, r, look, over = {}) => {
   const t = { ...RECRUIT[cls], ...over };
   return { id, cls, classId: cls, variantId: cls, faction, c, r, name: t.name, title: t.title, lv: t.lv, hp: t.hp, maxHp: t.hp, str: t.str, mag: t.mag, skl: t.skl,
     spd: t.spd, def: t.def, res: t.res, mov: t.mov, weapon: t.weapon, look, stars: 1, population: 1, state: 'field', energy: 0, maxEnergy: 4,
-    abilityOrder: cls === 'pikeman' ? ['rally'] : [], stance: cls === 'cavalier' ? 'advance' : 'hold', cooldowns: {}, statuses: {} };
+    abilityOrder: cls === 'pikeman' ? ['rally'] : [], stance: t.stance ?? (cls === 'archer' ? 'hold' : 'advance'), cooldowns: {}, statuses: {} }; // stance matches UNIT_CARDS defaultStance
 };
 
 export const UNITS = [
@@ -45,7 +45,7 @@ export function createRecruitUnit(cls, id, faction, c, r, over = {}) {
 
 /** Prototype champion respawn: rebuild the named hero at full HP and empty combat resources. */
 export function createHeroRespawnData(id, c, r) {
-  const hero = UNITS.find((unit) => unit.id === id && unit.faction === 'blue' && unit.cls === 'paladin');
+  const hero = UNITS.find((unit) => unit.id === id && ['paladin', 'barbarian'].includes(unit.cls));
   if (!hero) throw new Error(`Unknown hero champion: ${id}`);
   return {
     ...structuredClone(hero), c, r, hp: hero.maxHp, energy: 0, maxEnergy: 4,

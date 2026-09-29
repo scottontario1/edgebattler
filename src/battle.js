@@ -78,7 +78,10 @@ export function resolveBattleRound({
     const target = stance === 'protect' ? protect : (order.targetId ? byId.get(order.targetId) : nearestOpponent(unit, start));
     const candidates = (legalMoves(unit, start) || []).map((p) => ({ c: p.c, r: p.r }));
     const current = { c: unit.c, r: unit.r };
-    const eligible = candidates.filter((p) => p.c !== current.c || p.r !== current.r);
+    // Tiles occupied in the shared snapshot can never be entered this round (original occupants
+    // block even when they intend to leave), so they are not candidates at all.
+    const occupiedAtStart = new Set(start.filter((u) => u.hp > 0 && u.id !== unit.id).map(positionKey));
+    const eligible = candidates.filter((p) => (p.c !== current.c || p.r !== current.r) && !occupiedAtStart.has(positionKey(p)));
     const range = attackRange(unit, order);
     const currentDistance = target ? manhattan(current, target) : Infinity;
     const alreadyInRange = target && range && stance === 'advance'

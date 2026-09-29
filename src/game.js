@@ -12,6 +12,8 @@ import { buildMap } from './map.js';
 import { createUnits } from './units.js';
 import { createCamera } from './camera.js';
 import { createUI } from './ui.js';
+import { createMatch } from './match.js';
+import { playLog } from './log.js';
 
 // Render one pixel per CSS pixel; SMAA handles edges without supersampling every pass.
 const PIXEL_RATIO = 1;
@@ -47,11 +49,22 @@ sun.shadow.radius = 3;
 scene.add(sun);
 
 const map = buildMap(scene);
-const units = createUnits(scene);
+// One match per page load. ?seed=N picks the card/battle seed; ?red=greedy|heuristic|passive picks the
+// enemy commander; ?blue=<policy> (or ?auto=<policy>) lets an AI play blue too; ?speed=4 shortens playback.
+const params = new URLSearchParams(location.search);
+const policies = { red: params.get('red') || 'greedy', blue: params.get('blue') || params.get('auto') || null, speed: params.get('speed') };
+// Dev builds stream every game to logs/play/ through the vite.config.js /__log endpoint.
+const gameLog = import.meta.env.DEV ? playLog() : null;
+const match = createMatch({
+  seed: Number(params.get('seed')) || 0x415348,
+  log: gameLog?.push,
+  meta: { source: 'browser', blue: policies.blue ? `ai:${policies.blue}` : 'human', red: `ai:${policies.red}`, commit: typeof __COMMIT__ !== 'undefined' ? __COMMIT__ : null },
+});
+const units = createUnits(scene, match.units);
 const view = createCamera(renderer.domElement);
 const { camera, resize } = view;
-const ui = createUI({ renderer, camera, scene, units, view });
-if (import.meta.env.DEV) window.__game = { THREE, scene, camera, renderer, units };
+const ui = createUI({ renderer, camera, scene, units, view, match, policies });
+if (import.meta.env.DEV) window.__game = { THREE, scene, camera, renderer, units, match, log: gameLog };
 
 const composer = new EffectComposer(renderer);
 composer.setPixelRatio(PIXEL_RATIO);

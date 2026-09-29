@@ -1,15 +1,14 @@
 import * as THREE from 'three';
-import { W, H, LAYOUT, TERRAIN, inBounds, terrainAt, toWorld, tileTop } from './map.js';
+import { W, H, TERRAIN, inBounds, terrainAt, toWorld, tileTop } from './map.js';
 import { portraitSVG } from './portraits.js';
-import { forecast, resolve, weaponOf } from './combat.js';
+import { forecast, weaponOf } from './combat.js';
 import { MOVE_COST, MOVE_TYPE, key, unkey, computeRange } from './rules.js';
-import { CARD_LIMITS, UNIT_CARDS, SPELL_CARDS, SKILL_CARDS, createCardState, drawOpeningHand, refreshRound, canAfford, recruitUnit, canDeployReserve, seededRandom } from './cards.js';
-import { advanceAbilityRound, initializeAbilityState, queueSpell, cancelSpell, resolveAbilityActivation, resolveQueuedSpells, equipTypeSkill, transferTypeSkill, skillsForUnitType } from './abilities.js';
-import { findUpgradeMatches, previewUpgrade, combineUnits } from './upgrades.js';
-import { resolveBattleRound } from './battle.js';
+import { CARD_LIMITS, UNIT_CARDS, SPELL_CARDS, SKILL_CARDS, canAfford } from './cards.js';
+import { findUpgradeMatches, previewUpgrade } from './upgrades.js';
+import { RULES } from './match.js';
 import { stanceIcon, STANCE_LABEL, STANCE_HINT } from './ui/icons.js';
-import { createEnemyCards, refreshEnemyCards, planEnemyReinforcements } from './enemy.js';
-import { createRecruitUnit, createHeroRespawnData } from './units.js';
+import { runCommander } from './ai/commander.js';
+import { createRecruitUnit } from './units.js';
 import { esc } from './ui/util.js';
 import { handHTML, reservesHTML, detailHTML, loadoutsHTML } from './ui/hand.js';
 import { trayHTML, applyTrayState } from './ui/tray.js';
@@ -208,7 +207,7 @@ function reticles(scene) {
   };
 }
 
-export function createUI({ renderer, camera, scene, units, view }) {
+export function createUI({ renderer, camera, scene, units, view, match, policies = {} }) {
   const card = document.getElementById('card');
   const terrainChip = document.getElementById('terrain');
   const roster = document.getElementById('roster');
@@ -217,10 +216,12 @@ export function createUI({ renderer, camera, scene, units, view }) {
   const sheet = document.getElementById('sheet');
   const turnNo = document.getElementById('turn-no');
   const phaseEl = document.getElementById('phase');
-  const HERO_RESPAWN_DELAY = 2; // A lost planning/battle cycle, then return at the next planning stage.
-  const RESERVE_HEAL = 4;   // HP a benched unit recovers each round (prototype default, tune with pacing)
-  const RESERVE_ENERGY = 1; // extra energy a benched unit gains each round
-  const HERO_RESPAWN_COST = 1; // Explicit prototype default; tune after match pacing tests.
+  // Rules and state live in the match controller (src/match.js); this module is the view over it.
+  const blue = () => match.sides.blue;
+  const redPolicy = policies.red || 'greedy';
+  const bluePolicy = policies.blue || null; // null = human
+  const speed = Math.max(0.25, Number(policies.speed) || 1);
+  const wait = (ms) => sleep(ms / speed);
 
   const feed = createFeed({ camera, units, phaseEl, turnEl: turnNo });
   const { pop, banner } = feed;
@@ -250,28 +251,18 @@ export function createUI({ renderer, camera, scene, units, view }) {
     turn: 1,
     busy: false, // an animation or the enemy phase is running: input is ignored
     over: false, // victory or defeat reached
-    heroRespawnAt: null,
     selectedCardId: null,
     selectedSkillType: 'pikeman',
     skillTransferTargets: {},
     selectedReserveId: null,
     upgradeChoice: null,
-    queuedSpellCards: {},
     // Short landscape (phone on its side) has no room for an open tray: start collapsed, one tap opens it.
     trayCollapsed: matchMedia('(max-height: 500px) and (min-aspect-ratio: 1/1) and (min-width: 561px)').matches,
     notice: '',
   };
-  let cardState = createCardState({ population: units.alive('blue').length });
-  let skillLoadouts = {};
-  const cardRng = seededRandom(0x415348);
-  cardState = drawOpeningHand(cardState, cardRng).state;
-  const territory = new Map();
-  for (let r = 0; r < H; r += 1) for (let c = 0; c < W; c += 1) {
-    const tile = LAYOUT[r][c];
-    if (tile === 'C') territory.set(`${c},${r}`, 'blue');
-    else if (tile === 'K') territory.set(`${c},${r}`, 'red');
-    else if (tile === 'V') territory.set(`${c},${r}`, null);
-  }
+  Object.defineProperty(state, 'turn', { get: () => match.round });
+  Object.defineProperty(state, 'over', { get: () => match.over });
+  const territory = match.territory;
   let range = null;
   const plates = createPlates({ camera, scene, units, territory, container: document.querySelector('.hud') });
 
@@ -280,16 +271,6 @@ export function createUI({ renderer, camera, scene, units, view }) {
   const selected = () => (state.selectedId ? data(state.selectedId) : null);
   // A player unit that can still act this turn.
   const canAct = (u) => !!u && u.faction === 'blue' && u.hp > 0 && state.phase === 'player' && !state.busy && !state.over;
-
-  for (const { data: unit } of units.list) {
-    Object.assign(unit, initializeAbilityState(unit, {
-      stance: UNIT_CARDS[unit.cls]?.defaultStance || unit.stance || (unit.cls === 'archer' ? 'hold' : 'advance'),
-      abilityOrder: unit.abilityOrder || (unit.cls === 'pikeman' ? ['rally'] : []),
-    }));
-    unit.state = 'field';
-    unit.population = unit.population ?? (unit.boss ? 2 : 1);
-    unit.planningMoved = false;
-  }
 
   // ---------- Panels ----------
 
@@ -300,30 +281,12 @@ export function createUI({ renderer, camera, scene, units, view }) {
     return forecastHTML({ a, d, f, terrain: TERRAIN[terrainAt(d.c, d.r)] });
   }
 
-  function armyRecords() {
-    const reserves = cardState.reserves.map((reserve) => {
-      const template = createRecruitUnit(reserve.unitId, reserve.id, 'blue', 0, 0);
-      const record = { ...template, ...reserve,
-        hp: reserve.hp ?? template.hp,
-        maxHp: reserve.maxHp ?? template.maxHp,
-        energy: reserve.energy ?? 0,
-        maxEnergy: reserve.maxEnergy ?? template.maxEnergy,
-        cooldowns: reserve.cooldowns ?? {},
-        statuses: reserve.statuses ?? {},
-        abilityOrder: reserve.abilityOrder ?? template.abilityOrder,
-        stance: reserve.stance ?? template.stance,
-        state: 'reserve' };
-      delete record.c;
-      delete record.r;
-      return record;
-    });
-    return [...reserves, ...units.alive('blue').map((entry) => entry.data)];
-  }
+  const armyRecords = () => match.armyRecords('blue');
 
   function renderPlanning() {
-    const selectedCard = cardState.hand.find((item) => item.instanceId === state.selectedCardId);
-    const affordable = (cost) => canAfford(cardState, cost);
-    const queued = (cardState.queuedSpells || []).map((cast) => {
+    const selectedCard = blue().cards.hand.find((item) => item.instanceId === state.selectedCardId);
+    const affordable = (cost) => canAfford(blue().cards, cost);
+    const queued = (blue().cards.queuedSpells || []).map((cast) => {
       const spell = SPELL_CARDS[cast.spellId];
       return {
         queueId: cast.queueId,
@@ -358,19 +321,19 @@ export function createUI({ renderer, camera, scene, units, view }) {
         : state.upgradeChoice ? 'Choose the surviving copy and destination, then confirm.'
           : 'Select a card to recruit or prepare a spell.');
     const m = {
-      supply: cardState.supply, population: cardState.population, populationCap: CARD_LIMITS.populationCap,
-      reserveCount: cardState.reserves.length, reserveCapacity: CARD_LIMITS.reserveCapacity,
+      supply: blue().cards.supply, population: blue().cards.population, populationCap: CARD_LIMITS.populationCap,
+      reserveCount: blue().cards.reserves.length, reserveCapacity: CARD_LIMITS.reserveCapacity,
       locations: controlledCount, prompt, phase: state.phase, collapsed: state.trayCollapsed,
       hand: handHTML({
-        hand: cardState.hand, selectedCardId: state.selectedCardId, canAfford: affordable,
+        hand: blue().cards.hand, selectedCardId: state.selectedCardId, canAfford: affordable,
         portraitFor: (item) => portraitSVG(units.list.find((entry) => entry.data.cls === item.unitId)?.data || createRecruitUnit(item.unitId, `preview-${item.unitId}`, 'blue', 0, 0)),
       }),
-      reserves: reservesHTML({ reserves: cardState.reserves, selectedReserveId: state.selectedReserveId, definitions: UNIT_CARDS }),
-      detail: detailHTML({ selectedCard, selectedSkillType: state.selectedSkillType, skillLoadouts, canAfford: affordable }),
+      reserves: reservesHTML({ reserves: blue().cards.reserves, selectedReserveId: state.selectedReserveId, definitions: UNIT_CARDS }),
+      detail: detailHTML({ selectedCard, selectedSkillType: state.selectedSkillType, skillLoadouts: blue().loadouts, canAfford: affordable }),
       queued: queuedHTML({ queued }),
       upgrades: upgradePromptsHTML({ groups }),
       choice: upgradeChoiceHTML({ choice }),
-      loadouts: loadoutsHTML({ skillLoadouts, skillTransferTargets: state.skillTransferTargets }),
+      loadouts: loadoutsHTML({ skillLoadouts: blue().loadouts, skillTransferTargets: state.skillTransferTargets }),
     };
     planning.innerHTML = trayHTML(m);
     applyTrayState(planning, m);
@@ -430,8 +393,8 @@ export function createUI({ renderer, camera, scene, units, view }) {
     } else if (state.mode === 'spellTarget') {
       html = btn('cancelCard', 'Cancel card', '‹', 'Esc');
     } else if (state.selectedCardId) {
-      const card = cardState.hand.find((item) => item.instanceId === state.selectedCardId);
-      if (card?.type === 'unit') html += btn('recruit', `Recruit · ${card.cost}`, '✚', '↵', 'primary', !canAfford(cardState, card.cost));
+      const card = blue().cards.hand.find((item) => item.instanceId === state.selectedCardId);
+      if (card?.type === 'unit') html += btn('recruit', `Recruit · ${card.cost}`, '✚', '↵', 'primary', !canAfford(blue().cards, card.cost));
       if (card?.type === 'spell') html += btn('targetSpell', 'Choose target', '✧', '↵', 'primary');
       html += btn('cancelCard', 'Clear card', '‹', 'Esc');
     } else {
@@ -465,7 +428,7 @@ export function createUI({ renderer, camera, scene, units, view }) {
 
   function renderOverlays() {
     if (state.mode === 'spellTarget') {
-      const card = cardState.hand.find((item) => item.instanceId === state.selectedCardId);
+      const card = blue().cards.hand.find((item) => item.instanceId === state.selectedCardId);
       let preview = [];
       if (card?.id === 'spell-fireburst') {
         for (let dr = -1; dr <= 1; dr += 1) for (let dc = -1; dc <= 1; dc += 1) {
@@ -563,206 +526,88 @@ export function createUI({ renderer, camera, scene, units, view }) {
 
   // ---------- Planning, automatic resolution, and persistent match state ----------
 
-  // Victory comes from occupying the enemy keep; ordinary and hero deaths persist.
-  function checkEnd() {
-    if (state.over) return true;
-    const winner = units.alive('blue').some((u) => terrainAt(u.data.c, u.data.r) === 'K');
-    const lost = !units.alive('blue').length && !cardState.reserves.length && state.heroRespawnAt === null;
-    if (!winner && !lost) return false;
-    state.over = true;
+  // End of match: banner with the reason.
+  function showEnd() {
     state.busy = false;
     state.mode = 'idle';
     refresh();
-    banner(winner ? 'Victory' : 'Defeat', winner ? 'The enemy keep has fallen' : 'Your army has fallen', 0);
-    return true;
+    const won = match.winner === 'blue';
+    const why = { 'keep-captured': won ? 'The enemy keep has fallen' : 'Your keep has fallen',
+      'army-destroyed': won ? 'The enemy army is destroyed' : 'Your army has fallen', 'round-limit': 'The round limit was reached' }[match.reason] || '';
+    banner(match.winner ? (won ? 'Victory' : 'Defeat') : 'Draw', why, 0);
   }
 
-  const deploymentTiles = () => {
-    const out = [];
-    for (const [location, owner] of territory) {
-      if (owner !== 'blue') continue;
-      const [c, r] = location.split(',').map(Number);
-      out.push([c, r]);
-      for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (inBounds(c + dc, r + dr)) out.push([c + dc, r + dr]);
-    }
-    return [...new Map(out.map(([c, r]) => [`${c},${r}`, [c, r]])).values()];
-  };
-
-  function canDeployAt(reserveId, c, r) {
-    const reserve = cardState.reserves.find((unit) => unit.id === reserveId);
-    const moveType = MOVE_TYPE[reserve?.unitId] || 'foot';
-    return canDeployReserve(cardState, reserveId, {
-      location: deploymentTiles().some(([x, y]) => x === c && y === r),
-      tile: { occupied: !!units.unitAt(c, r), traversable: MOVE_COST[moveType][terrainAt(c, r)] !== undefined, terrain: terrainAt(c, r) === 'W' ? 'water' : terrainAt(c, r) },
-    });
-  }
-
+  const deploymentTiles = () => match.deploymentTiles('blue');
+  const canDeployAt = (reserveId, c, r) => match.canDeployAt('blue', reserveId, c, r);
   function deploymentOptions() {
     return deploymentTiles().filter(([c, r]) => canDeployAt(state.selectedReserveId, c, r).ok);
   }
 
-  function tryHeroRespawn() {
-    if (state.heroRespawnAt === null || state.turn < state.heroRespawnAt) return false;
-    if (cardState.supply < HERO_RESPAWN_COST) {
-      state.notice = `Brenna returns in round ${state.turn}, but needs ${HERO_RESPAWN_COST} Supply.`;
-      return false;
-    }
-    const tile = deploymentTiles().find(([c, r]) => !units.unitAt(c, r) && MOVE_COST.armor[terrainAt(c, r)] !== undefined);
-    if (!tile) {
-      state.notice = 'Brenna is ready to return, but the base deployment tiles are occupied.';
-      return false;
-    }
-    if (units.byId.has('brenna')) units.removeUnit('brenna');
-    const hero = createHeroRespawnData('brenna', tile[0], tile[1]);
-    Object.assign(hero, initializeAbilityState(hero));
-    units.addUnit(hero);
-    cardState.supply -= HERO_RESPAWN_COST;
-    cardState.population += hero.population;
-    state.heroRespawnAt = null;
-    state.notice = `Brenna returned at the base for ${HERO_RESPAWN_COST} Supply.`;
-    return true;
+  // Scene units follow the match records: add new ones, drop removed or replaced ones, snap positions.
+  function syncView({ snap = true } = {}) {
+    for (const u of [...units.list]) if (match.byId(u.data.id) !== u.data) units.removeUnit(u.data.id);
+    for (const rec of match.units) if (!units.byId.has(rec.id)) { units.addUnit(rec); portraits.set(rec.id, portraitSVG(rec)); }
+    if (snap) for (const rec of match.units) if (rec.hp > 0) units.setPosition(rec.id, rec.c, rec.r);
+  }
+
+  const reason = (r) => String(r || '').replaceAll('-', ' ');
+  /** Apply a human planning action; on failure show why. */
+  function act(action) {
+    const res = match.apply({ faction: 'blue', ...action }, 'human');
+    if (!res.ok) state.notice = `Cannot ${action.type}: ${reason(res.reason)}.`;
+    return res;
   }
 
   async function doPlanMove(unit, tile) {
     if (!canAct(unit) || unit.planningMoved) return;
-    const moveRange = computeRange(unit, units, unit.mov);
-    const path = moveRange.pathTo(tile[0], tile[1]);
-    if (!path.length) return;
+    const from = [unit.c, unit.r];
+    const res = act({ type: 'move', unitId: unit.id, c: tile[0], r: tile[1] });
+    if (!res.ok) { refresh(); return; }
+    units.setPosition(unit.id, ...from);
     state.busy = true;
     refresh();
-    await units.moveAlong(unit.id, path);
-    unit.planningMoved = true;
+    await units.moveAlong(unit.id, res.path);
     state.busy = false;
     refresh();
   }
 
-  // ---------- Enemy commander: recruits and deploys under the same card rules ----------
-  let enemy = null;
-  let enemySeq = 0;
-  const redPopulation = () => units.alive('red').reduce((sum, entry) => sum + (entry.data.population || 1), 0);
-
-  function enemyDeploymentTiles() {
-    const out = new Map();
-    for (const [location, owner] of territory) {
-      if (owner !== 'red') continue;
-      const [c, r] = location.split(',').map(Number);
-      for (const [dc, dr] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) if (inBounds(c + dc, r + dr)) out.set(`${c + dc},${r + dr}`, [c + dc, r + dr]);
-    }
-    return [...out.values()];
+  // An AI commander plans one side (red always; blue too in autoplay). Returns a feed notice.
+  function runAI(faction, policy) {
+    const before = new Set(match.alive(faction).map((u) => u.id));
+    runCommander(match, faction, policy);
+    syncView();
+    const arrived = match.alive(faction).filter((u) => !before.has(u.id)).map((u) => u.name);
+    if (!arrived.length) return '';
+    return faction === 'red' ? `Enemy reinforcements: ${arrived.join(', ')}` : `Deployed: ${arrived.join(', ')}`;
   }
 
-  /** Grant the enemy its round's Supply and cards (after round 1), then recruit and deploy. Returns a notice or ''. */
-  function planEnemy(first = false) {
-    enemy = first ? createEnemyCards({ population: redPopulation() }) : refreshEnemyCards(enemy, redPopulation());
-    const foes = units.alive('blue').map((entry) => entry.data);
-    const plan = planEnemyReinforcements(enemy, {
-      tiles: enemyDeploymentTiles(),
-      canStand: (unitId, c, r) => !units.unitAt(c, r) && MOVE_COST[MOVE_TYPE[unitId] || 'foot'][terrainAt(c, r)] !== undefined,
-      threat: (c, r) => foes.reduce((best, f) => Math.min(best, Math.abs(f.c - c) + Math.abs(f.r - r)), 99),
-    });
-    enemy = plan.enemy;
-    for (const d of plan.deployments) {
-      enemySeq += 1;
-      const unit = createRecruitUnit(d.unitId, `enemy-${enemySeq}-${d.unitId}`, 'red', d.c, d.r);
-      Object.assign(unit, initializeAbilityState(unit, { stance: UNIT_CARDS[d.unitId]?.defaultStance }));
-      unit.state = 'field';
-      unit.planningMoved = false;
-      units.addUnit(unit);
-    }
-    if (!plan.deployments.length) return '';
-    const names = plan.deployments.map((d) => d.name);
-    return `Enemy reinforcements: ${names.join(', ')}`;
-  }
-
-  // Withdraw: a deployed recruit standing on a controlled deployment tile returns to the reserve bench
-  // with its HP, energy, cooldowns and statuses. It keeps its population slot (it is still paid for).
-  function canWithdraw(u) {
-    return !!u && u.faction === 'blue' && u.hp > 0 && u.cls !== 'paladin' && state.phase === 'player' && !state.busy && !state.over
-      && cardState.reserves.length < CARD_LIMITS.reserveCapacity
-      && deploymentTiles().some(([c, r]) => c === u.c && r === u.r);
-  }
-
+  // Withdraw: a deployed recruit on a controlled tile returns to the bench with its HP, energy,
+  // cooldowns and statuses (src/match.js RULES for the recovery rates).
+  const canWithdraw = (u) => !state.busy && match.canWithdraw('blue', u);
   function withdrawSelected() {
     const u = selected();
-    if (!canWithdraw(u)) {
-      state.notice = u && u.cls === 'paladin' ? 'Champions cannot be benched.' : 'Withdraw from your keep or a captured village (or free a reserve slot).';
-      refresh();
-      return;
-    }
-    const reserve = { ...structuredClone(u), id: `reserve-${u.id}`, fieldId: u.id, unitId: u.cls, faction: 'blue', state: 'reserve' };
-    for (const k of ['c', 'r', 'planningMoved', 'done', 'moved']) delete reserve[k];
-    units.removeUnit(u.id);
-    cardState.reserves.push(reserve);
-    state.selectedId = null;
-    state.notice = `${u.name} withdrew to the reserve bench (recovers ${RESERVE_HEAL} HP and ${RESERVE_ENERGY} energy per round).`;
+    const res = act({ type: 'withdraw', unitId: u?.id });
+    if (res.ok) {
+      state.selectedId = null;
+      state.notice = `${u.name} withdrew to the reserve bench (recovers ${RULES.reserveHeal} HP and ${RULES.reserveEnergy} energy per round).`;
+    } else if (u?.id === match.champion('blue')) state.notice = 'Champions cannot be benched.';
+    syncView();
     refresh();
   }
 
   function deployReserveAt(c, r) {
-    const reserve = cardState.reserves.find((unit) => unit.id === state.selectedReserveId);
-    if (!reserve) return false;
-    const legal = canDeployAt(reserve.id, c, r);
-    if (!legal.ok) { state.notice = `Cannot deploy here: ${legal.reason.replaceAll('-', ' ')}.`; refresh(); return false; }
-    const unit = createRecruitUnit(reserve.unitId, `recruit-${reserve.id}`, 'blue', c, r, {
-      stars: reserve.stars,
-      population: reserve.population,
-      state: 'field',
-      energy: reserve.energy ?? 0,
-      maxEnergy: reserve.maxEnergy ?? 4,
-      cooldowns: reserve.cooldowns ?? {},
-      statuses: reserve.statuses ?? {},
-      abilityOrder: reserve.abilityOrder ?? (reserve.unitId === 'pikeman' ? ['rally'] : []),
-      stance: reserve.stance ?? UNIT_CARDS[reserve.unitId]?.defaultStance,
-    });
-    // A reserve may carry more than the class template: combined stars and stats, hurt HP, stored energy.
-    const carried = Object.fromEntries(Object.entries(reserve).filter(([k, v]) => v != null && !['id', 'fieldId', 'state', 'faction', 'c', 'r', 'costPaid'].includes(k)));
-    Object.assign(unit, carried);
-    if (reserve.fieldId && !units.byId.has(reserve.fieldId)) unit.id = reserve.fieldId;
-    Object.assign(unit, initializeAbilityState(unit));
-    unit.state = 'field';
-    unit.planningMoved = false;
-    cardState.reserves = cardState.reserves.filter((item) => item.id !== reserve.id);
-    units.addUnit(unit);
-    state.selectedReserveId = null;
-    state.mode = 'idle';
-    state.notice = `${unit.name} deployed. It will act in this battle.`;
+    const res = act({ type: 'deploy', reserveId: state.selectedReserveId, c, r });
+    if (res.ok) {
+      state.selectedReserveId = null;
+      state.mode = 'idle';
+      state.notice = `${match.byId(res.unitId).name} deployed. It will act in this battle.`;
+    }
+    syncView();
     refresh();
-    return true;
+    return res.ok;
   }
 
-  function unitBoard(records = units.alive().map((entry) => entry.data)) {
-    const list = records.map((record) => ({ data: record }));
-    return {
-      list,
-      byId: new Map(list.map((entry) => [entry.data.id, entry])),
-      unitAt(c, r) { return list.find((entry) => entry.data.hp > 0 && entry.data.c === c && entry.data.r === r); },
-    };
-  }
-
-  function updateTerritory() {
-    const captured = [];
-    for (const location of territory.keys()) {
-      const [c, r] = location.split(',').map(Number);
-      const occupant = units.unitAt(c, r);
-      if (terrainAt(c, r) === 'V' && occupant && territory.get(location) !== occupant.data.faction) {
-        territory.set(location, occupant.data.faction);
-        captured.push({ c, r, faction: occupant.data.faction });
-      }
-    }
-    return captured;
-  }
-
-  async function showSpellEvents(events) {
-    for (const event of events) {
-      if (event.amount > 0 && event.targetId) pop(`+${event.amount}`, event.targetId, 'heal');
-      for (const hit of event.events || []) {
-        if (hit.amount > 0) pop(`${hit.amount}`, hit.targetId);
-        if (data(hit.targetId).hp <= 0) await units.die(hit.targetId);
-      }
-      if (event.targetId && units.byId.has(event.targetId) && data(event.targetId).hp <= 0) await units.die(event.targetId);
-      await sleep(120);
-    }
-  }
+  const unitBoard = (records) => match.board(records);
 
   function makeUpgradeChoices(ids) {
     const records = armyRecords().filter((unit) => ids.includes(unit.id));
@@ -776,88 +621,52 @@ export function createUI({ renderer, camera, scene, units, view }) {
   function applyUpgrade() {
     const choice = state.upgradeChoice;
     if (!choice) return;
-    const records = armyRecords();
-    const preview = previewUpgrade(records, choice.ids, choice);
-    if (!preview.ok) { state.notice = `Cannot combine: ${preview.reason}`; refresh(); return; }
-    if (choice.destination === 'field' && preview.unit.c === undefined) {
-      state.notice = 'Choose a field unit to keep the upgraded unit on its tile, or place the result on the reserve bench.';
-      refresh();
-      return;
+    const res = act({ type: 'combine', ids: choice.ids, survivorId: choice.survivorId, destination: choice.destination });
+    if (res.ok) {
+      if (choice.ids.includes(state.selectedId)) state.selectedId = null;
+      state.upgradeChoice = null;
+      state.notice = `Combined to ${res.stars} stars (${res.populationDelta >= 0 ? '+' : ''}${res.populationDelta} population).`;
     }
-    const consumed = new Set(choice.ids);
-    const result = combineUnits(records, choice.ids, choice);
-    if (!result.ok) { state.notice = `Cannot combine: ${result.reason}`; refresh(); return; }
-    for (const id of consumed) units.removeUnit(id);
-    if (consumed.has(state.selectedId)) state.selectedId = null;
-    cardState.reserves = cardState.reserves.filter((unit) => !consumed.has(unit.id));
-    cardState.population = Math.max(0, cardState.population + result.populationDelta);
-    if (result.unit.state === 'reserve') cardState.reserves.push(result.unit);
-    else units.addUnit(result.unit);
-    state.upgradeChoice = null;
-    state.notice = `${result.unit.name} combined to ${result.unit.stars} stars (${result.populationDelta >= 0 ? '+' : ''}${result.populationDelta} population).`;
+    syncView();
     refresh();
   }
 
   function recruitSelectedCard() {
-    const result = recruitUnit(cardState, state.selectedCardId);
-    if (!result.ok) { state.notice = `Recruit failed: ${result.reason}`; refresh(); return; }
-    cardState = result.state;
-    state.selectedCardId = null;
-    state.notice = `${UNIT_CARDS[result.reserve.unitId].name} joined the reserve bench.`;
+    const res = act({ type: 'recruit', cardId: state.selectedCardId });
+    if (res.ok) {
+      state.selectedCardId = null;
+      state.notice = `${UNIT_CARDS[res.unitId].name} joined the reserve bench.`;
+    }
     refresh();
   }
 
   function equipSelectedSkill() {
-    const card = cardState.hand.find((item) => item.instanceId === state.selectedCardId);
+    const card = blue().cards.hand.find((item) => item.instanceId === state.selectedCardId);
     if (!card || card.type !== 'skill') return false;
-    if (cardState.supply < card.cost) {
-      state.notice = `Barrier needs ${card.cost} Supply.`;
-      refresh();
-      return false;
+    const res = act({ type: 'equip', cardId: card.instanceId, unitType: state.selectedSkillType });
+    if (res.ok) {
+      state.selectedCardId = null;
+      state.notice = `${card.name} now protects every ${state.selectedSkillType} in the next battle.`;
     }
-    if ((skillLoadouts[state.selectedSkillType] || []).some((skill) => skill.id === card.skillId)) {
-      state.notice = `${card.name} is already equipped for ${state.selectedSkillType}.`;
-      refresh();
-      return false;
-    }
-    const skill = { ...SKILL_CARDS[card.skillId], id: card.skillId };
-    const result = equipTypeSkill(skillLoadouts, state.selectedSkillType, skill, { slots: 2 });
-    if (!result.ok) {
-      state.notice = `Cannot equip skill: ${result.reason.replaceAll('-', ' ')}.`;
-      refresh();
-      return false;
-    }
-    skillLoadouts = result.loadouts;
-    cardState.supply -= card.cost;
-    cardState.hand = cardState.hand.filter((item) => item.instanceId !== card.instanceId);
-    state.selectedCardId = null;
-    state.notice = `${card.name} now protects every ${state.selectedSkillType} in the next battle.`;
     refresh();
-    return true;
+    return res.ok;
   }
 
   function queueSelectedSpell(c, r, targetUnit) {
-    const card = cardState.hand.find((item) => item.instanceId === state.selectedCardId);
+    const card = blue().cards.hand.find((item) => item.instanceId === state.selectedCardId);
     if (!card || card.type !== 'spell') return false;
-    const spellId = card.id.replace('spell-', '');
-    const target = spellId === 'fireburst'
-      ? { kind: 'area', x: c, y: r }
-      : targetUnit && targetUnit.faction === 'blue'
-        ? { kind: 'unit', faction: 'friendly', unitId: targetUnit.id } : null;
-    if (!target) { state.notice = 'Choose a living friendly unit for this spell.'; refresh(); return false; }
-    const queueId = `queued-${card.instanceId}`;
-    const result = queueSpell(cardState, spellId, target, { queueId });
-    if (!result.ok) { state.notice = `Spell unavailable: ${result.reason}`; refresh(); return false; }
-    const hand = cardState.hand.filter((item) => item.instanceId !== card.instanceId);
-    cardState = { ...result.state, hand };
-    state.queuedSpellCards[queueId] = card;
-    state.selectedCardId = null;
-    state.mode = 'idle';
-    state.notice = `${card.name} queued for battle.`;
+    const res = act({ type: 'spell', cardId: card.instanceId, c, r, unitId: targetUnit?.id });
+    if (res.ok) {
+      state.selectedCardId = null;
+      state.mode = 'idle';
+      state.notice = `${card.name} queued for battle.`;
+    }
     refresh();
-    return true;
+    return res.ok;
   }
 
+  // Resolve the round in the match, then play its event batches back. Playback order never changes
+  // the outcome: every record already holds its final state; the HP bars show `displayHp` meanwhile.
   async function resolveBattle() {
     if (state.busy || state.over || state.phase !== 'player') return;
     state.busy = true;
@@ -867,117 +676,76 @@ export function createUI({ renderer, camera, scene, units, view }) {
     state.selectedReserveId = null;
     state.selectedId = null;
     state.notice = '';
+    const shown = new Map(match.alive().map((u) => [u.id, u.hp]));
+    const from = new Map(match.alive().map((u) => [u.id, [u.c, u.r]]));
+    const result = match.resolveRound();
+    // Authoritative end positions, taken before the sprites are rewound for playback.
+    const final = new Map(match.units.map((u) => [u.id, [u.c, u.r]]));
+    for (const [id, hp] of shown) { const u = units.byId.get(id); if (u) u.displayHp = hp; }
+    // setPosition also writes the record (records are shared); restore() puts the end positions back.
+    for (const [id, at] of from) if (units.byId.has(id)) units.setPosition(id, ...at);
+    const restore = () => { for (const u of match.units) { const at = final.get(u.id); if (at) { u.c = at[0]; u.r = at[1]; } } };
+    restore();
     refresh();
-    await banner('Battle begins', '', 500);
-
-    // Spells commit before movement. This is a single authoritative update; animations only read it.
-    if ((cardState.queuedSpells || []).length) {
-      const spellResult = resolveQueuedSpells(cardState, units.alive().map((entry) => entry.data));
-      for (const record of spellResult.units) Object.assign(data(record.id), record);
-      cardState = { ...spellResult.state };
-      state.queuedSpellCards = {};
-      await showSpellEvents(spellResult.events);
-      refresh();
+    await banner('Battle begins', '', 500 / speed);
+    const show = (id, delta) => { const u = units.byId.get(id); if (u && u.displayHp != null) u.displayHp = Math.max(0, u.displayHp + delta); };
+    const dying = async (id) => { if (units.byId.has(id) && (units.byId.get(id).displayHp ?? 1) <= 0) await units.die(id); };
+    for (const batch of result.batches) {
+      if (batch.type === 'spells') {
+        for (const e of batch.events) {
+          if (e.amount > 0 && e.targetId) { pop(`+${e.amount}`, e.targetId, 'heal'); show(e.targetId, e.amount); }
+          if (e.status && e.targetId) pop(e.status === 'ward' ? 'Ward' : e.status, e.targetId, 'ward');
+          for (const hit of e.events || []) { if (hit.amount > 0) { pop(`${hit.amount}`, hit.targetId); show(hit.targetId, -hit.amount); } await dying(hit.targetId); }
+          await wait(120);
+        }
+      } else if (batch.type === 'abilities') {
+        for (const e of batch.events) {
+          if (e.effect?.type === 'heal' && e.effect.amount) { pop(`${e.name || 'Rally'} +${e.effect.amount}`, e.unitId, 'heal'); show(e.unitId, e.effect.amount); }
+          await wait(100);
+        }
+      } else if (batch.type === 'movement') {
+        for (const e of batch.events) {
+          if (e.type !== 'move' || !units.byId.has(e.unitId)) continue;
+          if (e.path?.length) await units.moveAlong(e.unitId, e.path);
+          else units.setPosition(e.unitId, e.to.c, e.to.r);
+        }
+        restore();
+      } else if (batch.type === 'combat') {
+        for (const e of batch.events) {
+          if (e.type === 'strike') {
+            const target = units.byId.get(e.targetId);
+            if (!units.byId.has(e.attackerId) || !target) continue;
+            await units.lunge(e.attackerId, [target.data.c, target.data.r]);
+            if (e.hit) {
+              if (e.damage) { pop(e.crit ? `${e.damage}!` : `${e.damage}`, e.targetId, e.crit ? 'crit' : ''); show(e.targetId, -e.damage); await units.shake(e.targetId); }
+              else if (e.barrierReduction) pop('Blocked', e.targetId, 'barrier');
+            } else pop('MISS', e.targetId, 'miss');
+            await wait(110);
+          } else if (e.type === 'death') await units.die(e.unitId);
+        }
+      }
     }
-
-    const abilityEvents = [];
-    for (const entry of units.alive()) {
-      const activation = resolveAbilityActivation(entry.data);
-      Object.assign(entry.data, activation.unit);
-      for (const fired of activation.fired) abilityEvents.push({ unitId: entry.data.id, ...fired });
-    }
-    for (const event of abilityEvents) {
-      if (event.effect?.type === 'heal' && event.effect.amount) pop(`Rally +${event.effect.amount}`, event.unitId, 'heal');
-      await sleep(100);
-    }
-
-    const snapshot = units.alive().map((entry) => entry.data).map((record) => ({ ...record, statuses: { ...(record.statuses || {}) } }));
-    for (const unit of snapshot) {
-      const sharedSkills = skillsForUnitType(skillLoadouts, unit.cls);
-      const barrier = unit.faction === 'blue' && sharedSkills.find((skill) => skill.id === 'barrier');
-      if (barrier) unit.statuses.barrier = { amount: barrier.blockDamage, duration: 'upcoming-battle' };
-    }
-    const legalMoves = (unit, shared) => computeRange(unit, unitBoard(shared), unit.mov).move.map(([c, r]) => ({ c, r }));
-    // A Protect order whose subject has fallen (or was never valid) reverts to the class default (GAME.md, Stances).
-    const alive = new Set(snapshot.map((unit) => unit.id));
-    const orders = Object.fromEntries(snapshot.map((unit) => {
-      let stance = unit.stance || 'advance';
-      if (stance === 'protect' && !(unit.objective?.type === 'protect' && alive.has(unit.objective.targetId))) stance = UNIT_CARDS[unit.cls]?.defaultStance || 'advance';
-      return [unit.id, { stance, range: weaponOf(unit).rng, objective: unit.objective }];
-    }));
-    const battle = resolveBattleRound({
-      units: snapshot,
-      orders,
-      seed: 0x415348 + state.turn,
-      legalMoves,
-      forecastAttack: (attacker, defender, from) => forecast(attacker, defender, [from.c, from.r]),
-    });
-    const pathByUnit = new Map();
-    const preMoveBoard = unitBoard(snapshot);
-    for (const event of battle.batches[0].events) {
-      if (event.type !== 'move') continue;
-      const startUnit = snapshot.find((unit) => unit.id === event.unitId);
-      const path = startUnit && computeRange(startUnit, preMoveBoard, startUnit.mov).pathTo(event.to.c, event.to.r);
-      if (path?.length) pathByUnit.set(event.unitId, path);
-    }
-    for (const event of battle.batches[0].events) {
-      if (event.type !== 'move') continue;
-      const route = pathByUnit.get(event.unitId);
-      if (route?.length) await units.moveAlong(event.unitId, route);
-      else units.setPosition(event.unitId, event.to.c, event.to.r);
-    }
-    for (const event of battle.batches[1].events) {
-      if (event.type !== 'strike') continue;
-      const attacker = units.byId.get(event.attackerId), target = units.byId.get(event.targetId);
-      if (!attacker || !target) continue;
-      await units.lunge(event.attackerId, [target.data.c, target.data.r]);
-      if (event.hit) {
-        if (event.damage) pop(event.crit ? `${event.damage}!` : `${event.damage}`, event.targetId, event.crit ? 'crit' : '');
-        if (event.damage) await units.shake(event.targetId);
-      } else pop('MISS', event.targetId, 'miss');
-      await sleep(110);
-    }
-    for (const record of battle.units) Object.assign(data(record.id), record);
-    const blueLosses = battle.batches[1].events.filter((event) => event.type === 'death' && units.byId.get(event.unitId)?.data.faction === 'blue');
-    cardState.population = Math.max(0, cardState.population - blueLosses.reduce((sum, event) => sum + (data(event.unitId).population || 1), 0));
-    if (blueLosses.some((event) => event.unitId === 'brenna')) state.heroRespawnAt = state.turn + HERO_RESPAWN_DELAY;
-    for (const event of battle.batches[1].events) if (event.type === 'death') {
-      const dead = units.byId.get(event.unitId);
-      if (dead) await units.die(event.unitId);
-    }
-    const captures = updateTerritory();
-    const captureNote = captures.map(({ c, r, faction }) => `${faction === 'blue' ? 'Captured' : 'Lost'} village at ${c},${r}`).join(' · ');
-    const lossNote = blueLosses.map((event) => `${data(event.unitId).name} fallen`).join(' · ');
-    const respawnNote = blueLosses.some((event) => event.unitId === 'brenna') ? `Brenna returns in round ${state.heroRespawnAt} for ${HERO_RESPAWN_COST} Supply` : '';
-    state.notice = [captureNote, lossNote, respawnNote].filter(Boolean).join(' · ');
+    for (const u of units.list) u.displayHp = null;
+    syncView();
+    state.notice = result.notes.filter((n) => n.faction === 'blue' || /fallen|Captured|Lost/.test(n.text)).map((n) => n.text).join(' · ');
+    if (match.over) { showEnd(); return; }
     refresh();
-    if (checkEnd()) return;
+    await planningStage();
+  }
 
-    state.turn += 1;
+  // Start of a planning stage: the AI side(s) plan, then the player (or blue AI in autoplay).
+  async function planningStage(first = false) {
+    const notes = [];
+    const red = runAI('red', redPolicy);
+    if (red) notes.push(red);
+    if (bluePolicy) { const b = runAI('blue', bluePolicy); if (b) notes.push(b); }
+    state.notice = [state.notice, ...notes].filter(Boolean).join(' · ');
     state.phase = 'player';
-    const refreshResult = refreshRound(cardState, cardRng);
-    cardState = refreshResult.state;
-    if (refreshResult.blocked) state.notice = `Hand full: ${refreshResult.blocked} draw${refreshResult.blocked === 1 ? '' : 's'} blocked.`;
-    for (const entry of units.list) {
-      Object.assign(entry.data, advanceAbilityRound(entry.data));
-      entry.data.planningMoved = false;
-      entry.data.done = false;
-      entry.data.moved = false;
-    }
-    // Benched units recover slowly: cooldowns tick, HP and energy rise by the reserve rates.
-    cardState.reserves = cardState.reserves.map((reserve) => {
-      const rested = advanceAbilityRound({ ...reserve, energy: reserve.energy ?? 0, maxEnergy: reserve.maxEnergy ?? 4 });
-      const energy = Math.min(rested.maxEnergy, rested.energy + RESERVE_ENERGY);
-      const hp = reserve.hp == null ? null : Math.min(reserve.maxHp, reserve.hp + RESERVE_HEAL);
-      return { ...reserve, cooldowns: rested.cooldowns, energy, maxEnergy: rested.maxEnergy, hp };
-    });
-    tryHeroRespawn();
-    const reinforcements = planEnemy();
-    if (reinforcements) state.notice = [state.notice, reinforcements].filter(Boolean).join(' · ');
     refresh();
-    await banner('Planning', 'Cards, Supply, and unit state carry forward', 650);
+    if (!first) await banner('Planning', 'Cards, Supply, and unit state carry forward', 650 / speed);
     state.busy = false;
     refresh();
+    if (bluePolicy && !match.over) { await wait(700); resolveBattle(); }
   }
 
   async function confirmAttack() {
@@ -1001,11 +769,10 @@ export function createUI({ renderer, camera, scene, units, view }) {
     stance() {
       const u = selected();
       if (!u || u.faction !== 'blue' || state.busy || state.phase !== 'player') return;
-      const cycle = u.id === 'brenna' ? ['advance', 'hold'] : ['advance', 'hold', 'protect'];
+      const champion = match.champion('blue');
+      const cycle = u.id === champion || !match.byId(champion)?.hp ? ['advance', 'hold'] : ['advance', 'hold', 'protect'];
       const next = cycle[(cycle.indexOf(u.stance || 'advance') + 1) % cycle.length];
-      u.stance = next;
-      if (next === 'protect') u.objective = { type: 'protect', targetId: 'brenna' };
-      else delete u.objective;
+      if (!act({ type: 'stance', unitId: u.id, stance: next, targetId: next === 'protect' ? champion : undefined }).ok) { refresh(); return; }
       state.notice = `${u.name}: ${STANCE_LABEL[next]} — ${STANCE_HINT[next]}.`;
       refresh();
     },
@@ -1065,12 +832,8 @@ export function createUI({ renderer, camera, scene, units, view }) {
     const cancelQueued = e.target.closest('[data-cancel-spell]');
     if (cancelQueued) {
       const queueId = cancelQueued.dataset.cancelSpell;
-      const result = cancelSpell(cardState, queueId);
+      const result = act({ type: 'cancelSpell', queueId });
       if (result.ok) {
-        cardState = result.state;
-        const card = state.queuedSpellCards[queueId];
-        if (card) cardState.hand.push(card);
-        delete state.queuedSpellCards[queueId];
         state.notice = 'Queued spell cancelled and its Supply returned.';
         refresh();
       }
@@ -1083,9 +846,8 @@ export function createUI({ renderer, camera, scene, units, view }) {
       const transferKey = `${fromType}:${skillId}`;
       const targetType = state.skillTransferTargets[transferKey]
         || ['pikeman', 'archer', 'cavalier'].find((type) => type !== fromType);
-      const result = transferTypeSkill(skillLoadouts, fromType, targetType, skillId, { slots: 2 });
+      const result = act({ type: 'transfer', skillId, from: fromType, to: targetType });
       if (result.ok) {
-        skillLoadouts = result.loadouts;
         state.skillTransferTargets[`${targetType}:${skillId}`] = fromType;
         state.notice = `${SKILL_CARDS[skillId]?.name || skillId} moved to ${targetType}; the old type no longer inherits it.`;
       } else state.notice = `Cannot transfer skill: ${result.reason.replaceAll('-', ' ')}.`;
@@ -1123,7 +885,7 @@ export function createUI({ renderer, camera, scene, units, view }) {
       if (state.sheet) return;
       if (state.mode === 'target') commands.confirm();
       else if (state.selectedCardId) {
-        const card = cardState.hand.find((item) => item.instanceId === state.selectedCardId);
+        const card = blue().cards.hand.find((item) => item.instanceId === state.selectedCardId);
         if (card?.type === 'unit') commands.recruit();
         else if (card?.type === 'spell') commands.targetSpell();
         else if (card?.type === 'skill') commands.equipSkill();
@@ -1146,7 +908,6 @@ export function createUI({ renderer, camera, scene, units, view }) {
   }
 
   units.list.forEach((entry) => addRosterUnit(entry.data));
-  state.notice = planEnemy(true);
 
   // ---------- Picking ----------
 
@@ -1232,8 +993,9 @@ export function createUI({ renderer, camera, scene, units, view }) {
   if (import.meta.env.DEV) {
     window.__ui = {
       state, feed, plates, commands, refresh, territory, units,
-      get cardState() { return cardState; }, set cardState(v) { cardState = v; },
-      get skillLoadouts() { return skillLoadouts; }, set skillLoadouts(v) { skillLoadouts = v; },
+      match,
+      get cardState() { return blue().cards; }, set cardState(v) { blue().cards = v; },
+      get skillLoadouts() { return blue().loadouts; }, set skillLoadouts(v) { blue().loadouts = v; },
     };
   }
   // ?select=brenna&act=attack|inspect|danger|grid — reproducible states for screenshots.
@@ -1249,6 +1011,10 @@ export function createUI({ renderer, camera, scene, units, view }) {
   refresh();
   for (const a of (q.get('act') || '').split(',').filter((x) => commands[x])) commands[a]();
   if (q.has('target') && state.mode === 'target') { state.targetId = q.get('target'); refresh(); }
+
+  // Round 1 planning: the enemy (and an autoplaying blue) plan before the player acts.
+  state.busy = true;
+  planningStage(true);
 
   return {
     activeId: () => state.hoverId || state.selectedId,
