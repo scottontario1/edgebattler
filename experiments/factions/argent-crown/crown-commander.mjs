@@ -93,21 +93,25 @@ export function crownCommander(m, f, { act, params = {} }) {
     if (P.reserveCavalry && u.cls === 'cavalier' && !engaged && m.round <= P.holdRounds + 3 && u.stance !== 'hold') act({ type: 'stance', faction: f, unitId: u.id, stance: 'hold' });
   }
 
-  // 6. Kit picks for the Crown's own classes (base-class picks were made by the heuristic).
+  // 6. Kit picks for the Crown's own skills (base-class picks were made by the heuristic and are kept).
   if (P.kitPicks) {
+    const COST = { closeRanks: 1, holdTheStandard: 2, interpose: 2, bulwarkOfTheRealm: 2, oathkeepersStrike: 1, rally: 0, brace: 2, focusedShot: 2, charge: 2, secondWind: 1 };
+    const total = (ids) => ids.reduce((n, id) => n + (COST[id] ?? 0), 0);
     for (const u of mine()) {
       const near = foes().some((o) => manhattan(o, u) <= u.mov + P.nearMargin);
-      const want = [];
-      const afford = (id, list = want) => list.reduce((n, x) => n + ({ closeRanks: 1, holdTheStandard: 2, interpose: 2, bulwarkOfTheRealm: 2, oathkeepersStrike: 1 }[x] || 0), 0) + ({ closeRanks: 1, holdTheStandard: 2, interpose: 2, bulwarkOfTheRealm: 2, oathkeepersStrike: 1 }[id] || 0) <= u.energy;
-      if (u.cls === 'crownGuard' && near && afford('closeRanks')) want.push('closeRanks');
-      if (u.cls === 'bannerman' && near && u.stance === 'hold' && afford('holdTheStandard')) want.push('holdTheStandard');
-      if (u.cls === 'oathsworn' && near && u.stance === 'protect' && afford('interpose')) want.push('interpose');
-      if (u.champion && u.cls === 'paladin') {
-        if (near && u.stance === 'hold' && afford('bulwarkOfTheRealm')) want.push('bulwarkOfTheRealm');
-        if (near && afford('oathkeepersStrike')) want.push('oathkeepersStrike');
+      const have = [...(u.selectedAbilities || [])];
+      const add = (ids, id) => (total([...ids, id]) <= u.energy ? [...ids, id] : ids);
+      let want = null;
+      if (u.variantId === 'crownGuard' || u.variantId === 'crownPike') { if (near) want = add(have.filter((x) => x !== 'closeRanks'), 'closeRanks'); }
+      else if (u.cls === 'bannerman') want = near && u.stance === 'hold' ? add([], 'holdTheStandard') : [];
+      else if (u.cls === 'oathsworn') want = near && u.stance === 'protect' ? add([], 'interpose') : [];
+      else if (u.champion && u.cls === 'paladin') {
+        let w = [];
+        if (near && u.stance === 'hold') w = add(w, 'bulwarkOfTheRealm');
+        if (near) w = add(w, 'oathkeepersStrike');
+        want = w;
       }
-      if (!['crownGuard', 'bannerman', 'oathsworn', 'paladin'].includes(u.cls)) continue;
-      if (JSON.stringify(want) !== JSON.stringify(u.selectedAbilities || [])) act({ type: 'abilities', faction: f, unitId: u.id, abilityIds: want });
+      if (want && JSON.stringify(want) !== JSON.stringify(u.selectedAbilities || [])) act({ type: 'abilities', faction: f, unitId: u.id, abilityIds: want });
     }
   }
 }

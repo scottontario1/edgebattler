@@ -41,12 +41,12 @@ function level({ id, title, question, setup, map = 'flat_open', maxRounds = 14, 
 }
 
 // ---------- Level 1: Shield Wall (Crown Guard: Line Doctrine, Shieldwall, Close Ranks) ----------
-// Three Crown Guards form a column on the open field with two Levy Archers and a Crown Pikeman packed behind them, against nine plain units
-// (five Pikemen, two Archers, two Cavaliers) coming from the east. Red Pikemen use Rally, Archers Focused Shot, Cavaliers Charge.
+// Three Crown Guards form a column on the open field with two Levy Archers and a Crown Pikeman packed behind them, against eleven plain units
+// (six Pikemen, two Archers, three Cavaliers) coming from the east. Red Pikemen use Rally, Archers Focused Shot, Cavaliers Charge.
 const L1 = level({
   id: 'crown-1', maxRounds: 18, title: 'Level 1: Shield Wall (Crown Guard: Line Doctrine, Shieldwall, Close Ranks)',
   question: 'How much stronger is the same Crown army in a block than scattered, and what do Line Doctrine, Shieldwall and Close Ranks each add?',
-  setup: 'Blue: 3 Crown Guards (6,4-6), 2 Levy Archers (5,4) (5,6), 1 Crown Pikeman (5,5). Red: 5 Pikemen, 2 Archers, 2 Cavaliers from the east; from round 5 Blue advances to finish.',
+  setup: 'Blue: 3 Crown Guards (6,4-6), 2 Levy Archers (5,4) (5,6), 1 Crown Pikeman (5,5). Red: 6 Pikemen, 2 Archers, 3 Cavaliers from the east; from round 5 Blue advances to finish.',
   blue: [
     u('bg1', 'blue', 'crownGuard', 6, 4, { stance: 'hold', facing: 'east' }), u('bg2', 'blue', 'crownGuard', 6, 5, { stance: 'hold', facing: 'east' }), u('bg3', 'blue', 'crownGuard', 6, 6, { stance: 'hold', facing: 'east' }),
     u('ba1', 'blue', 'crownArcher', 5, 4, { stance: 'hold', facing: 'east' }), u('ba2', 'blue', 'crownArcher', 5, 6, { stance: 'hold', facing: 'east' }), u('bp1', 'blue', 'crownPike', 5, 5, { stance: 'hold', facing: 'east' }),
@@ -57,11 +57,12 @@ const L1 = level({
     u('rp4', 'red', 'pikeman', 11, 6, { stance: 'advance', facing: 'west' }), u('rp5', 'red', 'pikeman', 11, 7, { stance: 'advance', facing: 'west' }),
     u('ra1', 'red', 'archer', 12, 4, { stance: 'advance', facing: 'west' }), u('ra2', 'red', 'archer', 12, 6, { stance: 'advance', facing: 'west' }),
     u('rc1', 'red', 'cavalier', 12, 3, { stance: 'advance', facing: 'west' }), u('rc2', 'red', 'cavalier', 12, 7, { stance: 'advance', facing: 'west' }),
+    u('rp6', 'red', 'pikeman', 12, 5, { stance: 'advance', facing: 'west' }), u('rc3', 'red', 'cavalier', 13, 5, { stance: 'advance', facing: 'west' }),
   ],
   redScript: [step(null, 1, 'red', { key: 'pikeman', abilities: ['rally'] }), step(null, 2, 'red', { key: 'archer', abilities: ['focusedShot'] }), step(null, 2, 'red', { key: 'cavalier', abilities: ['charge'] })],
   plan: [
     step(null, 1, 'blue', { key: 'crownPike', abilities: ['rally'] }),
-    step(null, 1, 'blue', { key: 'crownGuard', abilities: ['closeRanks'] }),
+    step(null, 1, 'blue', { key: 'crownGuard', abilities: ['rally', 'closeRanks'] }),
     step(null, 2, 'blue', { key: 'crownArcher', abilities: ['focusedShot'] }),
     step('Mop-up', 5, 'blue', { stance: 'advance' }),
   ],

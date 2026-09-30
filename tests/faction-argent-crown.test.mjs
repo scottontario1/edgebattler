@@ -55,8 +55,8 @@ test('registration is explicit and fully removable; nothing registers by importi
   assert.equal(cardFor('crownGuard'), null);
   const rec1 = registerArgentCrown();
   assert.deepEqual(ACTIVE_CULTURES, ['crown']);
-  assert.deepEqual(rec1.classes.sort(), ['bannerman', 'crownGuard', 'oathsworn']);
-  assert.deepEqual(rec1.variants.sort(), ['crownArcher', 'crownCavalier', 'crownPike']);
+  assert.deepEqual(rec1.classes.sort(), ['bannerman', 'oathsworn']);
+  assert.deepEqual(rec1.variants.sort(), ['crownArcher', 'crownCavalier', 'crownGuard', 'crownPike']);
   assert.deepEqual(rec1.abilities.sort(), ['bulwarkOfTheRealm', 'closeRanks', 'holdTheStandard', 'interpose', 'oathkeepersStrike']);
   resetCultures();
   assert.equal(snap(), before, 'every registry is back to the shipped contents');
@@ -71,8 +71,8 @@ test('registration is explicit and fully removable; nothing registers by importi
 
 test('the culture definition has the shape registerCulture documents and one entry per FACTIONS.md item', () => {
   assert.equal(ARGENT_CROWN.id, 'crown');
-  assert.deepEqual(Object.keys(ARGENT_CROWN.classes).sort(), ['bannerman', 'crownGuard', 'oathsworn']);
-  assert.deepEqual(Object.keys(ARGENT_CROWN.variants).sort(), ['crownArcher', 'crownCavalier', 'crownPike']);
+  assert.deepEqual(Object.keys(ARGENT_CROWN.classes).sort(), ['bannerman', 'oathsworn']);
+  assert.deepEqual(Object.keys(ARGENT_CROWN.variants).sort(), ['crownArcher', 'crownCavalier', 'crownGuard', 'crownPike']);
   assert.deepEqual(ARGENT_CROWN.abilities.map((a) => a.id).sort(), ['bulwarkOfTheRealm', 'closeRanks', 'holdTheStandard', 'interpose', 'oathkeepersStrike']);
   assert.deepEqual(Object.keys(ARGENT_CROWN.spells), ['rallyBanner']);
   assert.deepEqual(Object.keys(ARGENT_CROWN.champions).sort(), ['brennaCrown', 'brennaCrownB']);
@@ -115,7 +115,7 @@ test('rarity gate: with uncommon from round 3 and rare from round 6, Bannerman a
 });
 
 // ---------------------------------------------------------------- units
-test('unit templates: variants keep the base stats; Crown Guard, Bannerman and Oathsworn use the documented deltas', () => {
+test('unit templates: Crown variants keep the base stats; Crown Guard, Bannerman and Oathsworn use the documented deltas', () => {
   reg();
   const pk = RECRUIT.pikeman;
   for (const [key, baseKey] of [['crownPike', 'pikeman'], ['crownArcher', 'archer'], ['crownCavalier', 'cavalier']]) {
@@ -127,13 +127,15 @@ test('unit templates: variants keep the base stats; Crown Guard, Bannerman and O
     assert.equal(b.passives, undefined, 'plain classes are untouched');
   }
   const g = createRecruitUnit('crownGuard', 'g', 'blue', 1, 1), bn = createRecruitUnit('bannerman', 'b', 'blue', 1, 1), o = createRecruitUnit('oathsworn', 'o', 'blue', 1, 1);
-  assert.deepEqual([g.cls, g.maxHp, g.str, g.def, g.mov, g.weapon, g.stance], ['crownGuard', pk.hp + 2, pk.str, pk.def + 1, pk.mov - 1, 'Iron Pike', 'hold']);
+  assert.deepEqual([g.cls, g.variantId, g.maxHp, g.str, g.def, g.mov, g.weapon, g.stance], ['pikeman', 'crownGuard', pk.hp + 2, pk.str, pk.def + 1, pk.mov - 1, 'Iron Pike', 'hold']);
   assert.deepEqual([bn.cls, bn.maxHp, bn.str, bn.def, bn.mov, bn.stance], ['bannerman', pk.hp - 4, pk.str - 3, pk.def, pk.mov, 'hold']);
   assert.deepEqual([o.cls, o.maxHp, o.str, o.def, o.mov, o.stance], ['oathsworn', pk.hp + 4, pk.str, pk.def + 3, pk.mov, 'hold']);
   assert.deepEqual(g.passives.map((p) => p.id), ['lineDoctrine', 'shieldwall']);
   assert.deepEqual(bn.passives.map((p) => p.id), ['lineDoctrine', 'banner']);
   assert.deepEqual(o.passives.map((p) => p.id), ['lineDoctrine', 'swornGuard', 'swornGuardCost']);
   for (const key of ['crownGuard', 'bannerman', 'oathsworn']) assert.deepEqual(SPRITE_FALLBACK[key].base, 'pikeman', 'placeholder art borrows the pikeman sprite');
+  assert.ok(kitFor(g).some((a) => a.id === 'rally') && kitFor(g).some((a) => a.id === 'brace'), 'a Crown Guard keeps the Pikeman kit');
+  assert.equal(kitFor(bn).some((a) => a.id === 'rally'), false, 'the new classes have no Rally or Brace (engine request: kit inheritance)');
   assert.equal(SPRITE_FALLBACK.crownArcher.base, 'archer');
   resetCultures();
 });
@@ -153,7 +155,7 @@ test('a Crown card recruits, deploys and keeps its identity, passives and star u
   const u = m.byId(d.unitId);
   assert.equal(u.culture, 'crown');
   assert.ok(u.passives.some((p) => p.id === 'lineDoctrine'));
-  assert.equal(u.stance, 'hold' === card.defaultStance ? 'hold' : u.stance);
+  assert.equal(u.stance, card.defaultStance, 'the deployed unit starts on its card\'s default stance');
   // combining: three of one identity yes; a Crown Pikeman with two plain Pikemen no
   const three = ['a', 'b', 'c'].map((n) => ({ ...rec('crownPike', n, 'blue', 1, 1), stars: 1, faction: 'blue' }));
   assert.equal(findUpgradeMatches(three).length, 1);
@@ -219,16 +221,18 @@ test('Shieldwall: a Crown Guard beside friendly infantry takes 2 more off (3 wit
   resetCultures();
 });
 
-test('Close Ranks: Crown Guard only, 1 energy / cooldown 2, defense phase, 2 less damage per strike; cleared after the battle', () => {
+test('Close Ranks: Pikeman class (Crown Pikeman and Crown Guard), 1 energy / cooldown 2, defense phase, 2 less damage per strike; cleared after the battle', () => {
   reg();
   const cr = ABILITY_CATALOG.closeRanks;
   assert.deepEqual([cr.cost, cr.cooldown, cr.phase, cr.effect.damageTaken], [1, 2, 'defense', 2]);
   const g = rec('crownGuard', 'g', 'blue', 6, 5, { ...hold, energy: 2 });
   assert.ok(kitFor(g).some((a) => a.id === 'closeRanks'));
-  for (const key of ['pikeman', 'crownPike', 'bannerman', 'oathsworn', 'archer']) assert.equal(kitFor(rec(key, 'z', 'blue', 1, 1)).some((a) => a.id === 'closeRanks'), false, `${key} has no Close Ranks`);
+  for (const key of ['bannerman', 'oathsworn', 'archer', 'cavalier']) assert.equal(kitFor(rec(key, 'z', 'blue', 1, 1)).some((a) => a.id === 'closeRanks'), false, `${key} has no Close Ranks`);
+  for (const key of ['crownGuard', 'crownPike']) assert.equal(kitFor(rec(key, 'z', 'blue', 1, 1)).some((a) => a.id === 'closeRanks'), true, `${key} has Close Ranks`);
+  assert.equal(kitFor(rec('pikeman', 'z', 'blue', 1, 1)).some((a) => a.id === 'closeRanks'), true, 'KNOWN LIMITATION: kits are class-keyed, so a plain Pikeman could select it too (engine request: kits by variant)');
   assert.equal(validateAbilitySelection(g, ['closeRanks']).ok, true);
   assert.equal(validateAbilitySelection({ ...g, energy: 0 }, ['closeRanks']).reason, 'insufficient-energy');
-  assert.equal(validateAbilitySelection(rec('pikeman', 'p', 'blue', 1, 1, { energy: 4 }), ['closeRanks']).reason, 'invalid-ability');
+  assert.equal(validateAbilitySelection(rec('archer', 'p', 'blue', 1, 1, { energy: 4 }), ['closeRanks']).reason, 'invalid-ability');
   const act = activatePhase({ ...g, selectedAbilities: ['closeRanks'] }, 'defense');
   assert.equal(act.events[0].applied, true);
   assert.equal(act.unit.statuses.damageTaken, 2);
@@ -428,6 +432,21 @@ test('gap check: registerCulture alone leaves a champion without passives (the e
   resetCultures();
   registerArgentCrown();
   assert.equal(CHAMPION_TEMPLATES.brennaCrown.passives.length, 2);
+  resetCultures();
+});
+
+test('gap check: a variant card\'s defaultStance alone does not set the unit\'s stance (stats.stance does); kits are class-keyed, so a plain Pikeman sees Close Ranks', () => {
+  resetCultures();
+  registerCulture({ id: 'gapfix', variants: { gapHold: { base: 'pikeman', name: 'Gap Hold', card: { defaultStance: 'hold' } }, gapHold2: { base: 'pikeman', name: 'Gap Hold 2', stats: { stance: 'hold' }, card: { defaultStance: 'hold' } } }, pool: ['gapHold', 'gapHold2'] });
+  const m = createMatch({ seed: 2, pools: { blue: ['gapHold'] } });
+  const card = m.summary('blue').handState.find((c) => c.type === 'unit');
+  assert.equal(card.defaultStance, 'hold', 'the card says Hold');
+  m.apply({ type: 'recruit', faction: 'blue', cardId: card.instanceId });
+  const reserve = m.summary('blue').reserveState.at(-1);
+  const tile = m.deploymentTiles('blue').find(([c, r]) => !m.unitAt(c, r));
+  const unit = m.byId(m.apply({ type: 'deploy', faction: 'blue', reserveId: reserve.id, c: tile[0], r: tile[1] }).unitId);
+  assert.equal(unit.stance, 'advance', 'ENGINE GAP: the deployed unit ignores its card\'s default stance (if this fails, the engine fixed it and `stats.stance` in the Crown Guard variant can go)');
+  assert.equal(createRecruitUnit('gapHold2', 'x', 'blue', 1, 1).stance, 'hold', 'stats.stance is the workaround');
   resetCultures();
 });
 

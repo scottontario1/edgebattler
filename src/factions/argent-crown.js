@@ -16,22 +16,24 @@ import { registerCulture } from '../cultures.js';
 export const LINE_REDUCTION_PER_ADJACENT = 1; // damage taken per strike, per adjacent friendly infantry unit (= +1 Defense)
 export const LINE_CAP = 2;                    // most adjacent units that count (= +2 Defense at most)
 // "Infantry" for Line Doctrine: every foot class (Brenna counts). Cavalry and unit-less objects do not. Cavalry can BENEFIT.
-export const INFANTRY = ['pikeman', 'archer', 'crownGuard', 'bannerman', 'oathsworn', 'paladin'];
+export const INFANTRY = ['pikeman', 'archer', 'bannerman', 'oathsworn', 'paladin']; // (a Crown Guard is a pikeman variant, so its class is 'pikeman')
 
 // ---------------------------------------------------------------- units (stat deltas are relative to the shipped classes)
-// Crown Guard (common): a sturdier, slower pikeman with its own kit. Real new class (kit is class-keyed; see the write-up).
+// Crown Guard (common): a sturdier, slower Pikeman. A VARIANT of the pikeman, so it keeps Rally and Brace and, with the Crown Pikeman, is the
+// holder of Close Ranks (the kit is class-keyed, so plain Pikemen could select it too; see Engine requests: kits by variant).
 export const GUARD_DELTA = { hp: +2, def: +1, mov: -1 };
 export const GUARD_COST = 2;                  // Supply (Pikeman 1, Archer 2, Cavalier 3)
 export const GUARD_STANCE = 'hold';           // default stance (Pikeman: advance)
 export const SHIELDWALL_REDUCTION = 2;        // Crown Guard: damage less per strike while adjacent to friendly infantry (>= 1)
-// Bannerman (uncommon): frail, buffs the line around it. Real new class (Hold the Standard is class-keyed).
+// Bannerman (uncommon): frail, buffs the line around it. A real new class because Hold the Standard must not reach other Pikemen (kits are class-keyed);
+// the price is that it has no Rally or Brace.
 export const BANNERMAN_DELTA = { hp: -4, str: -3 };
 export const BANNERMAN_COST = 2;
 export const BANNERMAN_STANCE = 'hold';
 export const BANNER_RADIUS = 2;               // tiles (Manhattan)
 export const BANNER_REDUCTION = 1;            // damage less per strike for friendly units in the radius...
 export const BANNER_STANCES = ['hold', 'protect']; // ...that are Holding or Protecting
-// Oathsworn (rare): heavy guard sworn to one subject. Real new class (Interpose is class-keyed).
+// Oathsworn (rare): heavy guard sworn to one subject. A real new class for the same reason (Interpose); no Rally or Brace.
 export const OATHSWORN_DELTA = { hp: +4, str: 0, def: +3 };
 export const OATHSWORN_COST = 3;
 export const OATHSWORN_STANCE = 'hold';       // the player (or commander) sets Protect <subject> after recruiting
@@ -81,16 +83,13 @@ export const BRENNA_AURA = Object.freeze({ id: 'crownPresence', aura: { radius: 
 /** Passives carried by Brenna (applied by registerArgentCrown, see below). */
 export const BRENNA_PASSIVES = [LINE_DOCTRINE, BRENNA_AURA];
 
-const guard = base('pikeman', GUARD_DELTA), bannerman = base('pikeman', BANNERMAN_DELTA), oath = base('pikeman', OATHSWORN_DELTA);
+const bannerman = base('pikeman', BANNERMAN_DELTA), oath = base('pikeman', OATHSWORN_DELTA);
 const stats = (t) => ({ hp: t.hp, str: t.str, skl: t.skl, spd: t.spd, def: t.def, res: t.res, mov: t.mov, lv: t.lv });
 
 const ARGENT_CROWN = {
   id: 'crown',
-  // New classes (real classes, not variants, because kits are keyed by class): they reuse the Iron Pike weapon and move as foot.
+  // New classes (real classes because kits are keyed by class): they reuse the Iron Pike weapon and move as foot.
   classes: {
-    crownGuard: { name: 'Crown Guard', title: 'Line Infantry', stats: stats(guard), weapon: 'Iron Pike', spriteBase: 'pikeman', tint: TINTS.crownGuard, label: 'Crown Guard',
-      passives: [LINE_DOCTRINE, SHIELDWALL], description: 'Holds the line. Shieldwall: takes 2 less damage per strike beside friendly infantry.',
-      card: { rarity: 'common', cost: GUARD_COST, class: 'Foot', range: 1, defaultStance: GUARD_STANCE, population: 1 } },
     bannerman: { name: 'Bannerman', title: 'Standard-bearer', stats: stats(bannerman), weapon: 'Iron Pike', spriteBase: 'pikeman', tint: TINTS.bannerman, label: 'Bannerman',
       passives: [LINE_DOCTRINE, BANNER], description: 'Banner: friendly Hold/Protect units within 2 tiles take 1 less damage per strike.',
       card: { rarity: 'uncommon', cost: BANNERMAN_COST, class: 'Foot', range: 1, defaultStance: BANNERMAN_STANCE, population: 1 } },
@@ -107,6 +106,9 @@ const ARGENT_CROWN = {
   },
   // Variants of the shipped classes: identical stats, Line Doctrine only.
   variants: {
+    crownGuard: { base: 'pikeman', name: 'Crown Guard', title: 'Line Infantry', delta: GUARD_DELTA, stats: { stance: GUARD_STANCE }, // stats.stance: how a variant sets its default stance on the unit (the card alone is not enough)
+      tint: TINTS.crownGuard, passives: [LINE_DOCTRINE, SHIELDWALL],
+      description: 'Holds the line. Shieldwall: takes 2 less damage per strike beside friendly infantry.', card: { rarity: 'common', cost: GUARD_COST, defaultStance: GUARD_STANCE } },
     crownPike: { base: 'pikeman', name: 'Crown Pikeman', title: 'Levy', tint: TINTS.crownPike, passives: [LINE_DOCTRINE], description: 'Line Doctrine: +1 Defense per adjacent friendly infantry (max +2).',
       card: { rarity: 'common', cost: CROWN_PIKE_COST } },
     crownArcher: { base: 'archer', name: 'Levy Archer', title: 'Levy', tint: TINTS.crownArcher, passives: [LINE_DOCTRINE], description: 'Line Doctrine: +1 Defense per adjacent friendly infantry (max +2).',
@@ -115,9 +117,9 @@ const ARGENT_CROWN = {
       card: { rarity: 'common', cost: CROWN_CAVALIER_COST } },
   },
   abilities: [
-    { id: 'closeRanks', name: 'Close Ranks', classes: ['crownGuard'], cost: CLOSE_RANKS.cost, cooldown: CLOSE_RANKS.cooldown, phase: 'defense',
+    { id: 'closeRanks', name: 'Close Ranks', classes: ['pikeman'], cost: CLOSE_RANKS.cost, cooldown: CLOSE_RANKS.cooldown, phase: 'defense',
       effect: { damageTaken: CLOSE_RANKS.reduction },
-      description: `Take ${CLOSE_RANKS.reduction} less damage per strike this battle. Does not force Hold. (Simplified: the design gives this to adjacent friendly infantry too.)` },
+      description: `Pikeman class (Crown Pikeman, Crown Guard). Take ${CLOSE_RANKS.reduction} less damage per strike this battle. Does not force Hold. (Simplified: the design gives this to adjacent friendly infantry too.)` },
     { id: 'holdTheStandard', name: 'Hold the Standard', classes: ['bannerman'], cost: HOLD_STANDARD.cost, cooldown: HOLD_STANDARD.cooldown, phase: 'defense', requires: { stance: 'hold' },
       effect: { damageTaken: HOLD_STANDARD.reduction },
       description: `Requires Hold. Take ${HOLD_STANDARD.reduction} less damage per strike this battle. (Simplified: the design heals friendly units within 2 tiles by 6.)` },
