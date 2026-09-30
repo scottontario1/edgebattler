@@ -38,6 +38,8 @@ function activeStatuses(u) {
     ? Object.entries(u.statuses).filter(([, v]) => v !== undefined && v !== null && v !== false && v !== 0) : [];
 }
 
+const monsterPassives = u => u.monster ? (u.passives || []).filter(p => p.name && p.description) : [];
+
 const stanceChip = (u, size = 12) => {
   const k = stanceKey(u);
   return k ? `<span class="schip stance ${k}" title="${STANCE_LABEL[k]}: ${STANCE_HINT[k]}">${stanceIcon(k, size)}<b>${STANCE_LABEL[k]}</b></span>` : '';
@@ -60,7 +62,7 @@ export function unitCardHTML(u, m) {
         <div class="cls" title="${esc(u.title)} · ${esc(categoryName(u))} · ${esc(u.weapon)}">${esc(u.title)} · Lv ${u.lv} · MOV ${u.mov}</div>
         <div class="hp"><span>HP</span><div class="bar"><i style="width:${pctOf(u.hp, u.maxHp)}%"></i></div><b>${u.hp}/${u.maxHp}</b></div>
         <div class="sts">${stanceChip(u)}${energyChip(u)}<span class="schip" title="Authoritative facing">${esc(u.facing||'north')}</span>${statusChips(u, { iconOnly: many })}</div>
-        <div class="cls">${(u.selectedAbilities||[]).map(id=>ABILITIES[id]?.name||id).join(' · ')||'Basic actions'}${selectedCost(u)>u.energy?' · Paid picks suspended':''}</div>
+        <div class="cls">${(u.selectedAbilities||[]).map(id=>ABILITIES[id]?.name||id).join(' · ')||(monsterPassives(u).map(p=>esc(p.name)).join(' · ')||'Basic actions')}${selectedCost(u)>u.energy?' · Paid picks suspended':''}</div>
       </div>`;
 }
 
@@ -124,6 +126,7 @@ export function sheetHTML(u, m) {
     tier ? row('Stars', tier) : '',
     abilities ? row('Abilities', abilities) : '',
     sts ? row('Statuses', sts, 'wide') : '',
+    monsterPassives(u).length ? row('Passives', monsterPassives(u).map(p=>`<div class="monster-passive"><b>${esc(p.name)}</b><span>${esc(p.description)}</span></div>`).join(''), 'wide') : '',
   ].join('');
   return `
       <button class="btn close" data-act="close" aria-label="Close">×</button>

@@ -333,3 +333,7 @@
   .sheet .face { width: 104px; height: 122px; }
   .sheet .info { padding-right: 40px; }
 }
+
+/* Monster kits are automatic; inspection explains their trigger and effect. */
+.monster-passive { display: grid; gap: 3px; margin-bottom: 8px; }
+.monster-passive span { font-size: 11px; line-height: 1.45; color: var(--muted); }
