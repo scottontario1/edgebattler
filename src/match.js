@@ -23,8 +23,8 @@ import { createBattleStats } from './battle-stats.js';
 import { MAP, W, H, LAYOUT, inBounds, terrainAt } from './board.js';
 import { MOVE_COST, MOVE_TYPE, computeRange } from './rules.js';
 import { forecast, weaponOf } from './combat.js';
-import { SHARDS, SHARD_RULES, shardBonus, combineShards as mergeShards, findShardCombos } from './shards.js';
-import { CARD_LIMITS, UNIT_CARDS, unitCardFor, RARITY_GATE, rarityGateActive, skillCardFor, createCardState, drawOpeningHand, refreshRound, recruitUnit, canDeployReserve, seededRandom, cycleCard } from './cards.js';
+import { SHARDS, SHARD_IDS, SHARD_RULES, pickShardSubset, shardBonus, combineShards as mergeShards, findShardCombos } from './shards.js';
+import { CARD_LIMITS, UNIT_CARDS, unitCardFor, RARITY_GATE, rarityGateActive, skillCardFor, createCardState, activePool, drawOpeningHand, refreshRound, recruitUnit, canDeployReserve, seededRandom, cycleCard } from './cards.js';
 import { SPELL_CATALOG, kitFor, advanceAbilityRound, initializeAbilityState, queueSpell, cancelSpell, activatePhase, paidBundleReady, validateAbilitySelection, facingFromPath, FACING, battleMovement, ABILITY_RULES, ABILITIES, ABILITY_SWITCH, resolveQueuedSpells, equipTypeSkill, transferTypeSkill, skillsForUnitType } from './abilities.js';
 import { previewUpgrade, combineUnits } from './upgrades.js';
 import { resolveBattleRound, selectAttackTarget, BATTLE_TUNING } from './battle.js';
@@ -65,7 +65,8 @@ const clone = (v) => structuredClone(v);
  */
 // pools: optional { blue: [cardKeys], red: [cardKeys] } per-side draw pools (cultures); absent = the shared pool.
 // champions: optional { blue: id, red: id } (cultures with their own champion); default Brenna and Dreg.
-export function createMatch({ seed = 0x415348, maxRounds = null, log = null, meta = {}, roster = UNITS, pools = null, champions = null, campaign = null, abilities = ABILITY_SWITCH.enabled } = {}) {
+export function createMatch({ seed = 0x415348, maxRounds = null, log = null, meta = {}, roster = UNITS, pools = null, champions = null, campaign = null, abilities = ABILITY_SWITCH.enabled, shardSubset = null } = {}) {
+  const shardTypes = shardSubset ?? pickShardSubset(seed);
   const abilitiesOn = Boolean(abilities);
   const CHAMPION = { ...DEFAULT_CHAMPION, ...(champions || {}) };
   const emit = (entry) => { if (log) log(entry); };
@@ -81,7 +82,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
   for (const f of FACTIONS) {
     // Blue keeps the original UI seed so existing seeded games are unchanged.
     const rng = seededRandom(f === 'blue' ? seed : (seed ^ 0x5a5a5a5a) + 0x1057b11);
-    const cards = drawOpeningHand(createCardState({ population: 0, pool: pools?.[f] }), rng).state;
+    const cards = drawOpeningHand(createCardState({ population: 0, pool: (pools?.[f] ?? activePool()).flatMap((k) => !SHARD_IDS.includes(k) ? [k] : shardTypes.includes(k) ? [k, k] : []) }), rng).state;
     sides[f] = { cards, rng, loadouts: {}, shardDock: [], shards: {}, shardSeq: 0, queuedSpellCards: {}, heroRespawnAt: null,
       stats: { recruited: {}, spells: {}, skills: 0, deployed: 0, withdrawn: 0, combined: 0, shardsBought: 0, shardsCombined: 0, lost: {}, killed: {}, supplySpent: 0, captures: 0, respawns: 0, blockedDraws: 0, abilities: {}, abilitySkips: {}, energySpent: 0, energyCapped: 0, cycles: {hand:0,bench:0}, supplyRefunded: 0 } };
   }
@@ -910,7 +911,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
 
   for (const f of FACTIONS) sides[f].cards.population = population(f);
   if (m.campaign) spawnCampaignWave();
-  emit({ t: 'header', schema: SCHEMA, seed, maxRounds, map: MAP.id, rules: RULES, abilityRules: ABILITY_RULES, abilities: ABILITIES, abilitiesEnabled: abilitiesOn, shardRules: SHARD_RULES, cardLimits: { ...CARD_LIMITS }, ...(BATTLE_TUNING.damageScale !== 1 ? { battleTuning: { ...BATTLE_TUNING } } : {}), ...(JSON.stringify(EXPERIMENT_RULES) === JSON.stringify(DEFAULT_EXPERIMENT_RULES) ? {} : { experimentRules: { ...EXPERIMENT_RULES } }), ...(ACTIVE_CULTURES.length ? { cultures: [...ACTIVE_CULTURES] } : {}), ...(rarityGateActive() ? { rarityGate: { ...RARITY_GATE } } : {}), ...(champions ? { champions } : {}), ...(pools ? { pools } : {}), ...(campaign ? { campaign: clone(campaign) } : {}), ...meta });
+  emit({ t: 'header', schema: SCHEMA, seed, maxRounds, map: MAP.id, rules: RULES, abilityRules: ABILITY_RULES, abilities: ABILITIES, abilitiesEnabled: abilitiesOn, shardSubset: shardTypes, shardRules: SHARD_RULES, cardLimits: { ...CARD_LIMITS }, ...(BATTLE_TUNING.damageScale !== 1 ? { battleTuning: { ...BATTLE_TUNING } } : {}), ...(JSON.stringify(EXPERIMENT_RULES) === JSON.stringify(DEFAULT_EXPERIMENT_RULES) ? {} : { experimentRules: { ...EXPERIMENT_RULES } }), ...(ACTIVE_CULTURES.length ? { cultures: [...ACTIVE_CULTURES] } : {}), ...(rarityGateActive() ? { rarityGate: { ...RARITY_GATE } } : {}), ...(champions ? { champions } : {}), ...(pools ? { pools } : {}), ...(campaign ? { campaign: clone(campaign) } : {}), ...meta });
   emit(summaryEntry(0));
 
   Object.assign(m, {

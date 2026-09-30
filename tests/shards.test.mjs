@@ -2,8 +2,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createMatch, SCHEMA } from '../src/match.js';
-import { cardFor, RECRUITMENT_POOL, SKILL_CARDS, previewCycle, cycleCard, createCardState, seededRandom } from '../src/cards.js';
-import { SHARDS, SHARD_IDS, SHARD_RULES, SHARD_CARDS, shardBonus, findShardCombos, combineShards } from '../src/shards.js';
+import { cardFor, RECRUITMENT_POOL, SKILL_CARDS, previewCycle, cycleCard, createCardState, seededRandom, drawCards } from '../src/cards.js';
+import { SHARDS, SHARD_IDS, SHARD_RULES, SHARD_CARDS, pickShardSubset, shardBonus, findShardCombos, combineShards } from '../src/shards.js';
 import { memoryLog, replay } from '../src/log.js';
 import { runCommander } from '../src/ai/commander.js';
 
@@ -20,7 +20,7 @@ const apply = (m, f, id, unitType) => m.apply({ type: 'applyShard', faction: f, 
 
 test('data: eight shards with three tier values, cards resolve, pool has each shard once and no skill cards', () => {
   assert.deepEqual(SHARD_IDS, ['ruby', 'sapphire', 'emerald', 'topaz', 'amethyst', 'garnet', 'pearl', 'onyx']);
-  assert.deepEqual(SHARD_RULES, { dockSlots: 10, classSlots: 3, maxTier: 3 });
+  assert.deepEqual(SHARD_RULES, { dockSlots: 10, classSlots: 3, maxTier: 3, poolTypes: 4 });
   assert.deepEqual(SHARDS.emerald.values, [3, 6, 12]);
   assert.deepEqual(SHARDS.amethyst.values, [2, 4, 8]);
   for (const id of SHARD_IDS) {
@@ -259,4 +259,20 @@ test('a seeded shard match replays exactly; schema is 4 and older schemas are re
   assert.ok(check.ok, JSON.stringify(check.mismatches?.slice(0, 1)));
   const old = structuredClone(log.entries); old[0].schema = 3;
   assert.equal(replay(old).ok, false);
+});
+
+test('each match draws shards from a seeded subset of 4 types, shared by both sides, and replays', () => {
+  const seen = new Set();
+  for (let seed = 1; seed <= 12; seed += 1) {
+    const sub = pickShardSubset(seed);
+    assert.equal(sub.length, 4); assert.deepEqual(sub, pickShardSubset(seed));
+    sub.forEach((id) => seen.add(id));
+    const m = createMatch({ seed, maxRounds: 4 });
+    for (const f of ['blue', 'red']) {
+      for (let i = 0; i < 6; i += 1) { m.sides[f].cards = drawCards(m.sides[f].cards, m.sides[f].rng, 8).state; }
+      for (const c of m.sides[f].cards.hand.filter((x) => x.type === 'shard')) assert.ok(sub.includes(c.shardId));
+    }
+  }
+  assert.ok(seen.size > 4, 'different seeds pick different subsets');
+  assert.equal(pickShardSubset(1, 8).length, 8);
 });

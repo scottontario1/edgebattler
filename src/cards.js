@@ -69,6 +69,7 @@ const rarityOpen = (rarity, round) => !(RARITY_GATE[rarity ?? 'common'] > (round
 const CANDIDATE_CARDS = {};
 let ACTIVE_POOL = RECRUITMENT_POOL;
 export const registerCandidateCards = (cards) => Object.assign(CANDIDATE_CARDS, cards);
+export const activePool = () => ACTIVE_POOL;
 export const setRecruitmentPool = (keys) => { ACTIVE_POOL = keys ? Object.freeze([...keys]) : RECRUITMENT_POOL; };
 export const unregisterCandidateCards = (keys) => { for (const k of keys) delete CANDIDATE_CARDS[k]; };
 export const resetCandidateCards = () => { for (const k of Object.keys(CANDIDATE_CARDS)) delete CANDIDATE_CARDS[k]; ACTIVE_POOL = RECRUITMENT_POOL; };

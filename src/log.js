@@ -69,7 +69,7 @@ export function replay(entries, { create } = {}) {
   try {
     const out = memoryLog();
     // Custom scenarios (other map, roster, candidate rules) pass create(header, log) to rebuild the same match.
-    const m = create ? create(header, out.push) : createMatch({ seed: header.seed, maxRounds: header.maxRounds, log: out.push, pools: header.pools ?? null, abilities: header.abilitiesEnabled === true });
+    const m = create ? create(header, out.push) : createMatch({ seed: header.seed, maxRounds: header.maxRounds, log: out.push, pools: header.pools ?? null, abilities: header.abilitiesEnabled === true, shardSubset: header.shardSubset ?? null });
     for (const e of entries) {
       if (e.t === 'action') m.apply(e.action, e.actor);
       else if (e.t === 'round') m.resolveRound();
