@@ -2,27 +2,29 @@
 
 Baseline reviewed: codex/gamegaps, d39fab9, 2026-09-29. This register replaces historical task tables as the current backlog. Review evidence is source inspection and saved screenshots; two targeted Node checks verified the archer targeting failure and lack of field baseline energy. No fresh browser or broad simulation run was performed in that review.
 
+Current implementation update: CORE-01 and SYS-01 are now verified with fresh browser, rule and simulation evidence. See SYS01_VERIFICATION.md.
+
 ## Implemented foundation
 
-Shared match controller, seeded cards, paid reserves, deployment, optional combinations, spell queue, type-wide Barrier, simultaneous basic combat, Protect stance, reserve recovery, symmetric champion respawn and capture checks, AI commanders and replayable logs exist. Browser/build/replay success was reported by the implementing agent at d39fab9; this review did not independently repeat that complete validation. Energy-driven multi-ability management is incomplete.
+Shared match controller, seeded cards, paid reserves, deployment, optional combinations, spell queue, type-wide Barrier, simultaneous basic combat, Protect stance, reserve recovery, symmetric champion respawn and capture checks, AI commanders and replayable logs exist. Browser/build/replay success was reported by the implementing agent at d39fab9; this review did not independently repeat that complete validation. SYS-01 energy/planning-selected kits are now implemented and verified on 2026-09-29; current evidence is in SYS01_VERIFICATION.md.
 
 ## CORE-01: Eligible attack targeting
 
-Status: confirmed correctness gap; blocks unrelated expansion.
-Archer chooses the nearest adjacent enemy and skips its attack even when another enemy is at valid range 2 (src/battle.js). Targeted Node reproduction yielded zero archer strikes.
+Status: implemented and verified, 2026-09-29. Legal targets are filtered before ranking; both factions, invalid explicit/friendly targets, out-of-range and simultaneous lethal behavior have rule checks and browser evidence. See SYS01_VERIFICATION.md.
 Acceptance: select among eligible enemy targets before ranking; cover adjacent blocker plus valid ranged target, no eligible target, and both factions. Preserve simultaneous lethal resolution and deterministic replay.
 
 ## CORE-02: Match pacing and keep pressure
 
 Status: reported core blocker; balance choices provisional.
-The implementing agent reported 96% draws in 100 games at a 30-round cap, including defensive keep immunity to ordinary recruits. Do not automatically adopt lower defense, siege bonuses or score victory.
+Historical baseline reported 96% draws; the final SYS-01 run draws 89/100 at 30 rounds despite 11 captures. Ordinary basic recruits still struggle with defensive keeps; enhancements/flanks now create some counterplay. Do not automatically adopt lower defense, siege bonuses or score victory.
 Acceptance: agree the attacking counterplay, run paired-seed/side-swapped experiments against passive, greedy and heuristic policies, report capture rate, draws, duration and tradeoffs, and let Scott select defaults.
 
 ## SYS-01: Energy and planning-selected abilities
 
-Status: partially implemented; agreed player experience incomplete.
-No baseline energy accrues to field units; Rally costs zero and generates energy, while Barrier is an automatic passive reduction. No planning-selected energy-consuming active kit. Automatic priority editing is now deferred for the MVP. Confirmed direction requires charging over turns and sustained engagement with cooldown/energy decisions.
-Acceptance: implement agreed planning selection and gain/spend timing, expose energy/cooldowns, enforce Brace defense and Charge Advance, define/test side/back facing and reduced advancing battle movement, demonstrate charge -> spend -> recover, and verify AI uses the same rules. Per-unit/group picks, multiple fixed-phase abilities, persistence with an energy exception, movement-updated facing, temporary Brace defense and passive flanking are confirmed. Suspended retained picks, total-cost planning validation and selected Rally are confirmed; final-step facing assumes 32A meant 31A. Persistent-bundle handling, payment and kit numbers await agreement; ABILITY_PROPOSAL.md is the pending revised proposal. Type-wide equipment remains distinct from per-round picks. Do not implement the superseded priority editor.
+Status: implemented and verified, 2026-09-29.
+Scott approved the complete MVP package in ABILITY_PROPOSAL.md. Baseline energy, paid kits, atomic per-unit/group selection, persistent suspended bundles, fixed phases, Brace Hold, Charge triggers, facing/flanks and reduced Advance movement are integrated into the shared engine and UI. Heuristic commanders use logged planning actions; greedy remains a recruit-only baseline. Type-wide equipment remains distinct. No automatic priority editor.
+Evidence: 18 rule checks and production build pass; three-round normal browser log replays exactly; combat fixture and inspected desktop/short/portrait screenshots; 100 paired-seed, side-swapped simulations replay exactly. See SYS01_VERIFICATION.md and design_overhaul/evidence/sys01-*.
+Limits: Cavalier movement does not optimize flank opportunities; that remains future scope. Champions have no active kit. The system is verified at approved prototype values, not declared balanced. Final run still draws 89/100 and blocks about 70 draws per side per game.
 
 ## SYS-02: Capacity, reserves and card circulation
 
@@ -50,10 +52,10 @@ Acceptance: distinct intent overlays, readable portrait planning flow, matched c
 
 ## DOC-01: Documentation reconciliation
 
-Status: partial; durable process and opening GAME.md status reconciled in this documentation pass.
-Other GAME.md foundation/milestone paragraphs retain legacy manual-loop wording and need a dedicated source-backed pass. Historical task logs remain unchanged intentionally.
+Status: substantially reconciled, 2026-09-29.
+GAME.md now reflects automatic rounds, recruitment, champion respawn, reserve gains, approved ability contracts and current milestones. Deferred UI/recycling/timing rules remain explicitly intended or open. Historical task logs remain unchanged intentionally.
 Acceptance: GAME.md consistently distinguishes current behavior, intended rules and provisional defaults; every current gap has evidence/status and a next action.
 
 ## Recommended next task
 
-Fix CORE-01 as a contained correctness prerequisite using the acceptance criteria above. The confirmed active system is then SYS-01 energy/planning-selected abilities, followed by SYS-02 card circulation/capacity. Complete necessary dependencies in the same system pass; elicit unresolved strategic choices before implementing them. Every task names this roadmap position and its acceptance criteria. See DEVELOPMENT.md for the current roadmap; do not start unrelated expansion while core match blockers persist.
+Proceed to SYS-02 card circulation/capacity. Confirm strategic recycle/return/repayment/state rules before implementing them; preserve optional triples and weighted population, demonstrate choices at capacity and report blocked draws/resource use through seeded replay runs. CORE-02 and CORE-03 still block unrelated expansion. CORE-01 and SYS-01 are verified prerequisites; do not reopen them without new evidence or explicit redirection.

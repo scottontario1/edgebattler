@@ -1,10 +1,10 @@
 // Unit card, combat forecast, inspect sheet, terrain chip and roster portraits.
 // Pure template functions; ui.js supplies plain data. Wired by ui.js through
 // [data-act="close"] on the sheet and `.mini[data-id]` roster buttons.
-// Optional unit fields (stars, population, stance, energy/maxEnergy, abilityOrder, cooldowns,
+// Optional unit fields (stars, population, stance, energy/maxEnergy, selectedAbilities, cooldowns,
 // statuses) are treated as absent when missing: the matching chip or row is simply omitted.
 import { esc, uniqueIds } from './util.js';
-import { ABILITIES } from '../abilities.js';
+import { ABILITIES, selectedCost } from '../abilities.js';
 import { stanceIcon, starPips, energyPips, statusIcon, STANCE_LABEL, STANCE_HINT } from './icons.js';
 
 const titleCase = (s) => String(s).replace(/[_-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -58,7 +58,8 @@ export function unitCardHTML(u, m) {
         <div class="name-row"><span class="name" title="${esc(u.name)}">${esc(u.name)}</span>${u.stars ? `<span class="rank" title="${u.stars}-star tier">${starPips(u.stars, u.stars, 12)}</span>` : ''}${u.boss ? '<span class="tag boss">BOSS</span>' : ''}<span class="tag side">${side}</span></div>
         <div class="cls" title="${esc(u.title)} · ${esc(u.weapon)}">${esc(u.title)} · Lv ${u.lv} · MOV ${u.mov}</div>
         <div class="hp"><span>HP</span><div class="bar"><i style="width:${pctOf(u.hp, u.maxHp)}%"></i></div><b>${u.hp}/${u.maxHp}</b></div>
-        <div class="sts">${stanceChip(u)}${energyChip(u)}${statusChips(u, { iconOnly: many })}</div>
+        <div class="sts">${stanceChip(u)}${energyChip(u)}<span class="schip" title="Authoritative facing">${esc(u.facing||'north')}</span>${statusChips(u, { iconOnly: many })}</div>
+        <div class="cls">${(u.selectedAbilities||[]).map(id=>ABILITIES[id]?.name||id).join(' · ')||'Basic actions'}${selectedCost(u)>u.energy?' · Paid picks suspended':''}</div>
       </div>`;
 }
 
@@ -105,9 +106,9 @@ export function sheetHTML(u, m) {
   const stat = (label, v) => `<div class="stat"><span>${label}</span><b>${v}</b></div>`;
   const row = (label, body, cls = '') => `<div class="srow ${cls}"><span class="lab">${label}</span><div class="val">${body}</div></div>`;
   const k = stanceKey(u);
-  const abilities = Array.isArray(u.abilityOrder)
-    ? (u.abilityOrder.length
-      ? u.abilityOrder.map((id) => {
+  const abilities = Array.isArray(u.selectedAbilities)
+    ? (u.selectedAbilities.length
+      ? u.selectedAbilities.map((id) => {
         const cd = u.cooldowns?.[id] || 0;
         const name = ABILITIES[id]?.name || titleCase(id);
         return `<span class="ability${cd > 0 ? ' cooling' : ''}" title="${esc(name)}${cd > 0 ? `: ready in ${cd} round${cd === 1 ? '' : 's'}` : ''}">${esc(name)}${cd > 0 ? `<small>cd ${cd}</small>` : ''}</span>`;

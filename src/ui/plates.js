@@ -1,3 +1,4 @@
+import {FACING} from '../abilities.js';
 // In-world markers for the persistent-state mechanics: a small plate above each unit (stars,
 // stance, energy, statuses) and a pennant on every village / camp / keep showing who holds it.
 // Plain DOM nodes projected from the 3D scene each frame; nothing here reads or changes game rules.
@@ -28,11 +29,11 @@ export function createPlates({ camera, units, territory, container }) {
   let ui = { selectedId: null, hoverId: null };
   let frame = 0;
 
-  const signature = (d) => [d.stars || 1, d.stance, d.energy, d.maxEnergy, d.faction,
+  const signature = (d) => [d.stars || 1, d.stance, d.energy, d.maxEnergy, d.faction,d.facing,
     Object.keys(d.statuses || {}).filter((k) => d.statuses[k]).join('+')].join('|');
 
   function plateHTML(d) {
-    const parts = [];
+    const parts = [`<span class="pl-facing" title="Facing ${d.facing}"><span class="pl-arrow">↑</span></span>`];
     if ((d.stars || 1) >= 2) parts.push(`<span class="pl-stars">${starPips(d.stars, d.stars, 10)}</span>`);
     if (d.faction === 'blue' || ui.selectedId === d.id || ui.hoverId === d.id) parts.push(`<span class="pl-stance" title="${d.stance || 'advance'}">${stanceIcon(d.stance || 'advance', 11)}</span>`);
     if (d.faction === 'blue' && d.maxEnergy > 0) parts.push(`<span class="pl-energy">${energyPips(d.energy || 0, Math.min(4, d.maxEnergy), 11)}</span>`);
@@ -104,6 +105,13 @@ export function createPlates({ camera, units, territory, container }) {
       v.y += HEAD[d.cls] ?? HEAD_DEFAULT;
       const ok = project(px) && !empty && u.group.visible !== false;
       place(n, px.x, px.y - LIFT_PX, ok);
+      const arrow=n.el.querySelector('.pl-arrow');
+      if(arrow&&ok) {
+        const origin={x:px.x,y:px.y};const [dc,dr]=FACING[d.facing]||FACING.north;
+        const at=toWorld(d.c+dc,d.r+dr),here=toWorld(d.c,d.r);
+        v.copy(u.group.position);v.y+=HEAD[d.cls]??HEAD_DEFAULT;v.x+=at.x-here.x;v.z+=at.z-here.z;project(px);
+        arrow.style.transform=`rotate(${Math.atan2(px.y-origin.y,px.x-origin.x)*180/Math.PI+90}deg)`;
+      }
     }
     for (const [id, n] of unitNodes) if (!seen.has(id)) { n.el.remove(); unitNodes.delete(id); }
 

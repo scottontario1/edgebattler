@@ -165,6 +165,18 @@ export function heuristic(m, f, { act, params = {} }) {
       && (want.tile ? u.objective?.type === 'tile' && u.objective.c === want.tile[0] && u.objective.r === want.tile[1] : want.stance !== 'advance' || !u.objective);
     if (!same) act({ type: 'stance', faction: f, unitId: u.id, ...want });
   }
+  // Optional kit selections use the same validated, logged planning actions as the player.
+  for(const u of mine()) {
+    const near=foes().some(o=>manhattan(o,u)<=u.mov+2);
+    const picks=[];
+    if(u.cls==='pikeman') {picks.push('rally');if(near&&u.energy>=2&&u.hp/u.maxHp<0.8) picks.push('brace');}
+    if(u.cls==='archer'&&near&&u.energy>=2) picks.push('focusedShot');
+    if(u.cls==='cavalier') {
+      if(near&&u.stance==='advance'&&u.energy>=2) picks.push('charge');
+      if(u.hp<=u.maxHp/2&&u.energy>=(picks.length?3:1)) picks.push('secondWind');
+    }
+    if(JSON.stringify(picks)!==JSON.stringify(u.selectedAbilities||[])) act({type:'abilities',faction:f,unitId:u.id,abilityIds:picks});
+  }
 }
 
 export const COMMANDERS = { passive, greedy, heuristic };

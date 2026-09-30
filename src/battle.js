@@ -1,3 +1,4 @@
+import {flankSide, ABILITY_RULES} from './abilities.js';
 /**
  * Presentation-independent resolver for one automatic round.
  *
@@ -61,7 +62,7 @@ function protectSubject(unit, order, snapshot) {
 /** Resolve both sides' planned movement and combat from shared snapshots. */
 export function resolveBattleRound({
   units, legalMoves = defaultMoves, orders = {}, seed = 1,
-  forecastAttack = defaultForecast,
+  forecastAttack = defaultForecast, pathForMove = null, beforeCombat = null,
 } = {}) {
   if (!Array.isArray(units)) throw new TypeError('units must be an array');
   const rand = makeRng(seed);
@@ -144,7 +145,12 @@ export function resolveBattleRound({
       movementEvents.push({ type: 'move', unitId: unit.id, from, to, reason: intent.reason });
     }
   }
-  const moved = start.map((u) => ({ ...u, ...(accepted.get(u.id) || {}) }));
+  let moved = start.map((u) => ({ ...u, statuses:{...(u.statuses||{})}, ...(accepted.get(u.id) || {}) }));
+  for (const e of movementEvents) if(e.type==='move'&&pathForMove) {
+    e.path=pathForMove(byId.get(e.unitId),e.to,start);
+  }
+  if(beforeCombat) moved=beforeCombat(moved,movementEvents);
+
 
   // Every living unit declares at most one strike against the same post-move
   // snapshot; hits and damage are computed before any HP is committed.
@@ -152,33 +158,32 @@ export function resolveBattleRound({
   const strikes = [];
   for (const attacker of combatSnapshot.filter((u) => u.hp > 0)) {
     const order = orders[attacker.id] || {};
-    const target = (order.targetId ? combatSnapshot.find((u) => u.id === order.targetId) : null)
-      || combatSnapshot.filter((u) => u.hp > 0 && u.faction !== attacker.faction)
-        .sort((a, b) => manhattan(attacker, a) - manhattan(attacker, b) || String(a.id).localeCompare(String(b.id)))[0];
-    if (!target || target.hp <= 0) continue;
+    const target = selectAttackTarget(attacker, combatSnapshot, forecastAttack, order.targetId);
+    if (!target) continue;
     const f = forecastAttack(attacker, target, { c: attacker.c, r: attacker.r });
-    if (!f?.atk?.can) continue;
-    const hit = rand() * 100 < (f.atk.hit ?? 100);
+    const hit = rand() * 100 < Math.min(100,(f.atk.hit ?? 100)+(attacker.statuses?.hitBonus||0));
     const crit = hit && rand() * 100 < (f.atk.crit ?? 0);
-    const rawDamage = hit ? Math.max(0, f.atk.dmg ?? 0) * (crit ? 3 : 1) : 0;
+    const flank = attacker.cls==='cavalier' ? flankSide(attacker,target) : null;
+    const flankBonus = flank && flank!=='front' ? ABILITY_RULES.flankDamage : 0;
+    const rawDamage = hit ? Math.max(0,(f.atk.dmg??0)+(attacker.statuses?.attackBonus||0)+flankBonus)*(crit?3:1) : 0;
     const warded = target.statuses?.ward === 'upcoming-battle';
     const mitigatedDamage = warded ? Math.floor(rawDamage / 2) : rawDamage;
     const barrier = target.statuses?.barrier;
     const barrierAmount = typeof barrier === 'number' ? barrier : barrier?.amount;
-    const damage = Math.min(target.hp, mitigatedDamage);
-    strikes.push({ attackerId: attacker.id, targetId: target.id, hit, crit, damage, warded,
+    const damage = mitigatedDamage;
+    strikes.push({ flank, flankBonus, attackBonus:attacker.statuses?.attackBonus||0, attackerId: attacker.id, targetId: target.id, hit, crit, damage, warded,
       barrierAmount: Number.isFinite(barrierAmount) ? Math.max(0, barrierAmount) : 0, barrierReduction: 0 });
   }
-  // Apply Barrier once to the target's battle-wide incoming total. Attribute that
-  // reduction to the strongest landed strike, breaking ties by attacker ID so
-  // simultaneous combat never depends on unit-array iteration order.
-  for (const target of combatSnapshot) {
-    const incoming = strikes.filter((strike) => strike.targetId === target.id && strike.hit && strike.damage > 0 && strike.barrierAmount > 0);
-    if (!incoming.length) continue;
-    incoming.sort((a, b) => b.damage - a.damage || String(a.attackerId).localeCompare(String(b.attackerId)));
-    const chosen = incoming[0];
-    chosen.barrierReduction = Math.min(chosen.damage, chosen.barrierAmount);
-    chosen.damage -= chosen.barrierReduction;
+  // Deterministic absorption across the entire incoming batch, including multiple small hits.
+  for(const target of combatSnapshot) {
+    const barrier=target.statuses?.barrier;
+    let barrierLeft=Math.max(0,(typeof barrier==='number'?barrier:barrier?.amount)||0);
+    let braceLeft=Math.max(0,target.statuses?.brace||0);
+    const incoming=strikes.filter(s=>s.targetId===target.id&&s.hit).sort((a,b)=>b.damage-a.damage||String(a.attackerId).localeCompare(String(b.attackerId)));
+    for(const s of incoming) {
+      s.braceReduction=Math.min(s.damage,braceLeft);braceLeft-=s.braceReduction;s.damage-=s.braceReduction;
+      s.barrierReduction=Math.min(s.damage,barrierLeft);barrierLeft-=s.barrierReduction;s.damage-=s.barrierReduction;
+    }
   }
   const damageById = new Map();
   for (const strike of strikes) damageById.set(strike.targetId, (damageById.get(strike.targetId) || 0) + strike.damage);
@@ -193,7 +198,8 @@ export function resolveBattleRound({
       next.statuses = { ...next.statuses };
       delete next.statuses.barrier;
     }
-    if (next.statuses && Object.keys(next.statuses).length === 0) delete next.statuses;
+    next.statuses={...(next.statuses||{})};
+    for(const key of ['brace','attackBonus','hitBonus']) delete next.statuses[key];
     return next;
   });
   const combatEvents = strikes.map((s) => ({ type: 'strike', ...s }));
@@ -207,4 +213,13 @@ export function resolveBattleRound({
       { type: 'combat', events: combatEvents },
     ],
   };
+}
+
+/** Prefer a requested legal enemy, otherwise the nearest eligible enemy (stable ID tie-break). */
+export function selectAttackTarget(attacker, snapshot, forecastAttack = defaultForecast, targetId) {
+  const eligible = snapshot.filter((u) => u.hp > 0 && u.faction !== attacker.faction
+    && forecastAttack(attacker, u, { c: attacker.c, r: attacker.r })?.atk?.can);
+  return eligible.find((u) => u.id === targetId)
+    || eligible.sort((a, b) => manhattan(attacker, a) - manhattan(attacker, b)
+      || String(a.id).localeCompare(String(b.id)))[0];
 }

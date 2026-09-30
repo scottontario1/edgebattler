@@ -1,110 +1,78 @@
-// Plain-data combat abilities and planning-time spell rules. These functions return copies so the
-// game-state owner can decide when to commit the resulting state.
-
-export const DEFAULT_ABILITY_STATE = Object.freeze({
-  energy: 0,
-  maxEnergy: 4,
-  cooldowns: {},
-  abilityOrder: [],
-  stance: 'advance',
-  objective: null,
-  energyGainNextTurn: 0,
-  statuses: {},
-});
-
+// Pure planning selections and fixed-phase combat abilities shared by browser and simulator.
+export const ABILITY_RULES = Object.freeze({maxEnergy:4, fieldGain:1, reserveExtra:1, advanceFraction:2/3, flankDamage:4});
 export const ABILITIES = Object.freeze({
-  rally: Object.freeze({
-    id: 'rally', name: 'Rally', cost: 0, cooldown: 2, target: 'self',
-    condition: 'always', effect: Object.freeze({ type: 'heal', amount: 10 }),
-    energyNow: 1, energyNextTurn: 1,
-  }),
+ rally:{id:'rally',name:'Rally',classes:['pikeman'],cost:0,cooldown:2,phase:'recovery',description:'Heal 10 HP; gain 1 energy now and next round, when useful.'},
+ brace:{id:'brace',name:'Brace',classes:['pikeman'],cost:2,cooldown:2,phase:'defense',description:'Hold this battle. Absorb 4 total damage; paid even without incoming attacks.'},
+ focusedShot:{id:'focusedShot',name:'Focused Shot',classes:['archer'],cost:2,cooldown:2,phase:'enhancement',description:'A legal ranged strike gains +4 damage and +20 hit.'},
+ charge:{id:'charge',name:'Charge',classes:['cavalier'],cost:2,cooldown:2,phase:'enhancement',description:'Requires Advance, automatic movement and a melee target. Strike gains +4 damage.'},
+ secondWind:{id:'secondWind',name:'Second Wind',classes:['cavalier'],cost:1,cooldown:3,phase:'recovery',description:'Heal 6 HP when at or below half HP, including outside combat.'},
 });
-
-export function initializeAbilityState(unit, options = {}) {
-  const maxEnergy = Math.max(0, options.maxEnergy ?? unit.maxEnergy ?? 4);
-  return {
-    ...unit,
-    energy: clamp(options.energy ?? unit.energy ?? 0, 0, maxEnergy),
-    maxEnergy,
-    cooldowns: { ...(unit.cooldowns || {}), ...(options.cooldowns || {}) },
-    abilityOrder: [...(options.abilityOrder ?? unit.abilityOrder ?? [])],
-    stance: options.stance ?? unit.stance ?? 'advance',
-    objective: options.objective ?? unit.objective ?? null,
-    energyGainNextTurn: options.energyGainNextTurn ?? unit.energyGainNextTurn ?? 0,
-    statuses: { ...(unit.statuses || {}), ...(options.statuses || {}) },
-  };
+export const DEFAULT_ABILITY_STATE = Object.freeze({energy:0,maxEnergy:4,cooldowns:{},selectedAbilities:[],stance:'advance',objective:null,energyGainNextTurn:0,statuses:{}});
+const clamp=(v,min,max)=>Math.max(min,Math.min(max,Number(v)||0));
+export const kitFor = unit => Object.values(ABILITIES).filter(a=>a.classes.includes(unit.cls));
+export const selectedCost = unit => (unit.selectedAbilities||[]).reduce((n,id)=>n+(ABILITIES[id]?.cost||0),0);
+export const battleMovement = unit => unit.stance==='hold'?0:unit.stance==='advance'?Math.max(1,Math.round(unit.mov*ABILITY_RULES.advanceFraction)):unit.mov;
+export const FACING = Object.freeze({north:[0,-1],east:[1,0],south:[0,1],west:[-1,0]});
+export function facingFromPath(path,fallback='north') {
+ if(path.length<2) return fallback;
+ const a=path.at(-2),b=path.at(-1),dc=b[0]-a[0],dr=b[1]-a[1];
+ return Object.keys(FACING).find(k=>FACING[k][0]===Math.sign(dc)&&FACING[k][1]===Math.sign(dr))||fallback;
 }
-
-const clamp = (v, min, max) => Math.max(min, Math.min(max, Number(v) || 0));
-
-// Call once at the start of each new round. A two-round cooldown used in round 5 therefore
-// remains at 1 throughout round 6 and reaches 0 at the start of round 7.
-export function advanceAbilityRound(unit) {
-  const next = initializeAbilityState(unit);
-  next.cooldowns = Object.fromEntries(Object.entries(next.cooldowns)
-    .map(([id, turns]) => [id, Math.max(0, turns - 1)]));
-  next.energy = clamp(next.energy + next.energyGainNextTurn, 0, next.maxEnergy);
-  next.energyGainNextTurn = 0;
-  return next;
+export function flankSide(attacker,target) {
+ const dc=attacker.c-target.c,dr=attacker.r-target.r;
+ if(Math.abs(dc)+Math.abs(dr)!==1) return null;
+ const [fc,fr]=FACING[target.facing]||FACING[target.faction==='red'?'south':'north'];
+ const dot=dc*fc+dr*fr;
+ return dot>0?'front':dot<0?'back':'side';
 }
-
-function conditionMet(ability, unit, context) {
-  if (typeof ability.condition === 'function') return ability.condition(unit, context);
-  if (ability.condition === 'always' || ability.condition == null) return true;
-  if (ability.condition === 'target') return Boolean(context.target && context.target.hp > 0);
-  if (ability.condition === 'injured') return Number(unit.hp) < Number(unit.maxHp);
-  return false;
+export function initializeAbilityState(unit,options={}) {
+ const maxEnergy=options.maxEnergy??unit.maxEnergy??4;
+ return {...unit,energy:clamp(options.energy??unit.energy??0,0,maxEnergy),maxEnergy,
+ cooldowns:{...(unit.cooldowns||{}),...(options.cooldowns||{})},
+ selectedAbilities:[...new Set(options.selectedAbilities??unit.selectedAbilities??[])],
+ stance:options.stance??unit.stance??'advance',objective:options.objective??unit.objective??null,
+ facing:options.facing??unit.facing??(unit.faction==='red'?'south':'north'),
+ energyGainNextTurn:options.energyGainNextTurn??unit.energyGainNextTurn??0,
+ statuses:{...(unit.statuses||{}),...(options.statuses||{})}};
 }
-
-function targetIsValid(ability, unit, context) {
-  if (typeof ability.isValidTarget === 'function') return ability.isValidTarget(unit, context.target, context);
-  if (ability.target === 'self') return Number(unit.hp) > 0;
-  if (ability.target === 'none') return true;
-  return Boolean(context.target && context.target.hp > 0);
+export function advanceAbilityRound(unit,extra=0) {
+ const next=initializeAbilityState(unit);
+ next.cooldowns=Object.fromEntries(Object.entries(next.cooldowns).map(([id,n])=>[id,Math.max(0,n-1)]));
+ next.energy=clamp(next.energy+1+extra+next.energyGainNextTurn,0,next.maxEnergy);
+ next.energyGainNextTurn=0;
+ return next;
 }
-
-function applyEffect(unit, ability, context) {
-  const target = ability.target === 'self' ? unit : context.target;
-  const effect = ability.effect || {};
-  if (effect.type === 'heal' && target) {
-    const before = Number(target.hp) || 0;
-    target.hp = Math.min(Number(target.maxHp) || before, before + Math.max(0, effect.amount || 0));
-    return { type: 'heal', targetId: target.id ?? null, amount: target.hp - before };
-  }
-  if (effect.type === 'damage' && target) {
-    const amount = Math.min(Number(target.hp) || 0, Math.max(0, effect.amount || 0));
-    target.hp -= amount;
-    return { type: 'damage', targetId: target.id ?? null, amount };
-  }
-  if (effect.type === 'status' && target) {
-    target.statuses = { ...(target.statuses || {}), [effect.status]: effect.duration ?? 1 };
-    return { type: 'status', targetId: target.id ?? null, status: effect.status, duration: effect.duration ?? 1 };
-  }
-  return { type: 'none', targetId: target?.id ?? null };
+// Validate the entire edit before mutating any group member. Cooldown does not prevent selecting.
+export function validateAbilitySelection(unit,ids) {
+ if(!Array.isArray(ids)||ids.some(id=>!ABILITIES[id]?.classes.includes(unit.cls))) return {ok:false,reason:'invalid-ability'};
+ if(ids.includes('charge')&&unit.stance!=='advance') return {ok:false,reason:'charge-requires-advance'};
+ const cost=selectedCost({selectedAbilities:[...new Set(ids)]});
+ return cost>unit.energy?{ok:false,reason:'insufficient-energy',cost,shortfall:cost-unit.energy}:{ok:true,cost};
 }
-
-/** Evaluate an ordered activation once, with no repeated ability IDs and a hard action cap. */
-export function resolveAbilityActivation(unit, context = {}, options = {}) {
-  const actor = initializeAbilityState(unit);
-  const registry = { ...ABILITIES, ...(options.abilities || {}) };
-  const maxAbilities = Math.max(0, Math.floor(options.maxAbilities ?? 3));
-  const fired = [];
-  const seen = new Set();
-  for (const id of actor.abilityOrder) {
-    if (fired.length >= maxAbilities) break;
-    if (seen.has(id)) continue;
-    seen.add(id);
-    const ability = registry[id];
-    if (!ability || (actor.cooldowns[id] || 0) > 0) continue;
-    if (actor.energy < (ability.cost || 0) || !conditionMet(ability, actor, context) || !targetIsValid(ability, actor, context)) continue;
-    actor.energy -= ability.cost || 0;
-    const effect = applyEffect(actor, ability, context);
-    actor.energy = clamp(actor.energy + (ability.energyNow || 0), 0, actor.maxEnergy);
-    actor.energyGainNextTurn = (actor.energyGainNextTurn || 0) + (ability.energyNextTurn || 0);
-    if ((ability.cooldown || 0) > 0) actor.cooldowns[id] = ability.cooldown;
-    fired.push({ abilityId: id, name: ability.name || id, effect, cooldown: ability.cooldown || 0 });
-  }
-  return { unit: actor, target: context.target, fired, remainingEnergy: actor.energy };
+// Bundle eligibility is frozen before recovery: Rally cannot rescue an unaffordable paid bundle.
+export const paidBundleReady = unit => unit.energy>=selectedCost(unit);
+export function activatePhase(unit,phase,{paid=true,moved=false,hasTarget=false}={}) {
+ const next=initializeAbilityState(unit),events=[];
+ for(const a of kitFor(next).filter(a=>a.phase===phase&&(next.selectedAbilities||[]).includes(a.id))) {
+  let reason=null;
+  if(a.cost&&!paid) reason='insufficient-energy';
+  else if(next.cooldowns[a.id]>0) reason='cooldown';
+  else if(a.id==='charge'&&(next.stance!=='advance'||!moved||!hasTarget)) reason='charge-trigger-unmet';
+  else if(a.id==='focusedShot'&&!hasTarget) reason='no-legal-target';
+  else if(a.id==='secondWind'&&next.hp>next.maxHp/2) reason='above-half-hp';
+  else if(a.id==='rally'&&next.hp>=next.maxHp&&next.energy>=next.maxEnergy&&next.energy+1+next.energyGainNextTurn>=next.maxEnergy) reason='not-useful';
+  if(reason) {events.push({unitId:next.id,abilityId:a.id,name:a.name,applied:false,reason});continue;}
+  next.energy-=a.cost;next.cooldowns[a.id]=a.cooldown;
+  let effect={type:'status'},energyCapped=0;
+  if(a.id==='rally'||a.id==='secondWind') {
+   const before=next.hp;next.hp=Math.min(next.maxHp,next.hp+(a.id==='rally'?10:6));
+   effect={type:'heal',amount:next.hp-before,targetId:next.id};
+   if(a.id==='rally'){energyCapped=Math.max(0,next.energy+1-next.maxEnergy);next.energy=Math.min(next.maxEnergy,next.energy+1);next.energyGainNextTurn+=1;}
+  } else if(a.id==='brace') next.statuses.brace=4;
+  else {next.statuses.attackBonus=4;if(a.id==='focusedShot') next.statuses.hitBonus=20;}
+  events.push({unitId:next.id,abilityId:a.id,name:a.name,applied:true,cost:a.cost,energyCapped,effect,cooldown:a.cooldown});
+ }
+ return {unit:next,events};
 }
 
 export const SPELLS = Object.freeze({

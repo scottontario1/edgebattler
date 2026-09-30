@@ -1,0 +1,22 @@
+.ability-editor {border-top:1px solid #766643;margin-top:12px;padding-top:10px;font-size:12px;line-height:1.4;grid-column:1/-1}
+.ability-editor h3,.ability-editor h4 {margin:6px 0;color:var(--ivory)}
+.ability-editor p {margin:6px 0;color:var(--muted)}
+.ability-options {display:grid;gap:6px;margin:10px 0}
+.ability-editor button {min-height:36px;cursor:pointer;background:#252b32;border:1px solid #7c745f;border-radius:5px;color:var(--ivory);padding:7px 10px;font:inherit}
+.ability-editor button:disabled {opacity:.5;cursor:default}
+.ability-editor button[aria-pressed="true"] {border-color:var(--gold-bright);background:#48402d}
+.ability-pick {text-align:left;display:flex;flex-direction:column;gap:3px}
+.ability-pick b small {font-weight:400;color:var(--muted)}
+.ability-pick em {font-style:normal;font-size:11px;color:#bbcfdf}
+.plan-summary {padding:7px;background:#1d2731;border-radius:5px}
+.plan-warning,.ability-editor .plan-warning {color:#ffd280}
+.plan-notice {min-height:18px}
+.plan-facing {display:flex;flex-wrap:wrap;gap:5px}
+.plan-group {margin:8px 0}
+.plan-group summary {cursor:pointer;padding:5px 0}
+.plan-group label {display:flex;align-items:center;gap:6px;min-height:36px}
+.plan-group input {width:18px;height:18px}
+.plan-group>div {max-height:160px;overflow:auto}
+@media(pointer:coarse) {.ability-editor button,.plan-group label {min-height:44px}}
+
+.plan-stats {grid-column:1/-1;margin-top:10px;font-size:12px}.plan-stats summary {cursor:pointer;min-height:32px}.sheet:has(.ability-editor) {display:block}

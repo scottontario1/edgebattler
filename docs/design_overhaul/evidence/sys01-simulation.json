@@ -1,0 +1,18 @@
+{
+  "games": 100,
+  "wins": {
+    "blue": 6,
+    "draw": 89,
+    "red": 5
+  },
+  "first10SeedDraws": 16,
+  "rounds": 29.37,
+  "blue_ability_uses": 15.6,
+  "red_ability_uses": 16.01,
+  "blue_energy_spent": 10.6,
+  "red_energy_spent": 12.37,
+  "blue_energy_capped": 182.08,
+  "red_energy_capped": 188.95,
+  "blue_blocked_draws": 69.6,
+  "red_blocked_draws": 70.27
+}

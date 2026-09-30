@@ -1,0 +1,3 @@
+eval: {"cost":"Energy 1/4 · Selected cost 2 · Facing north","disabled":true,"bodyWidth":900,"screenWidth":900,"sheetWidth":620}
+wrote docs/design_overhaul/evidence/sys01-short.png (900x420)
+

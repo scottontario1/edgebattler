@@ -10,7 +10,7 @@ Presentation: an illustrated fantasy army on a readable square-grid battlefield,
 
 ## Design status
 
-The current prototype implements seeded cards, paid reserves, deployment, optional upgrades, queued spells, shared skills, stances, automatic rounds, enemy recruitment, reserve recovery and champion respawn. Energy-driven ability management and persistent human orders remain incomplete. Rules marked as **prototype defaults** are starting points for testing, not final balance decisions. See `docs/CURRENT_GAPS.md` for current implementation and verification gaps, and `docs/DEVELOPMENT.md` for the confirmed development process.
+The current prototype implements seeded cards, paid reserves, deployment, optional upgrades, queued spells, shared skills, stances, automatic rounds, enemy recruitment, reserve recovery and champion respawn. Planning-selected active kits, persistent energy/cooldowns, facing, passive flanks and reduced Advance battle movement are implemented. Arbitrary persistent human objectives remain incomplete. Rules marked as **prototype defaults** are starting points for testing, not final balance decisions. See `docs/CURRENT_GAPS.md` for current implementation and verification gaps, and `docs/DEVELOPMENT.md` for the confirmed development process.
 
 The primary loop is planning followed by one Resolve battle action. The shared match controller drives browser and simulator behavior; manual exchanges remain legacy foundations rather than the required player flow. The sections below include intended rules and provisional details that must be reconciled against the current gap register before implementation.
 
@@ -18,12 +18,12 @@ The primary loop is planning followed by one Resolve battle action. The shared m
 
 - First version: single player against an AI commander, on a persistent tactical map.
 - Primary objective: capture or destroy the enemy keep; other maps may later define different objectives.
-- Players select active abilities during planning for the MVP; player-managed ability prioritization is deferred. Movement and combat still resolve automatically for both armies. Planning uses the full movement allowance; advancing units have a separate battle movement allowance of approximately two-thirds of planning movement, with rounding and terrain-cost treatment to be tuned.
+- Players select active abilities during planning for the MVP; player-managed ability prioritization is deferred. Movement and combat still resolve automatically for both armies. Planning uses the full movement allowance; advancing units have a separate battle movement allowance of approximately two-thirds of planning movement, using max(1, round(MOV * 2/3)) movement-cost points with existing terrain costs; tune later.
 - Energy accumulates across turns. Several positioning and charging rounds can lead into a sustained engagement with energy and cooldown management.
 - Cards come from a shared recruitment pool. Resource costs and a population limit gate army building; exact amounts remain balance decisions.
-- Ordinary unit deaths are permanent for the match. Hero champions can respawn at base; delay, resource cost, and respawn state remain open.
+- Ordinary unit deaths are permanent for the match. Hero champions can respawn at base; current delay, cost and reset state are prototype defaults below.
 - Paid reserve units and deployed units can participate in combinations. Combining is optional: three ordinary Pikemen may be preferable to one upgraded Pikeman.
-- Units may have active abilities and passives; players pick active abilities in planning instead of arranging automatic priorities for the MVP. Type-wide skill equipment remains shared. For now, picks are per unit with group/apply-to-class controls; multiple picks resolve in fixed effect phases. Picks persist when unaffordable but suspend execution until energy recovers. New planning selections must fit their total cost into available energy. Brace temporarily forces defensive/Hold for that battle; Cavalier Charge requires Advance already selected. Cavalier flanking is passive on side/back attacks, including Charge. Automatic movement updates facing to its final step; stationary units retain planning facing. Facing locks before attacks (interpreting the latest 32A as question 31A).
+- Units may have active abilities and passives; players pick active abilities in planning instead of arranging automatic priorities for the MVP. Type-wide skill equipment remains shared. For now, picks are per unit with group/apply-to-class controls; multiple picks resolve in fixed effect phases. Picks persist when unaffordable but suspend execution until energy recovers. New planning selections must fit their total cost into available energy. Brace temporarily forces defensive/Hold for that battle; Cavalier Charge requires Advance already selected. Cavalier flanking is passive on side/back attacks, including Charge. Automatic movement updates facing to its final step; stationary units retain planning facing. Facing locks before attacks; the final-step interpretation and prototype package were approved on 2026-09-29.
 - HP, energy, cooldowns, and statuses persist across rounds. Recovery abilities run during normal activations, even without a nearby enemy. A two-turn cooldown used in round 5 is ready again in round 7.
 - Units may withdraw through controlled reinforcement locations into recovering/charging reserves and may be sold or recycled into a card of the same grade. Refunds, card repayment, and preserved state remain open.
 - Spell cards are queued during planning and resolve when battle starts. Skill cards are transferable equipment; their type-wide scope is distinct from one-shot spells.
@@ -48,7 +48,7 @@ A round has four stages:
 
 There is no requirement to mark every friendly unit as finished. A unit without a new order uses its existing stance and objective. An army with no cards or resources available can still resolve its battle.
 
-The first version is single-player against an enemy commander. Implemented: the enemy draws from its own seeded hand, gains Supply each round, and recruits and deploys unit cards (most expensive affordable first) at its keep and any red-held village, subject to the same population cap; it does not yet cast spells or equip skills. Proposed fairness baseline: the enemy recruits and plans under the same core rules. Enemy recruitment and orders lock before battle begins. Shared combat replaces the current sequence of manually ordered player attacks followed by an enemy-only action phase. Competitive multiplayer is outside the first implementation slice.
+The first version is single-player against an enemy commander using the same match rules. Default red policy is greedy (recruit/deploy); heuristic also uses spells, equipment, stances, combinations, withdrawal and planning-selected abilities. Either faction can use any policy in simulations. Enemy planning locks before battle begins. Competitive multiplayer remains outside MVP scope.
 
 ## Cards, hand, and resources
 
@@ -80,9 +80,9 @@ Playing a unit card pays its recruitment cost and creates a unit on the reserve 
 
 Deployed units may withdraw through a controlled base or reinforcement point into reserves. Reserves can recover and accumulate energy. Eligible units can also be sold or recycled into a card of the same grade, preserving the existence of upgraded cards rather than breaking every unit back into 1-star copies.
 
-**Implemented (prototype defaults):** a deployed recruit standing on a controlled keep or village tile can Withdraw (W) to the bench with its HP, energy, cooldowns and statuses intact; it keeps its population slot. Benched units recover 4 HP and 1 energy per round (`RESERVE_HEAL`, `RESERVE_ENERGY` in `src/ui.js`) and tick cooldowns; redeploying restores exactly that state. Champions cannot be benched. Selling/recycling is not implemented.
+**Implemented (prototype defaults):** a deployed recruit standing on a controlled keep or village tile can Withdraw (W) to the bench with its HP, energy, cooldowns and statuses intact; it keeps its population slot. Benched units recover 4 HP and 2 energy per planning refresh (baseline 1 plus reserve bonus 1 in src/match.js), plus a pending Rally bonus, and tick cooldowns; redeploying restores picks, facing and that carried state. Champions cannot be benched. Selling/recycling is not implemented.
 
-Reserve capacity, reserve population cost, recovery/energy rates, withdrawal timing, and any extra deployment charge are unresolved. Selling/recycling must define whether resources are refunded, whether the resulting card must be paid for again, and what happens to HP, energy, cooldowns, and statuses. Keep these rules explicit so the system does not accidentally grant an instant full heal or unlimited refunds. Spells, enchantments, and equipment need an explicit inventory model rather than silently being treated as reserve units.
+Current prototype bench cap is 8, reserves retain their population cost, withdrawal occurs during planning, and deployment has no additional Supply cost. These values can be tuned. Selling/recycling must define whether resources are refunded, whether the resulting card must be paid for again, and what happens to HP, energy, cooldowns, and statuses. Keep these rules explicit so the system does not accidentally grant an instant full heal or unlimited refunds. Spells, enchantments, and equipment need an explicit inventory model rather than silently being treated as reserve units.
 
 Prototype deployment rules:
 
@@ -116,7 +116,7 @@ Preview the consumed copies, resulting stars/stats, and population change. The p
 
 Upgrades improve a defined class stat table and may strengthen existing abilities. A star upgrade should create a stronger specialist, not simply triple every statistic. Proposed health inheritance: apply the inputs' combined current-HP/max-HP ratio to the upgraded maximum HP. The result uses the shared skill loadout for its unit type, so merging differently equipped individual copies is not a required feature yet. Exact scope across star levels, planned-ability inheritance, and enchantment inheritance remain open. Per-instance HP, energy, cooldowns, and statuses still require inheritance rules; do not assume an upgrade heals, refills energy, resets cooldowns, or cleanses effects for free.
 
-Hero champions are distinct from ordinary recruits and can respawn at base after death. Automatic respawn after a delay and paid respawn are both candidates; their star progression, resource penalty, and reset state remain undecided. The current demo's immediate defeat on losing Brenna is a legacy rule, not the intended normal outcome of champion death.
+Hero champions respawn symmetrically after two rounds for 1 Supply at an available controlled deployment location. They return at full HP with cleared picks/cooldowns and 1 energy from their arrival baseline. Champion death alone is not defeat. Values remain prototype defaults.
 
 ## Spells
 
@@ -136,17 +136,18 @@ Spells provide direct intervention without introducing a per-unit manual action 
 
 ## Persistent energy, recovery, and cooldowns
 
-Every unit has its own persistent energy pool. The typical maximum is around 3–4 energy; casters may have larger pools. Energy gains have a per-turn baseline, with additional energy possible from attacks, taking damage, abilities, and class-specific triggers. The exact baseline, gain timing, starting energy, and overflow behavior remain open.
+**Approved MVP defaults (2026-09-29):** max energy 4; initial 0 before round-1 +1; field +1 each planning refresh; reserves gain baseline plus extra +1; overflow clamps. Newly recruited reserves start at 0, and deployment does not grant a second refresh. Pending Rally energy is consumed exactly once at the next refresh. Ordinary movement and basic attacks are free.
 
-Ordinary movement and basic attacks are normally available without an energy cost. Enhanced actions, abilities, and some stance effects can spend energy. Each effect needs an explicit cost, legal trigger, and cooldown. Energy does not reset between battle phases, so a formation may spend several rounds moving and charging before a sustained fight.
+Units retain HP, energy, picks, facing and cooldowns across rounds and withdrawal. Recovery does not imply a full heal. A cooldown of 2 used in round 5 is unavailable in 6 and ready in 7.
 
-HP, cooldowns, statuses, and energy persist across rounds. Recovery abilities matter between engagements; there is no assumed automatic full heal. Recovery skills run as part of normal activations, even when no enemy is nearby, and reserves can recover and charge under rates still to be specified.
+- Pikeman Rally: selected active, cost 0, cooldown 2; heal 10 and gain 1 energy now and next refresh, only when useful.
+- Pikeman Brace: cost 2, cooldown 2; commit before movement, temporarily Hold and absorb 4 total incoming basic damage this battle. Paid even without attacks; normal stance resumes afterward.
+- Archer Focused Shot: cost 2, cooldown 2; legal ranged basic strike gains 4 damage and 20 hit percentage points, capped at 100.
+- Cavalier Charge: cost 2, cooldown 2; requires pre-existing Advance, actual automatic movement and a legal melee target; ordinary strike gains 4 damage.
+- Cavalier Second Wind: cost 1, cooldown 3; heal 6 at or below half HP, including outside combat.
+- Cavalier Flank: passive 4 damage from a target's side/back, stacking with Charge before critical multiplication.
 
-Concrete design example supplied by the user:
-
-> **Pike — Rally:** restore 10 HP to the Pike; gain 1 energy this turn and next; cooldown 2 turns.
-
-Cooldown convention: using Rally in round 5 makes it unavailable in round 6 and ready in round 7. Recovery happens during the normal activation, including rounds without nearby enemies. Under planning-selected MVP abilities, Rally is eligible when either healing or energy gain would be useful; it requires explicit planning selection and follows the same persistence rule as other active abilities. Its energy cost, precise usefulness check, and placement within simultaneous ability resolution still need definition. Whether cooldowns tick while stunned and how reserve cooldowns advance remain open. Cavalry flanking means attacking an enemy's side or back. Define unit facing, when facing locks, and the bonus reward; Charge requires Advance already selected. Brace temporarily forces defensive/Hold for the battle, then restores the persistent stance. Cavalier flanking is passive and can benefit Charge. Players set facing in planning; automatic movement may change facing, which locks before attacks. Future Cavalier automatic behavior should emphasize flanking. These examples express roles and timing, not implemented or fully balanced abilities.
+Ward halves incoming damage first. Active Brace and purchased passive Barrier (2 absorption) then reduce the battle's total damage; unused protection expires. Attack enhancements expire after the battle. Full selection, payment and execution contracts are in docs/ABILITY_PROPOSAL.md.
 
 ## Stances, objectives, and automatic abilities
 
@@ -160,13 +161,11 @@ Stances are persistent behavioral orders. Each class has a sensible default, so 
 
 Defaults should reflect roles: frontline melee advances, archers maintain useful firing range, and an objective defender holds. Orders may name a tile, objective, or ally; losing an assigned target falls back to the class default. Stances never bypass occupation, movement costs, or attack range.
 
-For the MVP, players pick active abilities during planning and combat executes the committed choices automatically. Player-managed ability prioritization is deferred and may be revisited later. Units may still have several available active abilities and passives. Picks are per unit for now, with group selection/apply-to-class controls. Multiple picked abilities resolve in fixed effect phases. Picks persist until changed, including when unaffordable; execution suspends until energy recovers. New selections must fit their total energy cost during planning. Define payment, invalid target/stance handling, and whether an unaffordable persistent bundle suspends together. Do not block free movement/basic attacks or require reselecting suspended abilities. Resolve a bounded sequence; energy-generating abilities must not create infinite action loops.
+For the MVP, players pick active abilities during planning and combat executes the committed choices automatically. Player-managed ability prioritization is deferred and may be revisited later. Units may still have several available active abilities and passives. Picks are per unit for now, with group selection/apply-to-class controls. Multiple picked abilities resolve in fixed effect phases. Picks persist until changed, including when unaffordable; execution suspends until energy recovers. New selections must fit their total energy cost during planning. Picking/cancelling is free; costs commit only for legal executions. Freeze total paid-bundle affordability before recovery and suspend all paid picks together when short. Invalid target/trigger/stance skips cost no energy or cooldown. Do not block free movement/basic attacks or require reselecting suspended abilities. Resolve a bounded sequence; energy-generating abilities must not create infinite action loops.
 
 Passives need explicit triggers and upkeep, distinct from planning-selected active casts. Shared skill equipment does not automatically imply shared active selection. The previously confirmed shared ability-priority editor and enable/disable automation are superseded for the MVP by planning selection; keep them as a deferred option. There is no minimum-energy reserve threshold control in the initial prototype. Design selection so the player can still resolve a round without clicking through every unit.
 
-Potential skill-card example: a Pike starts with Rally, and the player equips **Barrier: block f(x) damage** when the situation calls for it. Barrier's scaling formula, duration, cost, trigger, and stack behavior remain open. Equipped skills currently apply to all instances of a unit type rather than one particular soldier. Skill cards are transferable equipment. Owner/faction scope, whether all star levels and future recruits inherit the skill, slot count, class restrictions, transfer costs, and cooldown handling on transfer remain open. More granular per-instance loadouts may come later.
-
-Expose ready/cooling-down status in inspection and show an ability label when it fires. Support applying a stance to a selected group or role later; do not require assigning it again to every unit every round.
+Purchased Barrier is transferable type-wide equipment with two loadout slots per type. Every friendly instance of the type, including future recruits and star levels, inherits its passive 2 total absorption per battle. Transfer is free and moves the item out of the old type. More granular equipment and additional skill cards remain future scope.
 
 ## Automatic battle rules
 
@@ -175,9 +174,9 @@ Resolve one bounded tactical exchange per round on the persistent map, rather th
 **Resolution contract:**
 
 1. Lock plans and queued cards for both armies. Resolve queued spells at battle start using explicitly defined batching and target rules.
-2. Resolve automatic movement for both armies together. Units follow their stances using their separate automatic movement allowance. Movement intentions come from a shared board snapshot; contested destinations, crossing paths, and occupied cells need explicit collision rules.
-3. Resolve combat for both armies together. Each unit has one bounded activation opportunity with planning-selected abilities and a basic attack. Partition preparation, healing, protection, attacks, and reactions into defined simultaneous batches or timing windows; their exact ordering remains open.
-4. Apply each batch consistently to authoritative state, then handle deaths, objective ownership, and victory at the defined boundaries. Decide explicitly whether a lethally hit unit's already-declared action still resolves. Code iteration order and animation order must not decide this implicitly.
+2. Commit ready affordable Brace before movement. Resolve movement from a shared starting snapshot: occupied starting tiles block entry even if the occupant leaves; contested destinations use seeded priority. Advance uses its reduced movement-cost allowance. Accepted movement sets facing from the final step.
+3. Resolve selected recovery (Rally/Second Wind), then legal attack enhancements, then one basic strike per living unit against the shared post-move snapshot. Paid-bundle eligibility is fixed before recovery. No user-managed priority or repeat-cast chain.
+4. Commit simultaneous strike damage: both declared strikes still resolve even when lethal. Clean up protection/enhancements, handle deaths/capture/victory, then refresh if play continues. Cross-faction spell interactions and mutual keep captures remain unresolved under CORE-03. Animation order never changes strike outcomes.
 5. Finish after the round's bounded action opportunities. Preserve survivors' state and return to planning. Abilities and reactions need finite limits and cannot generate an endless chain.
 
 Reuse weapon range, terrain defense, the weapon triangle, and hit/critical calculations where they fit. The demo's sequential attacker-counter-follow-up exchange is a foundation, not the settled timing rule for simultaneous combat. Decide how speed, follow-ups, counters, and energy earned from incoming damage interact with simultaneous actions before adapting that resolver. Proposed reaction limits remain balance candidates.
@@ -207,7 +206,7 @@ Input priority depends on intent: when playing a card or assigning a destination
 
 ## Current demo foundation
 
-Two named heroes and three recruit classes are already present. Recruits use templates in `RECRUIT` (`src/units.js`) and may appear in either army. The current roster is fixed; random recruitment and dynamic deployment are future work.
+Two named heroes and three recruit classes are already present. Recruits use templates in `RECRUIT` (`src/units.js`) and may appear in either army. A starting roster is augmented by seeded recruitment and dynamic deployment. Pure templates are in src/roster.js; the browser view is in src/units.js.
 
 | Class | Move type | Current range | Tactical role |
 |---|---|---|---|
@@ -221,7 +220,7 @@ Future classes may include mage, knight, healer, and flying units. Add them afte
 
 Current terrain includes plains, roads, bridges, forests, mountains, villages, and keeps. Use `src/terrain.js` for terrain effects and `src/rules.js` for movement costs rather than duplicating balance values in this document. The current map is 16 × 12 tiles; each tile is one world unit.
 
-Current demo outcomes are routing the enemy or occupying its keep; losing Brenna currently causes defeat. The intended standard match is won by capturing or destroying the enemy keep, while hero champions can respawn. Future maps may declare other objectives. Maps should declare commanders, deployment zones, capture locations, and victory conditions as data. Define exactly when occupation counts as a capture or win, and report that reason to the player.
+Current outcomes are either faction occupying the enemy keep at battle end, or eliminating all enemy field/reserve units with no pending champion respawn. The intended standard match is won by capturing or destroying the enemy keep, while hero champions can respawn. Future maps may declare other objectives. Maps should declare commanders, deployment zones, capture locations, and victory conditions as data. Define exactly when occupation counts as a capture or win, and report that reason to the player.
 
 ## Art direction
 
@@ -231,27 +230,11 @@ Card faces, battlefield units, and portraits should share the same character art
 
 Upgraded units need an obvious star badge and a restrained visual accent. The first prototype can reuse the base sprite; it does not require a new illustration for every star level. Spell effects should communicate their area and duration without hiding occupied tiles.
 
-## Implementation milestones
+## Implementation status and roadmap
 
-### Existing foundation
+Implemented: seeded hand/Supply, paid reserves and deployment; optional combinations; queued spells and type-wide skills; persistent stances; shared automatic rounds; champion respawn; planning-selected kits, energy, cooldowns, facing and passive flanking. src/match.js owns rules for browser and simulator. src/ui.js only presents planning and plays event batches. Legacy manual exchange helpers are not the normal round flow.
 
-- Visual battlefield, sprites, portraits, selection, range overlays, and inspection.
-- Manual movement with path animation; Wait and End turn.
-- Attack forecasts and resolved combat, counters, follow-ups, HP changes, and deaths.
-- Basic enemy decisions and scenario victory/defeat.
-
-### New direction: build one playable slice at a time
-
-1. **Hand, reserves, and deployment:** card data, seeded draw, resource costs, paid reserves, population, the bottom dock, placement previews, and dynamic unit creation. Start with the three existing recruit classes and legal starting deployment tiles.
-2. **Simultaneous round and energy:** one Resolve battle command, separate planning/automatic movement allowances, persistent stances, per-unit energy/cooldowns, simultaneous movement and combat batches, enemy planning, and event-driven playback. Complete a match without manually issuing attacks or waits.
-3. **Optional combinations:** matching across paid reserves and the field, survivor/destination choices, star stats, population changes, inheritance rules, and visible upgrade markers. Verify that available triples can be kept separate and each upgrade requires an explicit choice.
-4. **Spells and ability loadouts:** queued battle-start spells, planning-selected active abilities plus automatic attacks, passives, Rally-style recovery, and transferable type-wide skill cards. Include explicit targeting, duration, energy costs, cooldowns, and reaction limits.
-5. **Territory and pacing:** captured deployment locations, resource/draw/population balance, reserve recovery and recycling, champion respawn, and readable battle summaries. Confirm positioning and energy accumulation matter alongside card luck; ordinary casualties remain permanent.
-6. **Presentation and expansion:** group orders, mobile dock polish, matching portraits, sound, dialogue, additional classes, and multiple maps. Save/load and campaign progression follow once the core match loop is stable.
-
-**Implemented: match controller, AI and data.** `src/match.js` now owns all match state and rules for both the browser and the headless simulator; `src/ai/commander.js` provides passive, greedy and heuristic commanders for either side; every game (browser or simulated) is logged as JSON Lines and can be replayed from its seed and actions (`src/log.js`, `tools/sim/`). First simulation findings (100 games, heuristic vs greedy, 30-round cap, both side assignments): 96% of games hit the round cap. Causes to tune: a champion standing on its own keep takes 0 damage from recruits (13 DEF + 3 castle DEF against 16 attack), so keeps are almost never taken; hands fill with unplayable cards once population reaches the cap (65-80 blocked draws per game); Supply sits at the 6 cap most of the game.
-
-Keep card/inventory, orders, and battle state independent of DOM handlers. The current turn flow in `src/ui.js` should move into a dedicated game-state controller as automatic resolution is introduced. Reuse `src/rules.js` and `src/combat.js`; adapt `src/ai.js` for both stance-driven friendly decisions and enemy planning.
+SYS-01 is implemented and verified; see docs/SYS01_VERIFICATION.md for rule, browser and replay evidence. The next active system is SYS-02 circulation/capacity. CORE-02 stalemates and CORE-03 cross-faction timing/mutual capture remain unresolved. Persistent arbitrary orders, playback controls and art/mobile polish follow the durable roadmap in docs/DEVELOPMENT.md. Historical overhaul task lists are not current completion status.
 
 ## Decisions to tune through the prototype
 
@@ -260,7 +243,7 @@ The intended direction is fixed: random shared-pool cards, paid reserves, contro
 - Draw counts, pool weights, resource types and costs, banking, hand/bench limits, and population values.
 - Exact planning and automatic movement distances, simultaneous collision rules, and the usefulness of each stance.
 - Energy gain timing, ability trigger complexity by unit type, action/repeat-cast limits, passive/toggle rules, and reserve recovery rates.
-- Type-wide skill scope, planned-ability affordability, persistent-bundle suspension details and group controls, slots, costs, compatibility, and transfer/cooldown semantics; enchantment rules.
+- Additional skill compatibility, slots/costs, transfer/cooldown semantics for future active equipment, and enchantment rules. MVP pick affordability and bundle suspension are approved above.
 - Exact star stat gains and per-instance HP/energy/status/cooldown inheritance during combinations.
 - Reserve withdrawal, selling/recycling refunds, same-grade card repayment and retained state, and inventory-capacity handling.
 - Simultaneous spell/ability/attack timing, reactions, follow-ups, lethal-action rules, target tracking, and mutual-victory outcomes.

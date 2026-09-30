@@ -7,7 +7,7 @@
 //   round    round, batches [{ type: spells | abilities | movement | combat | results, events }]
 //   summary  round, blue {...}, red {...}   state after that round (round 0 = start)
 //   result   round, winner ('blue' | 'red' | null), reason, stats
-import { createMatch } from './match.js';
+import { createMatch, SCHEMA } from './match.js';
 
 export const toJSONL = (entries) => entries.map((e) => JSON.stringify(e)).join('\n') + '\n';
 export const fromJSONL = (text) => text.split('\n').filter((l) => l.trim()).map((l) => JSON.parse(l));
@@ -57,13 +57,14 @@ export function playLog({ endpoint = '/__log', name = `${new Date().toISOString(
 export function replay(entries) {
   const header = entries.find((e) => e.t === 'header');
   if (!header) return { ok: false, mismatches: [{ reason: 'no-header' }] };
+  if(header.schema!==SCHEMA) return {ok:false,mismatches:[{reason:'unsupported-schema',schema:header.schema,expected:SCHEMA}]};
   const out = memoryLog();
   const m = createMatch({ seed: header.seed, maxRounds: header.maxRounds, log: out.push });
   for (const e of entries) {
     if (e.t === 'action') m.apply(e.action, e.actor);
     else if (e.t === 'round') m.resolveRound();
   }
-  const pick = (list) => list.filter((e) => e.t === 'summary' || e.t === 'result').map((e) => JSON.stringify(e));
+  const pick = (list) => list.filter((e) => ['action','round','summary','result'].includes(e.t)).map((e) => JSON.stringify(e));
   const want = pick(entries), got = pick(out.entries);
   const mismatches = [];
   for (let i = 0; i < Math.max(want.length, got.length); i += 1) {

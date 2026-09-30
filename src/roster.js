@@ -13,7 +13,7 @@ const recruit = (cls, id, faction, c, r, look, over = {}) => {
   const t = { ...RECRUIT[cls], ...over };
   return { id, cls, classId: cls, variantId: cls, faction, c, r, name: t.name, title: t.title, lv: t.lv, hp: t.hp, maxHp: t.hp, str: t.str, mag: t.mag, skl: t.skl,
     spd: t.spd, def: t.def, res: t.res, mov: t.mov, weapon: t.weapon, look, stars: 1, population: 1, state: 'field', energy: 0, maxEnergy: 4,
-    abilityOrder: cls === 'pikeman' ? ['rally'] : [], stance: t.stance ?? (cls === 'archer' ? 'hold' : 'advance'), cooldowns: {}, statuses: {} }; // stance matches UNIT_CARDS defaultStance
+    selectedAbilities: [], stance: t.stance ?? (cls === 'archer' ? 'hold' : 'advance'), cooldowns: {}, statuses: {} }; // stance matches UNIT_CARDS defaultStance
 };
 
 export const UNITS = [
@@ -49,7 +49,7 @@ export function createHeroRespawnData(id, c, r) {
   if (!hero) throw new Error(`Unknown hero champion: ${id}`);
   return {
     ...structuredClone(hero), c, r, hp: hero.maxHp, energy: 0, maxEnergy: 4,
-    cooldowns: {}, statuses: {}, abilityOrder: [], stance: 'advance', state: 'field', population: 1,
+    cooldowns: {}, statuses: {}, selectedAbilities: [], stance: 'advance', state: 'field', population: 1,
     planningMoved: false, done: false, moved: false,
   };
 }

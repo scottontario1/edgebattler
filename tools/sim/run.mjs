@@ -9,7 +9,7 @@
 // Then: node tools/sim/report.mjs <out dir>
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { createMatch } from '../../src/match.js';
 import { runCommander, DEFAULT_PARAMS } from '../../src/ai/commander.js';
 import { memoryLog, replay } from '../../src/log.js';
@@ -27,7 +27,7 @@ const params = { blue: readParams(opt('blue-params')), red: readParams(opt('red-
 const stamp = new Date().toISOString().replace(/[:.]/g, '-');
 const out = resolve(opt('out', join('logs', 'sim', `${stamp}-${blue}-vs-${red}`)));
 const writeLogs = !flag('no-logs');
-const commit = (() => { try { return execSync('git rev-parse --short HEAD').toString().trim(); } catch { return null; } })();
+const commit = (() => { try { return execFileSync('git',['-c',`safe.directory=${process.cwd()}`,'rev-parse','--short','HEAD']).toString().trim(); } catch { return null; } })();
 mkdirSync(out, { recursive: true });
 
 /** Play one game; `sides` maps faction -> { policy, params }. Returns a CSV row object and the log. */
@@ -47,12 +47,13 @@ export function playGame(seed, sides) {
   return {
     log,
     row: {
-      seed, blue: sides.blue.policy, red: sides.red.policy, winner: m.winner || 'draw', reason: m.reason, rounds: m.round,
+      seed, blue: sides.blue.policy, red: sides.red.policy, winner: m.winner || 'draw', reason: m.reason, rounds: log.entries.filter(e=>e.t==='round').length,
       ...Object.fromEntries(['blue', 'red'].flatMap((f) => [
         [`${f}_recruited`, sum(s[f].recruited)], [`${f}_pikeman`, s[f].recruited.pikeman || 0], [`${f}_archer`, s[f].recruited.archer || 0],
         [`${f}_cavalier`, s[f].recruited.cavalier || 0], [`${f}_spells`, sum(s[f].spells)], [`${f}_skills`, s[f].skills],
         [`${f}_combined`, s[f].combined], [`${f}_withdrawn`, s[f].withdrawn], [`${f}_lost`, sum(s[f].lost)], [`${f}_killed`, sum(s[f].killed)],
         [`${f}_captures`, s[f].captures], [`${f}_respawns`, s[f].respawns], [`${f}_supply_spent`, s[f].supplySpent],
+        [`${f}_ability_uses`, sum(s[f].abilities)], [`${f}_ability_skips`, sum(s[f].abilitySkips)], [`${f}_energy_spent`, s[f].energySpent], [`${f}_energy_capped`, s[f].energyCapped],
         [`${f}_blocked_draws`, s[f].blockedDraws], [`${f}_final_units`, fin[f].units], [`${f}_final_hp`, fin[f].hp],
         [`${f}_final_territory`, fin[f].territory], [`${f}_final_supply`, fin[f].supply],
       ])),

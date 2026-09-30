@@ -1,3 +1,6 @@
+import {abilityEditorHTML} from './ui/abilities.js';
+import {selectedCost,FACING,flankSide} from './abilities.js';
+import './ui/abilities.css';
 import * as THREE from 'three';
 import { W, H, TERRAIN, inBounds, terrainAt, toWorld, tileTop } from './map.js';
 import { portraitSVG } from './portraits.js';
@@ -227,6 +230,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
   const { pop, banner } = feed;
 
   const layers = {
+    flank: cellLayer(scene, 'attack', 0xf2cf6b, 0.55, 0.023),
     danger: cellLayer(scene, 'danger', COL.danger, 0.45, 0.012),
     move: cellLayer(scene, 'move', COL.move, 0.85, 0.016),
     attack: cellLayer(scene, 'attack', COL.attack, 0.85, 0.016),
@@ -246,6 +250,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     targetId: null,
     danger: false,
     sheet: false,
+    abilityDraft:null, abilityTargets:[], abilityNotice:'', abilityGroupOpen:false, lastAbilityResults:{},
     selectedAt: 0,
     phase: 'player', // 'player' | 'enemy'
     turn: 1,
@@ -370,11 +375,20 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     sheet.hidden = !state.sheet;
     if (!state.sheet) return;
     const u = selected();
+    if(!u) {state.sheet=false;sheet.hidden=true;return;}
     sheet.className = `panel sheet ${u.faction}`;
     sheet.innerHTML = sheetHTML(u, {
       portrait: portraitSVG(u), weapon: weaponOf(u), terrain: TERRAIN[terrainAt(u.c, u.r)],
       moveType: { armor: 'Armored', mounted: 'Mounted', foot: 'Foot' }[MOVE_TYPE[u.cls] || 'foot'],
     });
+    if(u.faction==='blue'&&!state.busy&&!state.over) {
+      if(state.abilityDraft?.unitId!==u.id) {
+        state.abilityDraft={unitId:u.id,ids:[...(u.selectedAbilities||[])]};state.abilityTargets=[u.id];state.abilityNotice='';state.abilityGroupOpen=false;
+      }
+      const stats=sheet.innerHTML.slice(sheet.innerHTML.indexOf('</button>')+9);
+      sheet.innerHTML=`<button class="btn close" data-act="close" aria-label="Close">×</button><div class="eyebrow">Planning</div><div class="name">${esc(u.name)}</div>`+abilityEditorHTML(u,{draft:state.abilityDraft.ids,targets:state.abilityTargets,units:match.alive(),notice:state.abilityNotice,groupOpen:state.abilityGroupOpen,lastResults:state.lastAbilityResults[u.id]||[]})+`<details class="plan-stats"><summary>Unit stats and equipment</summary>${stats}</details>`;
+    }
+
   }
 
   function renderActions() {
@@ -398,7 +412,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
       if (card?.type === 'spell') html += btn('targetSpell', 'Choose target', '✧', '↵', 'primary');
       html += btn('cancelCard', 'Clear card', '‹', 'Esc');
     } else {
-      if (u) html += btn('inspect', 'Inspect', 'ⓘ', 'I');
+      if (u) html += btn('inspect', u.faction==='blue'?'Plan abilities':'Inspect', 'ⓘ', 'I');
       if (canWithdraw(u)) html += btn('withdraw', 'Withdraw to reserve', '⇲', 'W');
       if (u?.faction === 'blue') {
         const st = u.stance || 'advance';
@@ -427,6 +441,11 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
   }
 
   function renderOverlays() {
+    const cav=selected();
+    const flankTiles=cav?.cls==='cavalier'&&!state.busy?match.alive(cav.faction==='blue'?'red':'blue').flatMap(o=>
+      Object.values(FACING).map(([dc,dr])=>[o.c+dc,o.r+dr]).filter(([c,r])=>inBounds(c,r)&&flankSide({c,r},o)!=='front')):[];
+    layers.flank.set(flankTiles);
+
     if (state.mode === 'spellTarget') {
       const card = blue().cards.hand.find((item) => item.instanceId === state.selectedCardId);
       let preview = [];
@@ -589,7 +608,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     const res = act({ type: 'withdraw', unitId: u?.id });
     if (res.ok) {
       state.selectedId = null;
-      state.notice = `${u.name} withdrew to the reserve bench (recovers ${RULES.reserveHeal} HP and ${RULES.reserveEnergy} energy per round).`;
+      state.notice = `${u.name} withdrew to the reserve bench (recovers ${RULES.reserveHeal} HP and ${1 + RULES.reserveEnergy} energy per round).`;
     } else if (u?.id === match.champion('blue')) state.notice = 'Champions cannot be benched.';
     syncView();
     refresh();
@@ -679,6 +698,10 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     const shown = new Map(match.alive().map((u) => [u.id, u.hp]));
     const from = new Map(match.alive().map((u) => [u.id, [u.c, u.r]]));
     const result = match.resolveRound();
+    state.lastAbilityResults={};
+    for(const e of result.batches.filter(b=>b.type==='abilities').flatMap(b=>b.events)) {
+      (state.lastAbilityResults[e.unitId]??=[]).push(e);
+    }
     // Authoritative end positions, taken before the sprites are rewound for playback.
     const final = new Map(match.units.map((u) => [u.id, [u.c, u.r]]));
     for (const [id, hp] of shown) { const u = units.byId.get(id); if (u) u.displayHp = hp; }
@@ -700,6 +723,8 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
         }
       } else if (batch.type === 'abilities') {
         for (const e of batch.events) {
+          if(!e.applied) continue;
+          if(e.effect?.type!=='heal'||!e.effect.amount) pop(e.name,e.unitId,'ward');
           if (e.effect?.type === 'heal' && e.effect.amount) { pop(`${e.name || 'Rally'} +${e.effect.amount}`, e.unitId, 'heal'); show(e.unitId, e.effect.amount); }
           await wait(100);
         }
@@ -717,8 +742,8 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
             if (!units.byId.has(e.attackerId) || !target) continue;
             await units.lunge(e.attackerId, [target.data.c, target.data.r]);
             if (e.hit) {
-              if (e.damage) { pop(e.crit ? `${e.damage}!` : `${e.damage}`, e.targetId, e.crit ? 'crit' : ''); show(e.targetId, -e.damage); await units.shake(e.targetId); }
-              else if (e.barrierReduction) pop('Blocked', e.targetId, 'barrier');
+              if (e.damage) { pop(`${e.crit ? e.damage+'!' : e.damage}${e.flankBonus?' Flank':''}`, e.targetId, e.crit ? 'crit' : ''); show(e.targetId, -e.damage); await units.shake(e.targetId); }
+              else if (e.barrierReduction||e.braceReduction) pop('Blocked', e.targetId, 'barrier');
             } else pop('MISS', e.targetId, 'miss');
             await wait(110);
           } else if (e.type === 'death') await units.die(e.unitId);
@@ -793,7 +818,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
       refresh();
     },
     inspect() { if (selected()) { state.sheet = true; refresh(); } },
-    close() { state.sheet = false; refresh(); },
+    close() { state.sheet = false; state.abilityDraft=null; refresh(); },
     cancel() { state.mode = 'idle'; state.targetId = null; refresh(); },
     danger() { state.danger = !state.danger; refresh(); },
     grid() { grid.visible = !grid.visible; },
@@ -872,6 +897,29 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
   };
   actions.addEventListener('click', onAction);
   sheet.addEventListener('click', onAction);
+  sheet.addEventListener('click',e=>{
+    if(state.busy||state.over||selected()?.faction!=='blue') return;
+    const pick=e.target.closest('[data-ability]');
+    if(pick) {
+      const id=pick.dataset.ability,ids=state.abilityDraft.ids;
+      state.abilityDraft.ids=ids.includes(id)?ids.filter(x=>x!==id):[...ids,id];state.abilityNotice='Unapplied picks';refresh();
+    }
+    if(e.target.closest('[data-plan-class]')) {state.abilityTargets=match.alive('blue').filter(u=>u.cls===selected().cls).map(u=>u.id);refresh();}
+    if(e.target.closest('[data-plan-apply]')) {
+      const result=act({type:'abilities',unitIds:state.abilityTargets,abilityIds:state.abilityDraft.ids});
+      state.abilityNotice=result.ok?'Picks saved. They repeat when ready.':`Cannot apply: ${result.reason.replaceAll('-',' ')}. No units changed.`;refresh();
+    }
+    const facing=e.target.closest('[data-facing]');
+    if(facing) {act({type:'facing',unitId:selected().id,facing:facing.dataset.facing});refresh();}
+  });
+  sheet.addEventListener('toggle',e=>{if(e.target.matches('.plan-group')) state.abilityGroupOpen=e.target.open;},true);
+  sheet.addEventListener('change',e=>{
+    if(e.target.matches('[data-plan-unit]')) {
+      const id=e.target.dataset.planUnit;
+      state.abilityTargets=e.target.checked?[...new Set([...state.abilityTargets,id])]:state.abilityTargets.filter(x=>x!==id);refresh();
+    }
+  });
+
 
   addEventListener('keydown', (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;

@@ -67,7 +67,11 @@ for (const [op, ...a] of JSON.parse(process.env.STEPS || '[]')) {
     await send('Input.dispatchKeyEvent', { type: 'keyUp', key: k, code });
   } else if (op === 'wait') await sleep(a[0]);
   else if (op === 'shot') await capture(a[0]);
-  else if (op === 'eval') console.log('eval:', JSON.stringify((await send('Runtime.evaluate', { expression: a[0], returnByValue: true })).result.result.value));
+  else if (op === 'eval') {
+    const result=await send('Runtime.evaluate',{expression:a[0],returnByValue:true});
+    if(result.result.exceptionDetails) errors.push(result.result.exceptionDetails.exception?.description||result.result.exceptionDetails.text);
+    else console.log('eval:',JSON.stringify(result.result.result.value));
+  }
   await sleep(250);
 }
 const shot = await send('Page.captureScreenshot', { format: 'png' });
@@ -78,4 +82,4 @@ ws.close();
 proc.kill();
 await sleep(300);
 try { rmSync(prof, { recursive: true, force: true }); } catch {}
-process.exit(0);
+process.exit(errors.length ? 1 : 0);
