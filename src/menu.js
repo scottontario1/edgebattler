@@ -1,6 +1,7 @@
 import './style.css';
 import './menu.css';
 import { FACTIONS } from './setup.js';
+import { CAMPAIGN_LEVELS, campaignURL } from './campaign.js';
 import { LEVELS } from './levels.js';
 import { esc } from './ui/util.js';
 
@@ -32,8 +33,13 @@ export function showMenu(root = document.body) {
   el.className = 'menu';
   el.innerHTML = `<div class="menu-card" role="dialog" aria-label="Main menu">
     <header><h1>Chronicle of Ashvale</h1><p>Recruit a battle line, plan the round, then watch it resolve.</p></header>
-    <nav class="tabs" role="tablist"><button role="tab" data-tab="skirmish" aria-selected="true">Skirmish</button><button role="tab" data-tab="levels" aria-selected="false">Levels</button></nav>
-    <section class="tab" data-panel="skirmish">
+    <nav class="tabs" role="tablist"><button role="tab" data-tab="campaign" aria-selected="true">Campaign</button><button role="tab" data-tab="skirmish" aria-selected="false">Skirmish</button><button role="tab" data-tab="levels" aria-selected="false">Levels</button></nav>
+    <section class="tab" data-panel="campaign">
+      <h2>Choose your faction</h2><div class="fgrid">${factionCards('campaignFaction', 'crown')}</div>
+      <p class="note">March south to north. Enemies arrive in fixed encounters and waves; they never recruit. Clear a position, regroup at its village, then continue north. Each mission starts a fresh army.</p>
+      ${CAMPAIGN_LEVELS.map(l => `<div class="lrow"><div><b>${l.number}. ${esc(l.title)}</b><p>${esc(l.teaches)}</p></div><a class="btn play campaign-play" data-campaign="${l.id}" href="${campaignURL(l.id,'crown',0x415348)}">Play</a></div>`).join('')}
+    </section>
+    <section class="tab" data-panel="skirmish" hidden>
       <h2>Your faction</h2><div class="fgrid" data-group="you">${factionCards('you', 'classic')}</div>
       <h2>Opponent</h2><div class="fgrid" data-group="foe">${factionCards('foe', 'classic')}</div>
       <div class="opts"><label>Opponent AI <select name="red">${AIS.map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join('')}</select></label>
@@ -48,6 +54,8 @@ export function showMenu(root = document.body) {
 
   const val = (name) => el.querySelector(`input[name="${name}"]:checked`)?.value || 'classic';
   const sync = () => {
+    const faction = el.querySelector('input[name=campaignFaction]:checked')?.value || 'crown';
+    for (const a of el.querySelectorAll('.campaign-play')) a.href = campaignURL(a.dataset.campaign, faction, 0x415348);
     const you = val('you');
     for (const input of el.querySelectorAll('input[name="foe"]')) {
       input.disabled = input.value === you && you !== 'classic';

@@ -8,6 +8,7 @@
 //   summary  round, blue {...}, red {...}   state after that round (round 0 = start)
 //   result   round, winner ('blue' | 'red' | null), reason, stats
 import { createMatch, SCHEMA } from './match.js';
+import { CAMPAIGN_BY_ID, createCampaignMatch } from './campaign.js';
 import { MAP } from './board.js';
 
 export const toJSONL = (entries) => entries.map((e) => JSON.stringify(e)).join('\n') + '\n';
@@ -59,6 +60,7 @@ export function replay(entries, { create } = {}) {
   const header = entries.find((e) => e.t === 'header');
   if (!header) return { ok: false, mismatches: [{ reason: 'no-header' }] };
   if(header.schema!==SCHEMA) return {ok:false,mismatches:[{reason:'unsupported-schema',schema:header.schema,expected:SCHEMA}]};
+  if (!create && header.campaign) create = (h,push) => createCampaignMatch(CAMPAIGN_BY_ID[h.campaign.id], { faction: h.campaign.faction, seed: h.seed, log: push });
   if (!create && header.map && header.map !== MAP.id) return { ok: false, mismatches: [{ reason: 'unsupported-map', map: header.map, active: MAP.id }] };
   const out = memoryLog();
   // Custom scenarios (other map, roster, candidate rules) pass create(header, log) to rebuild the same match.

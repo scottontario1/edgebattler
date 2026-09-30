@@ -15,6 +15,7 @@ import { createUI } from './ui.js';
 import { mountLevelPanel } from './ui/levelpanel.js';
 import { createMatch } from './match.js';
 import { playLog } from './log.js';
+import { CAMPAIGN_BY_ID, createCampaignMatch } from './campaign.js';
 import { createSkirmish, isFaction } from './setup.js';
 import './level-maps.js';
 import { LEVEL_BY_ID, createLevelMatch, redScriptPolicy } from './levels.js';
@@ -66,8 +67,13 @@ const commit = typeof __COMMIT__ !== 'undefined' ? __COMMIT__ : null;
 const level = LEVEL_BY_ID[params.get('level')] || null;
 const you = isFaction(params.get('you')) ? params.get('you') : 'classic';
 const foe = isFaction(params.get('foe')) ? params.get('foe') : 'classic';
+const campaignLevel = CAMPAIGN_BY_ID[params.get('campaign')] || null;
 let match;
-if (level) {
+if (campaignLevel) {
+  match = createCampaignMatch(campaignLevel, { faction: you, seed, log: gameLog?.push, meta: { commit } });
+  policies.red = () => {};
+  policies.blue = null;
+} else if (level) {
   match = createLevelMatch(level, { seed, log: gameLog?.push, meta: { source: 'browser', blue: 'human', red: 'level-script', commit } });
   policies.red = redScriptPolicy(level); // Red has no commander in a level: only its scripted picks
   policies.blue = null;
@@ -86,7 +92,7 @@ const units = createUnits(scene, match.units);
 const view = createCamera(renderer.domElement);
 const { camera, resize } = view;
 const ui = createUI({ renderer, camera, scene, units, view, match, policies });
-mountLevelPanel({ level, you, foe });
+mountLevelPanel({ level, you, foe, campaignLevel, match });
 if (import.meta.env.DEV) window.__game = { THREE, scene, camera, renderer, units, match, log: gameLog };
 
 const composer = new EffectComposer(renderer);

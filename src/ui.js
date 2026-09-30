@@ -11,6 +11,7 @@ import { CARD_LIMITS, UNIT_CARDS, SPELL_CARDS, SKILL_CARDS, canAfford, previewCy
 import { findUpgradeMatches, previewUpgrade } from './upgrades.js';
 import { RULES } from './match.js';
 import { stanceIcon, STANCE_LABEL, STANCE_HINT } from './ui/icons.js';
+import { CAMPAIGN_LEVELS, campaignURL } from './campaign.js';
 import { runCommander } from './ai/commander.js';
 import { createRecruitUnit } from './units.js';
 import { esc } from './ui/util.js';
@@ -212,6 +213,11 @@ function reticles(scene) {
 }
 
 export function createUI({ renderer, camera, scene, units, view, match, policies = {} }) {
+  if (match.campaign) {
+    const controls = document.createElement('div'); controls.className = 'campaign-controls';
+    controls.setAttribute('aria-label','Campaign progress'); document.body.appendChild(controls);
+    controls.addEventListener('click', e => { const b=e.target.closest('[data-act]'); if(b && !b.disabled) commands[b.dataset.act]?.(); });
+  }
   const objectLayer = createObjectLayer(scene);
   const card = document.getElementById('card');
   const terrainChip = document.getElementById('terrain');
@@ -429,6 +435,23 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
       html += btn('danger', 'Danger zone', '◈', 'D', state.danger ? 'on' : '');
       html += btn('resolve', 'Resolve battle', '⚔', '↵', 'primary');
     }
+    if (match.campaign) {
+      const cs = match.campaign, stage = cs.stages[cs.stage];
+      const [c,r] = stage.checkpoint;
+      const near = match.alive('blue').some(u => Math.abs(u.c-c)+Math.abs(u.r-r)<=2);
+      let controls = `<span>${esc(stage.name)} · ${cs.phase === 'engage' ? `Wave ${cs.wave+1}/${stage.waves.length} · ${match.alive('red').length} enemies` : cs.phase === 'regroup' ? 'Regroup at village' : 'Reach the north exit'}<small>↑ North · checkpoint ${c},${r}</small></span>`;
+      if (!state.over) {
+        controls += btn('campaignOrder', cs.phase === 'regroup' ? 'Regroup' : 'March north', '↑', '', '', state.busy);
+        if (cs.phase === 'regroup') {
+          controls += btn('campaignRally', cs.rallied ? 'Rallied' : 'Rally · +4 HP', '✚', '', '', state.busy || !near || cs.rallied);
+          controls += btn('campaignContinue', 'Continue north', '↑', '', 'primary', state.busy || !near);
+        }
+      } else if (match.winner === 'blue') {
+        const next = CAMPAIGN_LEVELS.find(l => l.number === CAMPAIGN_LEVELS.find(l => l.id === cs.id).number+1);
+        controls += `<a class="btn primary" href="${next ? campaignURL(next.id,cs.faction,match.seed) : '?menu=1'}">${next ? 'Next mission →' : 'Campaign complete · Menu'}</a>`;
+      }
+      document.querySelector('.campaign-controls').innerHTML = controls;
+    }
     actions.innerHTML = html;
   }
 
@@ -561,7 +584,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     refresh();
     const won = match.winner === 'blue';
     const why = { 'keep-captured': won ? 'The enemy keep has fallen' : 'Your keep has fallen',
-      'army-destroyed': won ? 'The enemy army is destroyed' : 'Your army has fallen', 'round-limit': 'The round limit was reached' }[match.reason] || '';
+      'campaign-complete': 'The north road is secured', 'army-destroyed': won ? 'The enemy army is destroyed' : 'Your army has fallen', 'round-limit': 'The round limit was reached' }[match.reason] || '';
     banner(match.winner ? (won ? 'Victory' : 'Defeat') : 'Draw', why, 0);
   }
 
@@ -830,6 +853,9 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     cancelDeploy() { state.selectedReserveId = null; state.mode = 'idle'; refresh(); },
     cancelUpgrade() { state.upgradeChoice = null; refresh(); },
     confirmUpgrade() { applyUpgrade(); },
+    campaignOrder() { if (state.busy) return; act({type:'campaignOrder'}); refresh(); },
+    campaignRally() { if (state.busy) return; const res=act({type:'campaignRally'}); if(res.ok) state.notice='Nearby survivors rallied. Casualties remain lost.'; refresh(); },
+    campaignContinue() { if (state.busy) return; const res=act({type:'campaignContinue'}); if(res.ok) { syncView(); act({type:'campaignOrder'}); state.notice='Next encounter opened. Form up and advance north.'; } refresh(); },
     restart() { location.reload(); },
     confirm() { if (state.mode === 'target') confirmAttack(); },
     attack() {

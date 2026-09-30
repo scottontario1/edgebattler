@@ -61,7 +61,7 @@ const clone = (v) => structuredClone(v);
  */
 // pools: optional { blue: [cardKeys], red: [cardKeys] } per-side draw pools (cultures); absent = the shared pool.
 // champions: optional { blue: id, red: id } (cultures with their own champion); default Brenna and Dreg.
-export function createMatch({ seed = 0x415348, maxRounds = null, log = null, meta = {}, roster = UNITS, pools = null, champions = null } = {}) {
+export function createMatch({ seed = 0x415348, maxRounds = null, log = null, meta = {}, roster = UNITS, pools = null, champions = null, campaign = null } = {}) {
   const CHAMPION = { ...DEFAULT_CHAMPION, ...(champions || {}) };
   const emit = (entry) => { if (log) log(entry); };
   const units = clone(roster).map((u) => {const next=prepare(u);next.energy=Math.min(next.maxEnergy,next.energy+1);return next;});
@@ -81,6 +81,31 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       stats: { recruited: {}, spells: {}, skills: 0, deployed: 0, withdrawn: 0, combined: 0, lost: {}, killed: {}, supplySpent: 0, captures: 0, respawns: 0, blockedDraws: 0, abilities: {}, abilitySkips: {}, energySpent: 0, energyCapped: 0, cycles: {hand:0,bench:0}, supplyRefunded: 0 } };
   }
   const m = { seed, maxRounds, round: 1, phase: 'planning', over: false, winner: null, reason: null, units, territory, sides, seq: 0, objects: [] };
+
+  if (campaign) {
+    m.campaign = { ...clone(campaign), stage: 0, wave: 0, phase: 'engage', rallied: false };
+    sides.red.cards.hand = [];
+    sides.red.cards.supply = 0;
+  }
+
+  // Authored waves are match state, not AI recruitment. Reserve future units until their
+  // encounter starts, and search nearby legal tiles if a player occupies the spawn point.
+  function spawnCampaignWave() {
+    const state = m.campaign;
+    const wave = state.stages[state.stage].waves[state.wave];
+    for (const record of wave) {
+      const candidates = [];
+      for (let r = 0; r < H; r++) for (let c = 0; c < W; c++) {
+        if (Math.abs(r-record.r)<=2 && Math.abs(c-record.c)<=3 && !unitAt(c,r) && !objectAt(c,r) && MOVE_COST[MOVE_TYPE[record.cls] || 'foot'][terrainAt(c,r)] !== undefined)
+          candidates.push([c,r]);
+      }
+      candidates.sort((a,b) => (Math.abs(a[0]-record.c)+Math.abs(a[1]-record.r))-(Math.abs(b[0]-record.c)+Math.abs(b[1]-record.r)) || a[1]-b[1] || a[0]-b[0]);
+      if (!candidates.length) throw new Error('Campaign wave has no legal spawn tile');
+      const [c,r] = candidates[0];
+      m.units.push(prepare({ ...clone(record), c, r }));
+    }
+    state.phase = 'engage';
+  }
 
   // ---------- tile objects (culture hook: barricades, corpses; none exist in the game) ----------
   // { id, kind: 'object', objectKind, faction (owner), c, r, hp, maxHp, blocks, decay }. A blocking object stops enemy movement
@@ -181,6 +206,35 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
   const planning = (f) => (m.over ? 'match-over' : m.phase !== 'planning' ? 'not-planning' : !sides[f] ? 'unknown-faction' : null);
 
   const handlers = {
+    campaignOrder({ faction: f }) {
+      if (!m.campaign || f !== 'blue') return fail('not-campaign');
+      const tile = m.campaign.stages[m.campaign.stage].checkpoint;
+      for (const u of alive('blue')) { u.stance = 'advance'; u.objective = { type: 'tile', c: tile[0], r: tile[1] }; }
+      return { ok: true, tile };
+    },
+    campaignRally({ faction: f }) {
+      const state = m.campaign;
+      if (!state || f !== 'blue' || state.phase !== 'regroup' || state.rallied) return fail('rally-unavailable');
+      const [c,r] = state.stages[state.stage].checkpoint;
+      if (!alive('blue').some(u => Math.abs(u.c-c)+Math.abs(u.r-r)<=2)) return fail('reach-rally-point');
+      // One modest recovery at a cleared checkpoint; casualties stay permanent.
+      const restored = [];
+      for (const u of alive('blue').filter(u => Math.abs(u.c-c)+Math.abs(u.r-r)<=2)) {
+        const amount = Math.min(RULES.reserveHeal, u.maxHp-u.hp); u.hp += amount;
+        restored.push({ unitId: u.id, amount });
+      }
+      state.rallied = true;
+      return { ok: true, restored };
+    },
+    campaignContinue({ faction: f }) {
+      const state = m.campaign;
+      if (!state || f !== 'blue' || (state.phase !== 'regroup' || state.stage+1 >= state.stages.length)) return fail('encounter-not-cleared');
+      const [c,r] = state.stages[state.stage].checkpoint;
+      if (!alive('blue').some(u => Math.abs(u.c-c)+Math.abs(u.r-r)<=2)) return fail('reach-rally-point');
+      state.stage += 1; state.wave = 0; state.rallied = false;
+      spawnCampaignWave();
+      return { ok: true, stage: state.stage };
+    },
     recruit({ faction: f, cardId }) {
       const side = sides[f];
       side.cards.population = population(f);
@@ -380,7 +434,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
 
   /** Apply one planning action. `actor` is 'human' or 'ai:<policy>' (for the log only). */
   function apply(action, actor = 'human') {
-    const blocked = planning(action.faction);
+    const blocked = planning(action.faction) || (m.campaign && action.faction === 'red' ? 'fixed-encounter-enemy' : null);
     const handler = handlers[action.type];
     const result = blocked ? fail(blocked) : handler ? handler(action) : fail('unknown-action');
     if (sides[action.faction]) sides[action.faction].cards.population = population(action.faction);
@@ -637,7 +691,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       const side = sides[f];
       side.cards.population = population(f);
       if (rarityGateActive()) side.cards = { ...side.cards, round: m.round };
-      const res = refreshRound(side.cards, side.rng);
+      const res = m.campaign && f === 'red' ? { state: side.cards, blocked: 0, drawn: [] } : refreshRound(side.cards, side.rng);
       side.cards = res.state;
       if (res.blocked) {
         side.stats.blockedDraws += res.blocked;
@@ -694,6 +748,21 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
   // A side wins by holding the other side's keep at the end of a battle, or when the other side has
   // no units, reserves or pending champion left.
   function checkEnd() {
+    if (m.campaign) {
+      const state = m.campaign;
+      if (!alive('blue').length && !sides.blue.cards.reserves.length && sides.blue.heroRespawnAt === null) return end('red','army-destroyed');
+      if (alive('red').length) return null;
+      const stage = state.stages[state.stage];
+      if (state.wave + 1 < stage.waves.length) {
+        state.wave += 1; spawnCampaignWave();
+      } else if (state.stage + 1 < state.stages.length) {
+        state.phase = 'regroup';
+      } else {
+        state.phase = 'exit';
+        if (alive('blue').some(u => u.c === state.exit[0] && u.r === state.exit[1])) return end('blue','campaign-complete');
+      }
+      return null;
+    }
     for (const f of FACTIONS) {
       if (alive(f).some((u) => terrainAt(u.c, u.r) === TARGET[f])) return end(f, 'keep-captured');
     }
@@ -722,12 +791,13 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       reserveState:clone(side.cards.reserves),
     };
   }
-  const summaryEntry = (round = m.round) => ({ t: 'summary', round, blue: sideSummary('blue'), red: sideSummary('red'),
+  const summaryEntry = (round = m.round) => ({ t: 'summary', round, ...(m.campaign ? { campaign: { stage: m.campaign.stage, wave: m.campaign.wave, phase: m.campaign.phase, rallied: m.campaign.rallied } } : {}), blue: sideSummary('blue'), red: sideSummary('red'),
     ...(m.objects.length ? { objects: m.objects.map((o) => ({ id: o.id, objectKind: o.objectKind, faction: o.faction, c: o.c, r: o.r, hp: o.hp, blocks: o.blocks, decay: o.decay })) } : {}) });
   const statsEntry = () => ({ blue: clone(sides.blue.stats), red: clone(sides.red.stats) });
 
   for (const f of FACTIONS) sides[f].cards.population = population(f);
-  emit({ t: 'header', schema: SCHEMA, seed, maxRounds, map: MAP.id, rules: RULES, abilityRules: ABILITY_RULES, abilities: ABILITIES, cardLimits: { ...CARD_LIMITS }, ...(BATTLE_TUNING.damageScale !== 1 ? { battleTuning: { ...BATTLE_TUNING } } : {}), ...(JSON.stringify(EXPERIMENT_RULES) === JSON.stringify(DEFAULT_EXPERIMENT_RULES) ? {} : { experimentRules: { ...EXPERIMENT_RULES } }), ...(ACTIVE_CULTURES.length ? { cultures: [...ACTIVE_CULTURES] } : {}), ...(rarityGateActive() ? { rarityGate: { ...RARITY_GATE } } : {}), ...(champions ? { champions } : {}), ...(pools ? { pools } : {}), ...meta });
+  if (m.campaign) spawnCampaignWave();
+  emit({ t: 'header', schema: SCHEMA, seed, maxRounds, map: MAP.id, rules: RULES, abilityRules: ABILITY_RULES, abilities: ABILITIES, cardLimits: { ...CARD_LIMITS }, ...(BATTLE_TUNING.damageScale !== 1 ? { battleTuning: { ...BATTLE_TUNING } } : {}), ...(JSON.stringify(EXPERIMENT_RULES) === JSON.stringify(DEFAULT_EXPERIMENT_RULES) ? {} : { experimentRules: { ...EXPERIMENT_RULES } }), ...(ACTIVE_CULTURES.length ? { cultures: [...ACTIVE_CULTURES] } : {}), ...(rarityGateActive() ? { rarityGate: { ...RARITY_GATE } } : {}), ...(champions ? { champions } : {}), ...(pools ? { pools } : {}), ...(campaign ? { campaign: clone(campaign) } : {}), ...meta });
   emit(summaryEntry(0));
 
   Object.assign(m, {

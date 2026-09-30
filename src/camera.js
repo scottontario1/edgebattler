@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { MAP } from './board.js';
 import { W, H } from './map.js';
 import { trayInset } from './ui/tray.js';
 
@@ -29,9 +30,10 @@ const isShort = () => !isPortrait() && innerHeight <= 500;
 // map the space back. Portrait adds the unit card and terrain chip that sit above the tray.
 function insets() {
   const tray = trayInset();
-  if (isPortrait()) return { top: 126, bottom: (tray || 142) + 118, left: 8, right: 8 };
-  if (isShort()) return { top: 40, bottom: (tray || 0) + 6, left: 206, right: 60 };
-  return { top: 24, bottom: (tray || 118) + 8, left: 16, right: 16 };
+  const campaign = MAP.id.startsWith('campaign-');
+  if (isPortrait()) return { top: campaign ? 200 : 126, bottom: (tray || 142) + 118, left: 8, right: 8 };
+  if (isShort()) return { top: campaign ? 90 : 40, bottom: (tray || 0) + 6, left: 206, right: 60 };
+  return { top: campaign ? 140 : 24, bottom: (tray || 118) + 8, left: 16, right: 16 };
 }
 
 export function createCamera(dom) {

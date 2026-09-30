@@ -1170,7 +1170,7 @@ export function buildMap(scene) {
 
   buildGround(scene, rand);
   const rocks = riverRocks(rng(41));
-  riverDetail(statics, rocks, rng(42));
+  if (MAP.id === 'river_ford') riverDetail(statics, rocks, rng(42));
 
   for (let r = 0; r < H; r++) {
     for (let c = 0; c < W; c++) {
@@ -1255,14 +1255,14 @@ export function buildMap(scene) {
   scene.add(foam);
 
   loadEnvironment(scene, bridgeTiles);
-  const waterfall = buildWaterfall(scene);
+  const waterfall = MAP.id === 'river_ford' ? buildWaterfall(scene) : null;
 
   return {
     animate(t) {
       time.value = t;
       waterNormal.offset.set(t * 0.05, t * 0.12);
       foamNoise.offset.set(Math.sin(t * 0.7) * 0.01, t * 0.06);
-      waterfall.animate(t);
+      waterfall?.animate(t);
       for (const f of flags) {
         const pos = f.mesh.geometry.attributes.position;
         for (let i = 0; i < pos.count; i++) {

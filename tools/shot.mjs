@@ -68,7 +68,7 @@ for (const [op, ...a] of JSON.parse(process.env.STEPS || '[]')) {
   } else if (op === 'wait') await sleep(a[0]);
   else if (op === 'shot') await capture(a[0]);
   else if (op === 'eval') {
-    const result=await send('Runtime.evaluate',{expression:a[0],returnByValue:true});
+    const result=await send('Runtime.evaluate',{expression:a[0],returnByValue:true,awaitPromise:true});
     if(result.result.exceptionDetails) errors.push(result.result.exceptionDetails.exception?.description||result.result.exceptionDetails.text);
     else console.log('eval:',JSON.stringify(result.result.result.value));
   }

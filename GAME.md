@@ -29,6 +29,17 @@ The primary loop is planning followed by one Resolve battle action. The shared m
 - Spell cards are queued during planning and resolve when battle starts. Skill cards are transferable equipment; their type-wide scope is distinct from one-shot spells.
 - Enemy information and potential fog of war will be tested; full visibility is not a settled rule.
 
+
+## Campaign playtest (2026-09-30)
+
+Scott explicitly prioritized selectable factions and playable south-to-north campaign encounters. The main menu now opens Campaign: choose Ashvale, Argent Crown, White Fang, Iron League or Hollow Court and play three authored missions. The earlier 24 standalone scenarios remain in Levels; Skirmish remains separate.
+
+The player always controls Blue as the human team, with the selected faction's champion, recruits, abilities and draw pool. Each mission starts a fresh five-unit army at the south keep. March north assigns persistent Advance orders toward the current checkpoint; individual movement, stances and planning abilities can refine that plan. The North Road teaches a screened advance through fixed patrols; The Wooded Approach adds second waves and forest approaches; The Northern Pass adds a bridge with alternate routes and mixed waves.
+
+Campaign enemies never recruit, draw replacements or respawn champions. Fixed guards Hold their authored positions and attack through normal combat rules. Clear every wave at a position, regroup at its village, then explicitly Continue north to open the next encounter. Wave transitions preserve friendly HP, losses, energy, reserves and cards within the mission. New waves appear before the next planning phase, not during combat playback. All encounters must be cleared before a living friendly unit can win at the north exit. The victory panel links to the next mission with the same faction and seed.
+
+Prototype rally rule: once per cleared village, when a survivor is within two Manhattan tiles, Rally restores up to 4 HP to living allies within that radius. It does not revive casualties or recover distant units. Existing unit Rally abilities, healing spells, reserve recovery and champion respawn remain available. The 90-round mission cap is a safety limit; roster sizes, wave compositions and checkpoint recovery are playtest values, not final balance. Progress/unlocks and army persistence between missions are deferred.
+
 ## Design pillars
 
 - **Position matters.** Terrain, choke points, attack range, formation, and reinforcement locations decide battles alongside unit strength.
