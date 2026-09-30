@@ -4,7 +4,7 @@
 // Optional unit fields (stars, population, stance, energy/maxEnergy, selectedAbilities, cooldowns,
 // statuses) are treated as absent when missing: the matching chip or row is simply omitted.
 import { categoryName } from '../categories.js';
-import { esc, uniqueIds } from './util.js';
+import { esc, uniqueIds, uiFlags } from './util.js';
 import { ABILITIES, selectedCost } from '../abilities.js';
 import { stanceIcon, starPips, energyPips, statusIcon, STANCE_LABEL, STANCE_HINT } from './icons.js';
 
@@ -44,7 +44,11 @@ const stanceChip = (u, size = 12) => {
   const k = stanceKey(u);
   return k ? `<span class="schip stance ${k}" title="${STANCE_LABEL[k]}: ${STANCE_HINT[k]}">${stanceIcon(k, size)}<b>${STANCE_LABEL[k]}</b></span>` : '';
 };
-const energyChip = (u) => (u.maxEnergy > 0
+const BONUS_LABEL = [['str', 'STR'], ['def', 'DEF'], ['maxHp', 'HP'], ['spd', 'SPD'], ['skl', 'SKL']];
+/** "+2 STR · +3 HP" from unit.shardBonus (non-zero entries only), or ''. */
+const shardBonusText = (u) => BONUS_LABEL.filter(([k]) => u.shardBonus?.[k]).map(([k, l]) => `${u.shardBonus[k] > 0 ? '+' : ''}${u.shardBonus[k]} ${l}`).join(' · ');
+const shardBonusLine = (u) => (shardBonusText(u) ? `<div class="cls shard-bonus" title="Bonus from shards applied to this unit's class">Shards ${shardBonusText(u)}</div>` : '');
+const energyChip = (u) => (uiFlags.abilities && u.maxEnergy > 0
   ? `<span class="schip energy" title="Energy ${u.energy || 0} of ${u.maxEnergy}">${energyPips(u.energy || 0, u.maxEnergy, 12)}</span>` : '');
 const statusChips = (u, { detail = false, iconOnly = false } = {}) => activeStatuses(u).map(([name, v]) => {
   const m = statusMeta(name, v);
@@ -61,9 +65,10 @@ export function unitCardHTML(u, m) {
         <div class="name-row"><span class="name" title="${esc(u.name)}">${esc(u.name)}</span>${u.stars ? `<span class="rank" title="${u.stars}-star tier">${starPips(u.stars, u.stars, 12)}</span>` : ''}${u.boss ? '<span class="tag boss">BOSS</span>' : ''}<span class="tag side">${side}</span></div>
         <div class="cls" title="${esc(u.title)} · ${esc(categoryName(u))} · ${esc(u.weapon)}">${esc(u.title)} · Lv ${u.lv} · MOV ${u.mov}</div>
         <div class="hp"><span>HP</span><div class="bar"><i style="width:${pctOf(u.hp, u.maxHp)}%"></i></div><b>${u.hp}/${u.maxHp}</b></div>
-        ${m.stats?`<div class="cls battle-mini" title="Strike damage after mitigation, including overkill">DMG ${m.stats.damageDealt} · Taken ${m.stats.damageTaken} · Abilities ${Object.values(m.stats.abilityUses).reduce((a,b)=>a+b,0)}</div>`:''}
+        ${m.stats?`<div class="cls battle-mini" title="Strike damage after mitigation, including overkill">DMG ${m.stats.damageDealt} · Taken ${m.stats.damageTaken}${uiFlags.abilities?` · Abilities ${Object.values(m.stats.abilityUses).reduce((a,b)=>a+b,0)}`:''}</div>`:''}
         <div class="sts">${stanceChip(u)}${energyChip(u)}<span class="schip" title="Authoritative facing">${esc(u.facing||'north')}</span>${statusChips(u, { iconOnly: many })}</div>
-        <div class="cls">${(u.selectedAbilities||[]).map(id=>ABILITIES[id]?.name||id).join(' · ')||(monsterPassives(u).map(p=>esc(p.name)).join(' · ')||'Basic actions')}${selectedCost(u)>u.energy?' · Paid picks suspended':''}</div>
+        <div class="cls">${uiFlags.abilities?(u.selectedAbilities||[]).map(id=>ABILITIES[id]?.name||id).join(' · '):''}${(uiFlags.abilities&&(u.selectedAbilities||[]).length)?'':(monsterPassives(u).map(p=>esc(p.name)).join(' · ')||'Basic actions')}${uiFlags.abilities&&selectedCost(u)>u.energy?' · Paid picks suspended':''}</div>
+        ${shardBonusLine(u)}
       </div>`;
 }
 
@@ -110,7 +115,7 @@ export function sheetHTML(u, m) {
   const stat = (label, v) => `<div class="stat"><span>${label}</span><b>${v}</b></div>`;
   const row = (label, body, cls = '') => `<div class="srow ${cls}"><span class="lab">${label}</span><div class="val">${body}</div></div>`;
   const k = stanceKey(u);
-  const abilities = Array.isArray(u.selectedAbilities)
+  const abilities = uiFlags.abilities && Array.isArray(u.selectedAbilities)
     ? (u.selectedAbilities.length
       ? u.selectedAbilities.map((id) => {
         const cd = u.cooldowns?.[id] || 0;
@@ -123,11 +128,12 @@ export function sheetHTML(u, m) {
   const tier = u.stars || u.population ? `<span class="gold">${u.stars || 1}★</span> · Pop ${u.population ?? 1}` : '';
   const rows = [
     k ? row('Stance', stanceChip(u, 14)) : '',
-    u.maxEnergy > 0 ? row('Energy', `${energyPips(u.energy || 0, u.maxEnergy, 14)}<b class="en-n">${u.energy || 0}/${u.maxEnergy}</b>`) : '',
+    uiFlags.abilities && u.maxEnergy > 0 ? row('Energy', `${energyPips(u.energy || 0, u.maxEnergy, 14)}<b class="en-n">${u.energy || 0}/${u.maxEnergy}</b>`) : '',
     tier ? row('Stars', tier) : '',
     abilities ? row('Abilities', abilities) : '',
+    shardBonusText(u) ? row('Shards', `<span class="shard-bonus">${shardBonusText(u)}</span>`, 'wide') : '',
     sts ? row('Statuses', sts, 'wide') : '',
-    m.stats ? row('Battle stats', `<b>${m.stats.damageDealt}</b> damage dealt · <b>${m.stats.damageTaken}</b> taken · <b>${Object.values(m.stats.abilityUses).reduce((a,b)=>a+b,0)}</b> ability uses`, 'wide') : '',
+    m.stats ? row('Battle stats', `<b>${m.stats.damageDealt}</b> damage dealt · <b>${m.stats.damageTaken}</b> taken${uiFlags.abilities?` · <b>${Object.values(m.stats.abilityUses).reduce((a,b)=>a+b,0)}</b> ability uses`:''}`, 'wide') : '',
     monsterPassives(u).length ? row('Passives', monsterPassives(u).map(p=>`<div class="monster-passive"><b>${esc(p.name)}</b><span>${esc(p.description)}</span></div>`).join(''), 'wide') : '',
   ].join('');
   return `

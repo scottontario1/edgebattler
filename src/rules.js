@@ -16,7 +16,7 @@ export const dist = (a, b) => Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
 
 // Fire Emblem style range: tiles you can reach, tiles you can hit from there, and the
 // enemies you could actually strike (from an unoccupied reachable tile).
-export function computeRange(unit, units, mov = unit.mov) {
+export function computeRange(unit, units, mov = unit.mov, {blockAllies=false}={}) {
   const costs = MOVE_COST[MOVE_TYPE[unit.cls] || 'foot'];
   const best = new Map([[key(unit.c, unit.r), 0]]);
   const prev = new Map(); // tile -> tile it was reached from, for path reconstruction
@@ -30,7 +30,7 @@ export function computeRange(unit, units, mov = unit.mov) {
       const cost = costs[terrainAt(nc, nr)];
       if (cost === undefined) continue;
       const occupant = units.unitAt(nc, nr);
-      if (occupant && occupant.data.faction !== unit.faction) continue;
+      if (occupant && (occupant.data.faction !== unit.faction || (blockAllies && occupant.data.id !== unit.id))) continue;
       const total = spent + cost;
       if (total > mov) continue;
       const k = key(nc, nr);

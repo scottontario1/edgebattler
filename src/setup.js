@@ -79,10 +79,10 @@ export const championFor = (factionId, side) => {
 };
 
 /** Skirmish: blue and red factions ('classic' for the shipped army). Classic v classic is exactly the shipped createMatch call. */
-export function createSkirmish({ blue = 'classic', red = 'classic', seed, maxRounds = null, log = null, meta = {} } = {}) {
+export function createSkirmish({ blue = 'classic', red = 'classic', seed, maxRounds = null, log = null, meta = {}, combat = null, abilities } = {}) {
   const cultures = prepareFactions([blue, red]);
-  if (!cultures.length) return createMatch({ ...(seed !== undefined ? { seed } : {}), maxRounds, log, meta });
-  const opts = { ...(seed !== undefined ? { seed } : {}), maxRounds, log, meta: { ...meta, blueFaction: blue, redFaction: red } };
+  if (!cultures.length) return createMatch({ ...(seed !== undefined ? { seed } : {}), maxRounds, log, meta, combat, ...(abilities!==undefined?{abilities}:{}) });
+  const opts = { ...(seed !== undefined ? { seed } : {}), maxRounds, log, combat, ...(abilities!==undefined?{abilities}:{}), meta: { ...meta, blueFaction: blue, redFaction: red } };
   if (blue === red) throw new Error('both sides cannot use the same faction yet (mirror matches need a second champion)');
   const pools = {};
   for (const side of ['blue', 'red']) { const f = FACTION_BY_ID[side === 'blue' ? blue : red]; if (f.culture) pools[side] = culturePool(f.culture); }

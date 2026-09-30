@@ -1,0 +1,12 @@
+.combat-clock{position:fixed;z-index:40;top:130px;left:50%;transform:translateX(-50%);width:min(360px,calc(100vw - 32px));padding:10px 14px 26px;background:var(--panel-solid);color:var(--ivory);border:1px solid var(--gold);border-radius:6px;font:12px var(--font-ui);pointer-events:none;box-shadow:0 6px 20px #0007}
+.combat-clock[hidden]{display:none}
+.combat-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;text-transform:uppercase;letter-spacing:.06em}
+.combat-countdown{color:var(--gold);font-size:17px;font-variant-numeric:tabular-nums}
+.combat-track{position:relative;height:5px;background:#ffffff20;border-radius:4px}
+.combat-progress{display:block;height:100%;width:0;background:var(--gold);border-radius:4px}
+.combat-mark{position:absolute;top:-3px;transform:translateX(-50%);width:11px;height:11px;border:2px solid #9c8e70;background:var(--panel-solid);border-radius:50%}
+.combat-mark small{position:absolute;top:13px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:11px;color:var(--muted)}
+.combat-mark.past{background:var(--gold);border-color:var(--gold)}
+.combat-mark.next{border-color:var(--gold);box-shadow:0 0 8px var(--gold)}
+@media(max-width:700px){.combat-clock{top:195px;width:calc(100vw - 24px)}}
+@media(max-height:500px) and (min-width:701px){.combat-clock{top:110px;padding-top:6px;padding-bottom:22px}}

@@ -62,14 +62,14 @@ export function replay(entries, { create } = {}) {
   const header = entries.find((e) => e.t === 'header');
   if (!header) return { ok: false, mismatches: [{ reason: 'no-header' }] };
   if(header.schema!==SCHEMA) return {ok:false,mismatches:[{reason:'unsupported-schema',schema:header.schema,expected:SCHEMA}]};
-  if (!create && header.campaign) create = (h,push) => createCampaignMatch(CAMPAIGN_BY_ID[h.campaign.id], { faction: h.campaign.faction, seed: h.seed, log: push, enemyFactions: h.campaign.enemyFactions, encounters: h.campaign.stages });
+  if (!create && header.campaign) create = (h,push) => createCampaignMatch(CAMPAIGN_BY_ID[h.campaign.id], { faction: h.campaign.faction, seed: h.seed, log: push, enemyFactions: h.campaign.enemyFactions, encounters: h.campaign.stages, combat:h.combat||null, abilities:h.abilitiesEnabled===true });
   if (!create && header.map && header.map !== MAP.id) return { ok: false, mismatches: [{ reason: 'unsupported-map', map: header.map, active: MAP.id }] };
   const previousLimits={...CARD_LIMITS};
   setCardLimits(header.cardLimits || previousLimits);
   try {
     const out = memoryLog();
     // Custom scenarios (other map, roster, candidate rules) pass create(header, log) to rebuild the same match.
-    const m = create ? create(header, out.push) : createMatch({ seed: header.seed, maxRounds: header.maxRounds, log: out.push, pools: header.pools ?? null, abilities: header.abilitiesEnabled === true });
+    const m = create ? create(header, out.push) : createMatch({ seed: header.seed, maxRounds: header.maxRounds, log: out.push, pools: header.pools ?? null, abilities: header.abilitiesEnabled === true, combat:header.combat||null });
     for (const e of entries) {
       if (e.t === 'action') m.apply(e.action, e.actor);
       else if (e.t === 'round') m.resolveRound();

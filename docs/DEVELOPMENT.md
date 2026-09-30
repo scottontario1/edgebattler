@@ -65,3 +65,6 @@ User-promoted campaign slice (2026-09-30): supplied faction/creature art and mix
 
 
 Human campaign playtest feedback (2026-09-30) promotes PLAY-01 and PERF-01: nearby action controls, grouped friendly army management, battle statistics, bank30 at unchanged income3, and Three.js quick wins researched by Luna. Verify legal group actions, type identity, old/new replay compatibility, stats retention/save, visible controls across screen sizes and rendering workload. Current pass does not resolve skirmish victory/balance or cross-mission persistence.
+
+
+2026-09-30: Scott explicitly promoted a separate timed-combat experiment and authorized trying/tuning alternative pacing without repeated balance questions. Root owns engine/presentation integration; Luna supplied timing-profile comparisons, focused resolver tests, a clock design and read-only review. Work is isolated on gameplay/timed-combat in a separate worktree to preserve concurrent Shards work. The experiment retains classic mode and deterministic replay, and does not merge to main. Acceptance: 18s live clock, repeated type/speed attacks, 2–3 timed skill opportunities, legal continuing movement/targeting, preserved campaign flow, desktop/mobile playback, tests/build and replay evidence.

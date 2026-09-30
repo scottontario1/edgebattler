@@ -65,6 +65,7 @@ function protectSubject(unit, order, snapshot) {
 export function resolveBattleRound({
   units, legalMoves = defaultMoves, orders = {}, seed = 1,
   forecastAttack = defaultForecast, pathForMove = null, beforeCombat = null,
+  canAttack = () => true, preserveStatuses = false, damageScale = BATTLE_TUNING.damageScale,
 } = {}) {
   if (!Array.isArray(units)) throw new TypeError('units must be an array');
   const rand = makeRng(seed);
@@ -159,7 +160,7 @@ export function resolveBattleRound({
   // snapshot; hits and damage are computed before any HP is committed.
   const combatSnapshot = moved.map((u) => ({ ...u }));
   const strikes = [];
-  for (const attacker of combatSnapshot.filter((u) => u.hp > 0 && u.kind !== 'object')) {
+  for (const attacker of combatSnapshot.filter((u) => u.hp > 0 && u.kind !== 'object' && canAttack(u))) {
     const order = orders[attacker.id] || {};
     const target = selectAttackTarget(attacker, combatSnapshot, forecastAttack, order.targetId);
     if (!target) continue;
@@ -172,15 +173,18 @@ export function resolveBattleRound({
     const mountedGuard = attacker.cls==='cavalier' && target.statuses?.setSpears>0;
     const spearBonus = target.cls==='cavalier' ? (attacker.statuses?.setSpears||0) : 0;
     const flankBonus = flank && flank!=='front' && !mountedGuard ? ABILITY_RULES.flankDamage : 0;
-    const scale = BATTLE_TUNING.damageScale;
+    const scale = damageScale;
     // Culture statuses (src/passives.js): all 0 unless set, so shipped output is unchanged.
     const offTarget = order.targetId!==undefined && order.targetId!==target.id ? (attacker.statuses?.offTargetPenalty||0) : 0;
     const cultureBonus = (attacker.statuses?.damageDealt||0)+Math.min(attacker.statuses?.ignoreDefense||0,target.def||0)-offTarget;
     const base = hit ? Math.max(0,(f.atk.dmg??0)+(mountedGuard?0:(attacker.statuses?.attackBonus||0))+flankBonus+spearBonus+cultureBonus)*(crit?3:1) : 0;
-    const rawDamage = scale === 1 ? base : Math.round(base * scale);
+    const rawDamage = preserveStatuses ? base : scale === 1 ? base : Math.round(base * scale);
     const warded = target.statuses?.ward === 'upcoming-battle';
     const wardedDamage = warded ? Math.floor(rawDamage / 2) : rawDamage;
-    const mitigatedDamage = hit && wardedDamage > 0 && target.statuses?.damageTaken ? Math.max(0, wardedDamage - target.statuses.damageTaken) : wardedDamage;
+    const reduced = hit && wardedDamage > 0 && target.statuses?.damageTaken ? Math.max(0, wardedDamage - target.statuses.damageTaken) : wardedDamage;
+    // Timed attacks scale the whole strike after flat passive mitigation; armor
+    // passives must not become immunity merely because attacks are more frequent.
+    const mitigatedDamage = preserveStatuses ? Math.round(reduced * scale) : reduced;
     const barrier = target.statuses?.barrier;
     const barrierAmount = typeof barrier === 'number' ? barrier : barrier?.amount;
     const damage = mitigatedDamage;
@@ -212,6 +216,17 @@ export function resolveBattleRound({
   for (const e of thornEvents) damageById.set(e.targetId, (damageById.get(e.targetId) || 0) + e.amount);
   const result = combatSnapshot.map((u) => {
     const next = { ...u, hp: Math.max(0, u.hp - (damageById.get(u.id) || 0)) };
+    if (preserveStatuses) {
+      next.statuses = {...(u.statuses || {})};
+      const incoming = strikes.filter(s => s.targetId === u.id);
+      if (incoming.some(s=>s.hit)) delete next.statuses.ward;
+      if (next.statuses.barrier !== undefined) {
+        const left = Math.max(0, (typeof next.statuses.barrier === 'number' ? next.statuses.barrier : next.statuses.barrier.amount) - incoming.reduce((n,s)=>n+s.barrierReduction,0));
+        if(left) next.statuses.barrier = left; else delete next.statuses.barrier;
+      }
+      if(next.statuses.brace !== undefined) next.statuses.brace = Math.max(0,next.statuses.brace-incoming.reduce((n,s)=>n+(s.braceReduction||0),0));
+      return next;
+    }
     if (next.statuses?.ward === 'upcoming-battle') {
       next.statuses = { ...next.statuses };
       delete next.statuses.ward;
