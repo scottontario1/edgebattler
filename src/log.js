@@ -62,7 +62,7 @@ export function replay(entries, { create } = {}) {
   if (!create && header.map && header.map !== MAP.id) return { ok: false, mismatches: [{ reason: 'unsupported-map', map: header.map, active: MAP.id }] };
   const out = memoryLog();
   // Custom scenarios (other map, roster, candidate rules) pass create(header, log) to rebuild the same match.
-  const m = create ? create(header, out.push) : createMatch({ seed: header.seed, maxRounds: header.maxRounds, log: out.push });
+  const m = create ? create(header, out.push) : createMatch({ seed: header.seed, maxRounds: header.maxRounds, log: out.push, pools: header.pools ?? null });
   for (const e of entries) {
     if (e.t === 'action') m.apply(e.action, e.actor);
     else if (e.t === 'round') m.resolveRound();

@@ -10,11 +10,25 @@ export const RECRUIT = {
   archer: { name: 'Archer', title: 'Recruit', lv: 2, hp: 18, str: 6, mag: 0, skl: 8, spd: 7, def: 3, res: 1, mov: 5, weapon: 'Longbow' },
   cavalier: { name: 'Cavalier', title: 'Recruit', lv: 3, hp: 24, str: 8, mag: 0, skl: 5, spd: 8, def: 7, res: 1, mov: 7, weapon: 'Iron Lance' },
 };
+// Culture variants (src/cultures.js): { base, name, title, delta, stats, weapon, passives, culture }. Empty in the game, so
+// every recruit is a plain class template; a variant recruits as its base class (kits, sprites and movement follow `cls`).
+export const VARIANTS = {};
+export const registerVariants = (defs) => { for (const [key, d] of Object.entries(defs)) VARIANTS[key] = d; };
+export const resetVariants = () => { for (const k of Object.keys(VARIANTS)) delete VARIANTS[k]; };
+export const variantOver = (key) => {
+  const v = VARIANTS[key];
+  if (!v) return null;
+  const t = { ...RECRUIT[v.base], ...(v.stats || {}) };
+  for (const [stat, d] of Object.entries(v.delta || {})) t[stat] = (t[stat] ?? 0) + d;
+  return { ...t, ...(v.name ? { name: v.name } : {}), ...(v.title ? { title: v.title } : {}), ...(v.weapon ? { weapon: v.weapon } : {}),
+    variantId: key, ...(v.culture ? { culture: v.culture } : {}), ...(v.passives ? { passives: v.passives } : {}) };
+};
 const recruit = (cls, id, faction, c, r, look, over = {}) => {
   const t = { ...RECRUIT[cls], ...over };
-  return { id, cls, classId: cls, variantId: cls, faction, c, r, name: t.name, title: t.title, lv: t.lv, hp: t.hp, maxHp: t.hp, str: t.str, mag: t.mag, skl: t.skl,
+  return { id, cls, classId: cls, variantId: t.variantId ?? cls, faction, c, r, name: t.name, title: t.title, lv: t.lv, hp: t.hp, maxHp: t.hp, str: t.str, mag: t.mag, skl: t.skl,
     spd: t.spd, def: t.def, res: t.res, mov: t.mov, weapon: t.weapon, look, stars: 1, population: 1, state: 'field', energy: 0, maxEnergy: 4,
-    selectedAbilities: [], stance: t.stance ?? (cls === 'archer' ? 'hold' : 'advance'), cooldowns: {}, statuses: {} }; // stance matches UNIT_CARDS defaultStance
+    selectedAbilities: [], stance: t.stance ?? (cls === 'archer' ? 'hold' : 'advance'), cooldowns: {}, statuses: {},
+    ...(t.culture ? { culture: t.culture } : {}), ...(t.passives ? { passives: t.passives } : {}) }; // stance matches UNIT_CARDS defaultStance
 };
 
 export const UNITS = [
@@ -39,9 +53,11 @@ const defaultLook = (cls) => UNITS.find((u) => u.cls === cls)?.look
   || { skin: '#d8a98a', hair: '#4a3524', eyes: '#3f7a4a', style: 'short' };
 
 /** Build a persistent recruit record from the same class template used by the starting roster. */
-export function createRecruitUnit(cls, id, faction, c, r, over = {}) {
-  if (!RECRUIT[cls]) throw new Error(`Unknown recruit class: ${cls}`);
-  return recruit(cls, id, faction, c, r, defaultLook(cls), over);
+export function createRecruitUnit(key, id, faction, c, r, over = {}) {
+  const variant = variantOver(key);
+  const cls = variant ? VARIANTS[key].base : key;
+  if (!RECRUIT[cls]) throw new Error(`Unknown recruit class: ${key}`);
+  return recruit(cls, id, faction, c, r, defaultLook(cls), { ...(variant || {}), ...over });
 }
 
 /** Prototype champion respawn: rebuild the named hero at full HP and empty combat resources. */

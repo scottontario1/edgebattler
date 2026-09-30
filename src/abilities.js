@@ -11,6 +11,7 @@ export const ABILITIES = Object.freeze({
 // extra abilities here and remove them again. The game itself never registers anything.
 export const ABILITY_CATALOG = {...ABILITIES};
 export const registerAbilities = defs => { for(const d of defs) ABILITY_CATALOG[d.id]=d; };
+export const unregisterAbilities = ids => { for(const id of ids) delete ABILITY_CATALOG[id]; };
 export const resetAbilities = () => { for(const id of Object.keys(ABILITY_CATALOG)) if(!ABILITIES[id]) delete ABILITY_CATALOG[id]; };
 export const DEFAULT_ABILITY_STATE = Object.freeze({energy:0,maxEnergy:4,cooldowns:{},selectedAbilities:[],stance:'advance',objective:null,energyGainNextTurn:0,statuses:{}});
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,Number(v)||0));
@@ -56,7 +57,7 @@ export function validateAbilitySelection(unit,ids) {
 }
 // Bundle eligibility is frozen before recovery: Rally cannot rescue an unaffordable paid bundle.
 export const paidBundleReady = unit => unit.energy>=selectedCost(unit);
-export function activatePhase(unit,phase,{paid=true,moved=false,hasTarget=false,movedTiles=0}={}) {
+export function activatePhase(unit,phase,{paid=true,moved=false,hasTarget=false,movedTiles=0,onControlled=false}={}) {
  const next=initializeAbilityState(unit),events=[];
  for(const a of kitFor(next).filter(a=>a.phase===phase&&(next.selectedAbilities||[]).includes(a.id))) {
   let reason=null;
@@ -70,6 +71,10 @@ export function activatePhase(unit,phase,{paid=true,moved=false,hasTarget=false,
   else if(a.requires?.stance&&next.stance!==a.requires.stance) reason='stance-trigger-unmet';
   else if(a.requires?.moved&&!(movedTiles>=a.requires.moved)) reason='movement-trigger-unmet';
   else if(a.requires?.target&&!hasTarget) reason='no-legal-target';
+  // Culture hooks (inert unless a registered ability sets them): HP fraction bounds and standing on an owned keep/village.
+  else if(a.requires?.hpBelow!==undefined&&!(next.hp<next.maxHp*a.requires.hpBelow)) reason='hp-trigger-unmet';
+  else if(a.requires?.hpAbove!==undefined&&!(next.hp>next.maxHp*a.requires.hpAbove)) reason='hp-trigger-unmet';
+  else if(a.requires?.onControlled&&!onControlled) reason='location-trigger-unmet';
   if(reason) {events.push({unitId:next.id,abilityId:a.id,name:a.name,applied:false,reason});continue;}
   next.energy-=a.cost;next.cooldowns[a.id]=a.cooldown;
   let effect={type:'status'},energyCapped=0;
@@ -93,6 +98,12 @@ export const SPELLS = Object.freeze({
   fireburst: Object.freeze({ id: 'fireburst', name: 'Fireburst', type: 'spell', cost: 2, target: 'enemy-area', duration: 'instant', radius: 1, effect: Object.freeze({ type: 'damage', amount: 6 }) }),
 });
 
+// Working spell set. Cultures (src/cultures.js) register extra spells here and remove them again; the game itself never does.
+export const SPELL_CATALOG = {...SPELLS};
+export const registerSpells = defs => { for(const d of defs) SPELL_CATALOG[d.id]=d; };
+export const unregisterSpells = ids => { for(const id of ids) delete SPELL_CATALOG[id]; };
+export const resetSpells = () => { for(const id of Object.keys(SPELL_CATALOG)) if(!SPELLS[id]) delete SPELL_CATALOG[id]; };
+
 function spellTargetValid(spell, target) {
   if (!target) return false;
   if (spell.target === 'friendly-unit') return target.kind === 'unit' && target.faction === 'friendly' && Boolean(target.unitId);
@@ -102,7 +113,7 @@ function spellTargetValid(spell, target) {
 
 /** Queueing reserves Supply immediately; cancelling refunds it. Resolution never charges again. */
 export function queueSpell(state, spellId, target, options = {}) {
-  const spell = (options.spells || SPELLS)[spellId];
+  const spell = (options.spells || SPELL_CATALOG)[spellId];
   if (!spell || spell.type !== 'spell') return { ok: false, reason: 'unknown-spell', state };
   if (!spellTargetValid(spell, target)) return { ok: false, reason: 'invalid-target', state };
   const supply = Number(state.supply) || 0;
@@ -124,7 +135,7 @@ export function cancelSpell(state, queueId) {
 export function retargetSpell(state, queueId, target, options = {}) {
   const queue = state.queuedSpells || [];
   const cast = queue.find((item) => item.queueId === queueId);
-  const spell = cast && (options.spells || SPELLS)[cast.spellId];
+  const spell = cast && (options.spells || SPELL_CATALOG)[cast.spellId];
   if (!cast) return { ok: false, reason: 'not-queued', state };
   if (!spellTargetValid(spell, target)) return { ok: false, reason: 'invalid-target', state };
   return { ok: true, state: { ...state, queuedSpells: queue.map((item) => item.queueId === queueId ? { ...item, target: { ...target } } : item) } };
@@ -156,7 +167,7 @@ function resolveSpellEffect(spell, cast, units, options) {
 export function resolveQueuedSpells(state, units, options = {}) {
   const nextUnits = units.map((unit) => ({ ...unit, statuses: { ...(unit.statuses || {}) } }));
   const events = (state.queuedSpells || []).map((cast) => {
-    const spell = (options.spells || SPELLS)[cast.spellId];
+    const spell = (options.spells || SPELL_CATALOG)[cast.spellId];
     if (!spell || !cast.committed) return { queueId: cast.queueId, spellId: cast.spellId, applied: false, reason: 'invalid-queue-entry' };
     return resolveSpellEffect(spell, cast, nextUnits, options);
   });

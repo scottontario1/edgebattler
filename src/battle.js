@@ -172,10 +172,14 @@ export function resolveBattleRound({
     const spearBonus = target.cls==='cavalier' ? (attacker.statuses?.setSpears||0) : 0;
     const flankBonus = flank && flank!=='front' && !mountedGuard ? ABILITY_RULES.flankDamage : 0;
     const scale = BATTLE_TUNING.damageScale;
-    const base = hit ? Math.max(0,(f.atk.dmg??0)+(mountedGuard?0:(attacker.statuses?.attackBonus||0))+flankBonus+spearBonus)*(crit?3:1) : 0;
+    // Culture statuses (src/passives.js): all 0 unless set, so shipped output is unchanged.
+    const offTarget = order.targetId!==undefined && order.targetId!==target.id ? (attacker.statuses?.offTargetPenalty||0) : 0;
+    const cultureBonus = (attacker.statuses?.damageDealt||0)+Math.min(attacker.statuses?.ignoreDefense||0,target.def||0)-offTarget;
+    const base = hit ? Math.max(0,(f.atk.dmg??0)+(mountedGuard?0:(attacker.statuses?.attackBonus||0))+flankBonus+spearBonus+cultureBonus)*(crit?3:1) : 0;
     const rawDamage = scale === 1 ? base : Math.round(base * scale);
     const warded = target.statuses?.ward === 'upcoming-battle';
-    const mitigatedDamage = warded ? Math.floor(rawDamage / 2) : rawDamage;
+    const wardedDamage = warded ? Math.floor(rawDamage / 2) : rawDamage;
+    const mitigatedDamage = hit && wardedDamage > 0 && target.statuses?.damageTaken ? Math.max(0, wardedDamage - target.statuses.damageTaken) : wardedDamage;
     const barrier = target.statuses?.barrier;
     const barrierAmount = typeof barrier === 'number' ? barrier : barrier?.amount;
     const damage = mitigatedDamage;
@@ -207,7 +211,7 @@ export function resolveBattleRound({
       delete next.statuses.barrier;
     }
     next.statuses={...(next.statuses||{})};
-    for(const key of ['brace','attackBonus','hitBonus','setSpears','equipStr','equipDef']) delete next.statuses[key];
+    for(const key of ['brace','attackBonus','hitBonus','setSpears','equipStr','equipDef','damageTaken','damageDealt','ignoreDefense','offTargetPenalty','energyWhenStruck']) delete next.statuses[key];
     return next;
   });
   const combatEvents = strikes.map((s) => ({ type: 'strike', ...s }));

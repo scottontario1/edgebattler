@@ -12,9 +12,9 @@ Items are graded against what the engine already does:
 - **Fixed facts:** energy max 4, +1 per round (+1 on the bench); Rally, Brace, Focused Shot, Charge, Second Wind are the shipped kits; champions (Brenna, Dreg) have no kit; all cards are common (no rarity rates exist); combining needs the same class, faction and stars; new classes wait until the three recruit classes support a complete match. So faction units are **variants of Pikeman, Archer or Cavalier** (a template plus one passive) until Scott says otherwise. Rarity below is a proposed power label only.
 - **Spec unit:** a unit entry = base class + stat delta + at most one passive + kit. A skill = a planning-selected ability. A spell = a one-shot card.
 
-## 2. Shared engine hooks (build once, before any faction branch)
+## 2. Shared engine hooks
 
-Sub-agents on separate branches will conflict if each adds these themselves, so the root builds them first:
+**Built and verified 2026-09-30; see [docs/CULTURE_HOOKS.md](docs/CULTURE_HOOKS.md).** In code a faction is a *culture* (the engine's `faction` already means the side). Sub-agents on separate branches would conflict if each added these themselves, so the root built them first. The table records what each hook is for:
 
 | hook | needed by | change |
 |---|---|---|
@@ -23,7 +23,8 @@ Sub-agents on separate branches will conflict if each adds these themselves, so 
 | `requires.onControlled` (unit stands on an owned keep/village) | Iron League | `src/abilities.js`, `src/match.js` |
 | Adjacent-ally and within-N-tiles passive check (read once per round) | Crown, Iron League | `src/battle.js` |
 | Generic numeric statuses read by the battle (`damageTaken`, `damageDealt`, `preferredTarget`) | all | `src/battle.js` |
-| Pending return at end of battle (reuse champion respawn path) | Hollow Court | `src/match.js` |
+| Revenant: once per match a fallen unit stays with 1 HP (simplified from a pending return) | Hollow Court | `src/match.js`, `src/passives.js` |
+| Marked target (`markTargetId`; no planning action yet) | White Fang | `src/match.js` |
 
 Recorded in the log header like `experimentRules`, so replays reconstruct them.
 

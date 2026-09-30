@@ -60,13 +60,17 @@ const CANDIDATE_CARDS = {};
 let ACTIVE_POOL = RECRUITMENT_POOL;
 export const registerCandidateCards = (cards) => Object.assign(CANDIDATE_CARDS, cards);
 export const setRecruitmentPool = (keys) => { ACTIVE_POOL = keys ? Object.freeze([...keys]) : RECRUITMENT_POOL; };
+export const unregisterCandidateCards = (keys) => { for (const k of keys) delete CANDIDATE_CARDS[k]; };
 export const resetCandidateCards = () => { for (const k of Object.keys(CANDIDATE_CARDS)) delete CANDIDATE_CARDS[k]; ACTIVE_POOL = RECRUITMENT_POOL; };
 export const cardFor = (key) => UNIT_CARDS[key] ?? SPELL_CARDS[key] ?? SKILL_CARDS[key] ?? CANDIDATE_CARDS[key] ?? null;
+/** Unit card by unit key: the shipped classes, or a registered culture variant. */
+export const unitCardFor = (key) => UNIT_CARDS[key] ?? (CANDIDATE_CARDS[key]?.type === 'unit' ? CANDIDATE_CARDS[key] : null);
 export const skillCardFor = (skillId) => SKILL_CARDS[skillId] ?? Object.values(CANDIDATE_CARDS).find((c) => c.skillId === skillId) ?? null;
 
 /** Create a fresh match inventory. `cards` defaults to an empty hand. */
-export function createCardState({ cyclesRemaining = CARD_LIMITS.cyclesPerRound, supply = CARD_LIMITS.initialSupply, hand = [], reserves = [], population = 0 } = {}) {
-  return { cyclesRemaining, supply: Math.max(0, Math.min(CARD_LIMITS.maxSupply, supply)), hand: copy(hand), reserves: copy(reserves), population, cardSequence: hand.length };
+export function createCardState({ cyclesRemaining = CARD_LIMITS.cyclesPerRound, supply = CARD_LIMITS.initialSupply, hand = [], reserves = [], population = 0, pool = null } = {}) {
+  // `pool`: optional per-side draw pool of card keys (cultures); absent = the shared pool.
+  return { ...(pool ? { pool: [...pool] } : {}), cyclesRemaining, supply: Math.max(0, Math.min(CARD_LIMITS.maxSupply, supply)), hand: copy(hand), reserves: copy(reserves), population, cardSequence: hand.length };
 }
 
 /** Draw into free hand slots without removing retained cards; opening draw defaults to five. */
@@ -74,7 +78,7 @@ export function drawCards(state, rng = seededRandom(1), count = CARD_LIMITS.open
   const next = copy(state);
   const requested = Math.max(0, Math.floor(count));
   const slots = Math.max(0, CARD_LIMITS.hand - next.hand.length);
-  const POOL = ACTIVE_POOL;
+  const POOL = next.pool ?? ACTIVE_POOL;
   const drawn = [];
   for (let i = 0; i < Math.min(requested, slots); i += 1) {
     const index = Math.min(POOL.length - 1, Math.floor(rng() * POOL.length));
@@ -104,7 +108,7 @@ export function canAfford(state, cardOrCost) {
 export function recruitUnit(state, cardInstanceId, { populationCap = CARD_LIMITS.populationCap, reserveCapacity = CARD_LIMITS.reserveCapacity } = {}) {
   const index = state.hand.findIndex((card) => card.instanceId === cardInstanceId);
   const card = index >= 0 ? state.hand[index] : null;
-  const definition = card?.type === 'unit' ? UNIT_CARDS[card.unitId] : null;
+  const definition = card?.type === 'unit' ? unitCardFor(card.unitId) : null;
   const fail = (reason) => ({ ok: false, reason, state });
   if (!definition) return fail('unit-card-not-found');
   const stars=card?.stars??1;
@@ -116,7 +120,7 @@ export function recruitUnit(state, cardInstanceId, { populationCap = CARD_LIMITS
   const next = copy(state);
   next.hand.splice(index, 1);
   next.supply -= card.cost;
-  const reserve = { id: `reserve-${card.instanceId}`, unitId: definition.unitId, classId: definition.unitId, variantId: definition.unitId, faction: 'blue', rarity: card.rarity??definition.rarity, stars, costPaid: card.cost, population, state: 'reserve', hp: null, maxHp: null };
+  const reserve = { id: `reserve-${card.instanceId}`, unitId: definition.unitId, classId: definition.base ?? definition.unitId, variantId: definition.unitId, faction: 'blue', rarity: card.rarity??definition.rarity, stars, costPaid: card.cost, population, state: 'reserve', hp: null, maxHp: null };
   next.reserves.push(reserve);
   next.population += population;
   return { ok: true, state: next, reserve: copy(reserve), supplySpent: card.cost, populationDelta: population };
@@ -136,7 +140,7 @@ export function canDeployReserve(state, reserveId, { location = false, tile = {}
 export function projectPopulation(state, action, reserveId) {
   if (action === 'recruit') {
     const unitId = typeof reserveId === 'string' ? reserveId : reserveId?.unitId;
-    const definition = UNIT_CARDS[unitId];
+    const definition = unitCardFor(unitId);
     return { current: state.population, delta: definition?.population ?? 0, projected: state.population + (definition?.population ?? 0), cap: CARD_LIMITS.populationCap };
   }
   if (action === 'deploy') return { current: state.population, delta: 0, projected: state.population, cap: CARD_LIMITS.populationCap };
@@ -152,10 +156,10 @@ export function previewCycle(state,{source,id}) {
   if(!item) return fail(source==='hand'?'card-not-found':'reserve-not-found');
   if(source==='bench'&&state.hand.length>=CARD_LIMITS.hand) return fail('hand-full');
   const type=source==='bench'?'unit':item.type;
-  const rarity=item.rarity??(source==='bench'?UNIT_CARDS[item.unitId]?.rarity:'common');
+  const rarity=item.rarity??(source==='bench'?unitCardFor(item.unitId)?.rarity:'common');
   const stars=type==='unit'?(item.stars??1):null;
   if(type==='unit'&&(!Number.isInteger(stars)||stars<1||stars>UPGRADE_MAX_STARS)) return fail('invalid-star-grade');
-  const pool=ACTIVE_POOL.filter(key=>cardFor(key)?.type===type&&cardFor(key)?.rarity===rarity);
+  const pool=(state.pool??ACTIVE_POOL).filter(key=>cardFor(key)?.type===type&&cardFor(key)?.rarity===rarity);
   if(!pool.length) return fail('no-matching-pool');
   return {ok:true,type,rarity,stars,pool,refund:source==='bench'?(item.costPaid??0):0,
     populationFreed:source==='bench'?(item.population??1):0};
