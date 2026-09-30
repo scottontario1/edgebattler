@@ -60,3 +60,9 @@ Acceptance: GAME.md consistently distinguishes current behavior, intended rules 
 ## Recommended next task
 
 Proceed to CORE-02 keep pressure and CORE-03 victory semantics. Agree counterplay and acceptable completion/duration outcomes, compare paired seeds with side swaps against passive/greedy/heuristic policies, and present evidence before changing defaults. Capacity pressure remains a limitation of the approved SYS-02 rules. CORE-01, SYS-01 and SYS-02 are verified prerequisites; do not reopen them without new evidence or explicit redirection.
+
+## FAC-01: Factions in the game (added 2026-09-30, branch faction_overhaul)
+
+Status: implemented and playable for playtesting; balance and AI are open.
+Four factions (Argent Crown, White Fang Clans, Iron League, Hollow Court) are merged from their branches, selectable in the start menu (skirmish v classic or v each other) and playable through 24 levels. Defaults for the open design questions are listed in FACTIONS.md section 10. Evidence: `npm test` (tests/faction-*.test.mjs, tests/culture*.test.mjs, tests/setup-levels.test.mjs), byte-identical classic simulations, browser checks of the menu, skirmishes and levels.
+Limits: the shipped AI cannot play faction cards well, so skirmish opponents are weak; whole games still draw 89-100% (CORE-02), so faction balance cannot be judged on win rate; no interaction UI for the mark action or tile objects; new classes use tinted placeholder sprites. Engine requests from the agents are in `docs/factions/*.md`.

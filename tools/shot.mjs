@@ -44,7 +44,7 @@ await send('Runtime.enable');
 await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile });
 if (mobile) await send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
 await send('Page.enable');
-await send('Page.navigate', { url: `http://localhost:${process.env.PORT || 5173}/${query ? `?${query}` : ''}` });
+await send('Page.navigate', { url: `http://localhost:${process.env.PORT || 5173}/?${/(^|&)(menu|nomenu)=/.test(query) ? query : `nomenu=1${query ? `&${query}` : ''}`}` });
 await sleep(+waitMs);
 const capture = async (file) => {
   const r = await send('Page.captureScreenshot', { format: 'png' });

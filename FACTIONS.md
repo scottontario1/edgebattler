@@ -250,3 +250,29 @@ Answered on 2026-09-30 (see section 1b): rarity, new classes, tile objects, cham
 5. Timing of Corpse decay (3 rounds proposed) and whether Corpses can be occupied for capture.
 6. The time-gate numbers (uncommon round 3, rare round 6) are proposals to tune by simulation.
 7. Neutral cards later: shared spells only for now (Mend, Ward, Fireburst).
+
+## 10. Defaults chosen for playtesting (2026-09-30, provisional)
+
+Scott asked for sane defaults so playtesting can start. These are the values the four faction branches chose and `faction_overhaul` merged; every one is a prototype default, listed so it can be changed. The full per-faction specs are in `docs/factions/`.
+
+| topic | default |
+|---|---|
+| Champions | Crown: Brenna (`brennaCrown`, kit Bulwark of the Realm + Oathkeeper's Strike). Fang: Dreg (`dreg`, or a copy `dregBlue` when the clans play Blue; kit Blood Challenge + Warlord's Rush). League: Captain Ilse Voss (Field Works). Court: the Hollow Regent. |
+| Unit types | Real new classes: Bannerman, Oathsworn, Reaver, Axeguard, Berserker, Relic Walker, Sapper, Ghoul, Graveguard, Wight, Necromancer. Variants: Crown Pikeman/Archer/Knight/Guard, Fang Hunter, League Pike/Pavise/Coil, Mourning Knight. |
+| Rarity | Time gate on whenever a faction plays: uncommon from round 3, rare from round 6. Off for the classic game and for levels (levels inject their own cards). |
+| Line Doctrine | Simple version: +1 Defense per adjacent friendly infantry, up to +2 (a Crown card may be strictly better than its base card). |
+| Blood Challenge | Mark plus penalty: +4 damage on the mark, -4 on other targets. |
+| League | Deterministic Overheat instead of random Malfunction; Sapper is a class; no Garrison Doctrine; ancient tech is flavour. |
+| Court | Revenant Vow on Mourning Knights only, once per match; Corpses decay after 3 rounds; a Necromancer may eat corpses of either side (owner filter is an engine request). |
+| Pools | One faction per side plus the shared spells (Mend, Ward, Fireburst). The same faction on both sides is refused for now (a mirror needs a second champion). |
+| Skirmish army | The shipped starting slots with each unit swapped by role: Pikeman/Archer/Cavalier become the faction's front, ranged and mounted-or-heavy unit (`FACTIONS[].core` in `src/setup.js`). |
+| AI | The shipped `greedy`/`heuristic` commanders play any faction (they do not understand faction cards); the culture-aware commanders in `experiments/factions/*/` are not wired into the game. Levels use a scripted enemy only. |
+
+Engine fixes made while merging (all inert for the classic game, checked byte-identical): a variant card's default stance now reaches the deployed unit; withdrawing a variant keeps its variant identity; roster variants read their own rarity; abilities tagged for a culture no longer apply to other units of the same base class.
+
+## 11. Menu and levels (playtesting)
+
+- **Menu** (`src/menu.js`): opens when the URL has no game flags (or `?menu=1`). Skirmish: pick your faction and the opponent's (classic Ashvale or the four factions), the opponent AI and an optional seed. Levels: the 24 scenario levels, grouped by faction. `?nomenu=1` (or any game flag) skips it, so existing tooling keeps working (`tools/shot.mjs` adds it).
+- **URL flags:** `?you=<faction>&foe=<faction>&red=<ai>&seed=N` for a skirmish (`crown`, `fang`, `league`, `court`, default `classic`), `?level=<id>` for a level.
+- **Levels** (`src/levels.js`): the suites written for the experiments (7 classic, 3 Crown, 5 Fang, 5 League, 4 Court) played as Blue by a human. Red follows the level's script and its units' stances. The panel under the objective ("About this level") shows the question, the setup and the suggested plan (the skilled variant's Blue steps).
+- **In game:** a "Menu" link in the objective panel returns to the menu.

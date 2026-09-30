@@ -246,7 +246,8 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
 
   const state = {
     hoverId: null,
-    selectedId: 'brenna',
+    // Brenna in the shipped game; the side's champion (or its first unit) when a faction or level has none of that name.
+    selectedId: units.byId.has(match.champion('blue')) ? match.champion('blue') : (units.list.find((u) => u.data.faction === 'blue')?.data.id ?? null),
     cursorTile: [3, 9],
     mode: 'idle', // 'idle' | 'target'
     targetId: null,
@@ -602,7 +603,8 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
   // An AI commander plans one side (red always; blue too in autoplay). Returns a feed notice.
   function runAI(faction, policy) {
     const before = new Set(match.alive(faction).map((u) => u.id));
-    runCommander(match, faction, policy);
+    if (typeof policy === 'function') policy(match); // a level's scripted enemy (src/levels.js)
+    else runCommander(match, faction, policy);
     syncView();
     const arrived = match.alive(faction).filter((u) => !before.has(u.id)).map((u) => u.name);
     if (!arrived.length) return '';

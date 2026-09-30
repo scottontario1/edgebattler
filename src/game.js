@@ -12,8 +12,12 @@ import { buildMap } from './map.js';
 import { createUnits } from './units.js';
 import { createCamera } from './camera.js';
 import { createUI } from './ui.js';
+import { mountLevelPanel } from './ui/levelpanel.js';
 import { createMatch } from './match.js';
 import { playLog } from './log.js';
+import { createSkirmish, isFaction } from './setup.js';
+import './level-maps.js';
+import { LEVEL_BY_ID, createLevelMatch, redScriptPolicy } from './levels.js';
 
 // Render one pixel per CSS pixel; SMAA handles edges without supersampling every pass.
 const PIXEL_RATIO = 1;
@@ -48,22 +52,41 @@ sun.shadow.normalBias = 0.015;
 sun.shadow.radius = 3;
 scene.add(sun);
 
-const map = buildMap(scene);
+// The match is built BEFORE the map so a level or faction can pick its map (setMap) first.
 // One match per page load. ?seed=N picks the card/battle seed; ?red=greedy|heuristic|passive picks the
 // enemy commander; ?blue=<policy> (or ?auto=<policy>) lets an AI play blue too; ?speed=4 shortens playback.
+// The menu (src/menu.js) starts a game through the URL: ?level=<id> plays a level as Blue (Red follows the level's script), and
+// ?you=<faction>&foe=<faction> starts a skirmish with those factions (crown, fang, league, court; default classic).
 const params = new URLSearchParams(location.search);
 const policies = { red: params.get('red') || 'greedy', blue: params.get('blue') || params.get('auto') || null, speed: params.get('speed') };
 // Dev builds stream every game to logs/play/ through the vite.config.js /__log endpoint.
 const gameLog = import.meta.env.DEV ? playLog() : null;
-const match = createMatch({
-  seed: Number(params.get('seed')) || 0x415348,
-  log: gameLog?.push,
-  meta: { source: 'browser', blue: policies.blue ? `ai:${policies.blue}` : 'human', red: `ai:${policies.red}`, commit: typeof __COMMIT__ !== 'undefined' ? __COMMIT__ : null },
-});
+const seed = Number(params.get('seed')) || 0x415348;
+const commit = typeof __COMMIT__ !== 'undefined' ? __COMMIT__ : null;
+const level = LEVEL_BY_ID[params.get('level')] || null;
+const you = isFaction(params.get('you')) ? params.get('you') : 'classic';
+const foe = isFaction(params.get('foe')) ? params.get('foe') : 'classic';
+let match;
+if (level) {
+  match = createLevelMatch(level, { seed, log: gameLog?.push, meta: { source: 'browser', blue: 'human', red: 'level-script', commit } });
+  policies.red = redScriptPolicy(level); // Red has no commander in a level: only its scripted picks
+  policies.blue = null;
+} else if (you !== 'classic' || foe !== 'classic') {
+  match = createSkirmish({ blue: you, red: foe === you ? 'classic' : foe, seed, log: gameLog?.push,
+    meta: { source: 'browser', blue: policies.blue ? `ai:${policies.blue}` : 'human', red: `ai:${policies.red}`, commit } });
+} else {
+  match = createMatch({
+    seed,
+    log: gameLog?.push,
+    meta: { source: 'browser', blue: policies.blue ? `ai:${policies.blue}` : 'human', red: `ai:${policies.red}`, commit },
+  });
+}
+const map = buildMap(scene);
 const units = createUnits(scene, match.units);
 const view = createCamera(renderer.domElement);
 const { camera, resize } = view;
 const ui = createUI({ renderer, camera, scene, units, view, match, policies });
+mountLevelPanel({ level, you, foe });
 if (import.meta.env.DEV) window.__game = { THREE, scene, camera, renderer, units, match, log: gameLog };
 
 const composer = new EffectComposer(renderer);

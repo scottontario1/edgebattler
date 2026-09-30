@@ -22,7 +22,9 @@ export function toWorld(c, r) {
 // Elevation: the river runs in a gorge (level 0), land sits at level 1, and mountains
 // plus a few wooded hills rise to level 2. Each level adds LEVEL world units of height.
 export const LEVEL = 0.3;
-const HILLS = new Set(MAP.hills.map(([c, r]) => `${c},${r}`));
+// Hill tiles of the ACTIVE map (setMap can change it before buildMap); recomputed when the map object changes.
+let hillsFor = null, hills = null;
+const HILLS = { has: (k) => { if (hillsFor !== MAP) { hillsFor = MAP; hills = new Set(MAP.hills.map(([c, r]) => `${c},${r}`)); } return hills.has(k); } };
 export const LAND_TOP = TERRAIN.G.h + LEVEL; // 0.52; tools/blender/build_env.py matches this
 export const WATER_Y = 0.16;
 
