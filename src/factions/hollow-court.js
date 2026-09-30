@@ -23,12 +23,12 @@ export const COURT = Object.freeze({
   corpseHp: 1,                    // objects need hp > 0 to exist; a corpse is a marker, never attacked (it does not block)
 
   // Feral Ghoul: cheap, fast, fragile. Spec delta from Pikeman: HP -8, Str -1, Def -6, Mov +2; recruit cost one lower.
-  ghoul: { hp: 16, str: 7, skl: 4, spd: 5, def: 3, mov: 6, cost: 0, mt: 6, hit: 80,
+  ghoul: { hp: 16, str: 7, skl: 4, spd: 5, def: 3, mov: 6, cost: 0, mt: 8, hit: 75,  // claws hit like a Pike (mt 8, hit 75): Str 7 + 8 = 15
     hungerEnergy: 1,              // Hunger: +1 energy the first time it is struck in a battle (energyWhenStruck)
     unquietDamage: 2, unquietCost: 1, unquietCooldown: 2 },  // Unquiet Step: +2 damage when it advanced and has a target
 
-  // Graveguard: a Pikeman with +2 HP that stands better among the dead. Slightly less Str than a Pikeman to pay for the passives.
-  graveguard: { hp: 26, str: 7, skl: 5, spd: 4, def: 9, mov: 4, cost: 2, mt: 8, hit: 75,
+  // Graveguard: a Pikeman with +2 HP that stands better among the dead (spec: HP +2, Def 0). Cost 2 (a Pikeman is 1).
+  graveguard: { hp: 26, str: 8, skl: 5, spd: 4, def: 9, mov: 4, cost: 2, mt: 8, hit: 75,
     dutyRadius: 2, dutyReduction: 1,        // Duty Beyond Death: takes 1 less damage per strike while a Corpse lies within 2 tiles
     graveRallyRadius: 1, graveRallyCost: 0, graveRallyCooldown: 2, graveRallyHeal: 6 },  // Grave Rally: eat an adjacent Corpse, heal 6 (self and friends within 1)
 
@@ -77,7 +77,11 @@ export const COURT_CHAMPIONS = Object.freeze(['hollowRegent', 'chancellor', 'mar
 /** PROVISIONAL default champion; the choice among the three is an open question for Scott. */
 export const DEFAULT_CHAMPION = 'hollowRegent';
 
-const TINT = { ghoul: '#7d8f6a', guard: '#8a8f99', wight: '#6f7f9a', knight: '#3b3a4a', necro: '#5a3f6e', noble: '#4a1f38' };
+// Placeholder tints (multiplied over the borrowed base sprite) follow design_assets/factions/hollow_court/README.md: black, ash grey and
+// steel with purple and pale gold; blue-white spectral glow for the undead, candle amber for the living court.
+//   feral_ghoul_sprite.png -> Feral Ghoul (pale grey skin, brown rags)   mourning_knight_sprite.png -> Mourning Knight (steel, purple)
+//   necromancer_sprite.png -> Necromancer (black velvet, grey silk, lantern staff)   Graveguard, Wight, champions: no reference art yet
+const TINT = { ghoul: '#a5a396', guard: '#7f8794', wight: '#9db4c8', knight: '#6a5a9a', necro: '#4a4656', noble: '#5a3a70' };
 const CORPSE = { spawn: { kind: 'corpse', hp: N.corpseHp, blocks: false, decay: N.corpseDecay, name: 'Corpse' } };
 const consume = (radius, count, healRadius, amount) => ({ kind: 'corpse', radius, count, heal: { radius: healRadius, amount } });
 const nearCorpse = (radius) => ({ objectNear: { kind: 'corpse', radius } });
@@ -104,7 +108,7 @@ export function buildHollowCourt(options = {}) {
       weapon: 'Ghoul Claws', weaponDef: { mt: g.mt, hit: g.hit, crit: 0, rng: [1, 1], kind: 'claw' }, // 'claw' sits outside the weapon triangle
       spriteBase: 'pikeman', tint: TINT.ghoul, ...onDeath,
       passives: [{ id: 'hunger', effect: { energyWhenStruck: g.hungerEnergy } }],
-      description: 'Cheap, fast and fragile. Leaves a Corpse. Gains 1 energy when struck.',
+      description: 'A hunched, feral servant of the dead: cheap, fast and fragile. Leaves a Corpse. Gains 1 energy when struck.',
       card: { rarity: rar('feralGhoul'), cost: g.cost, class: 'Foot', range: 1, defaultStance: 'advance' },
     },
     graveguard: {
@@ -126,11 +130,11 @@ export function buildHollowCourt(options = {}) {
       card: { rarity: rar('wight'), cost: w.cost, class: 'Foot', range: 1, defaultStance: 'advance' },
     },
     necromancer: {
-      name: 'Necromancer', title: 'Necromancer', label: 'Necromancer',
+      name: 'Necromancer', title: 'Court Necromancer', label: 'Necromancer',
       stats: { hp: nc.hp, str: 0, mag: nc.mag, skl: nc.skl, spd: nc.spd, def: nc.def, res: nc.res, mov: nc.mov },
-      weapon: 'Grave Staff', weaponDef: { mt: nc.mt, hit: nc.hit, crit: 0, rng: [1, 2], kind: 'tome', magic: true },
+      weapon: 'Lantern Staff', weaponDef: { mt: nc.mt, hit: nc.hit, crit: 0, rng: [1, 2], kind: 'tome', magic: true },
       spriteBase: 'archer', tint: TINT.necro, ...onDeath,
-      description: 'Frail support with a weak Defense-ignoring staff. Consume Remains eats a Corpse and heals friends nearby.',
+      description: 'A living court official: frail support with a weak Defense-ignoring lantern staff. Consume Remains eats a Corpse and heals friends nearby.',
       card: { rarity: rar('necromancer'), cost: nc.cost, class: 'Foot', range: 2, defaultStance: 'hold' },
     },
   };
@@ -143,7 +147,7 @@ export function buildHollowCourt(options = {}) {
         ...(o.revenant ? [{ id: 'revenantVow', effect: { revenant: 1 } }] : []),
         { id: 'deathlessStand', when: { stance: ['hold'] }, effect: { damageTaken: mk.standReduction } },
       ],
-      description: 'Revenant Vow: once per match, when killed it stays on its tile with 1 HP. Takes less damage while holding.',
+      description: 'Mounted, in polished steel and a purple mourning scarf. Revenant Vow: once per match, when killed it stays on its tile with 1 HP. Takes less damage while holding.',
       card: { rarity: rar('mourningKnight'), cost: mk.cost },
     },
   };

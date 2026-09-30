@@ -81,9 +81,9 @@ test('unit sheet: stats, weapons, move types, cards, rarities and placeholder ar
   const wight = createRecruitUnit('wight', 'w', 'blue', 1, 1);
   assert.deepEqual([wight.maxHp, wight.def, wight.weapon], [20, 6, 'Wight Blade']);
   const necro = createRecruitUnit('necromancer', 'n', 'blue', 1, 1);
-  assert.deepEqual([necro.maxHp, necro.mag, necro.def, necro.weapon], [16, 2, 2, 'Grave Staff']);
-  assert.deepEqual(WEAPONS['Grave Staff'].rng, [1, 2]);
-  assert.equal(WEAPONS['Grave Staff'].magic, true);
+  assert.deepEqual([necro.maxHp, necro.mag, necro.def, necro.weapon], [16, 2, 2, 'Lantern Staff']);
+  assert.deepEqual(WEAPONS['Lantern Staff'].rng, [1, 2]);
+  assert.equal(WEAPONS['Lantern Staff'].magic, true);
   assert.equal(unitCardFor('necromancer').defaultStance, 'hold');
   assert.equal(unitCardFor('necromancer').range, 2);
   const knight = createRecruitUnit('mourningKnight', 'k', 'blue', 1, 1);
@@ -94,7 +94,7 @@ test('unit sheet: stats, weapons, move types, cards, rarities and placeholder ar
   for (const [key, rarity] of Object.entries(COURT_RARITY)) assert.equal(cardFor(key).rarity, rarity, key);
   assert.equal(cardFor('feralGhoul').rarity, 'common');
   assert.equal(cardFor('mourningKnight').rarity, 'rare');
-  assert.deepEqual(SPRITE_FALLBACK.feralGhoul, { base: 'pikeman', tint: '#7d8f6a', label: 'Feral Ghoul' });
+  assert.deepEqual(SPRITE_FALLBACK.feralGhoul, { base: 'pikeman', tint: '#a5a396', label: 'Feral Ghoul' });
   assert.equal(SPRITE_FALLBACK.necromancer.base, 'archer');
   assert.equal(SPRITE_FALLBACK.mourningKnight.base, 'cavalier');
   done();
@@ -367,7 +367,7 @@ test('champions: three options, provisional default is the Hollow Regent, each w
   assert.ok(regent.maxHp >= brenna.maxHp - 2 && regent.maxHp <= brenna.maxHp + 4 && regent.def <= brenna.def, 'comparable to Brenna, not above her');
   assert.deepEqual(kitFor(regent).map((a) => a.id).sort(), ['decreeOfAttendance', 'sovereignStand']);
   const chancellor = createChampionUnit('chancellor', 'blue', 5, 5);
-  assert.deepEqual([chancellor.cls, chancellor.weapon, chancellor.mag, chancellor.maxHp], ['necromancer', 'Grave Staff', COURT.chancellor.mag, COURT.chancellor.hp]);
+  assert.deepEqual([chancellor.cls, chancellor.weapon, chancellor.mag, chancellor.maxHp], ['necromancer', 'Lantern Staff', COURT.chancellor.mag, COURT.chancellor.hp]);
   assert.deepEqual(kitFor(chancellor).map((a) => a.id).sort(), ['chancelleryAudit', 'consumeRemains', 'ledgerOfTheDead']);
   const marshal = createChampionUnit('marshal', 'blue', 5, 5);
   assert.deepEqual(kitFor(marshal).map((a) => a.id).sort(), ['graveRally', 'holdBeyondDeath']);

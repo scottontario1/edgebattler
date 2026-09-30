@@ -16,16 +16,18 @@ export const MATCHUPS = ['base:base', 'court:base', 'courtOff:base', 'courtPlain
 const wilson = (k, n) => { if (!n) return [0, 0]; const z = 1.96, p = k / n, d = 1 + z * z / n, c = (p + z * z / (2 * n)) / d, h = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d; return [Math.max(0, c - h), Math.min(1, c + h)]; };
 const mean = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 
-async function runMatchup({ matchup, seeds, maxRounds, map, gate }) {
+async function runMatchup({ matchup, seeds, maxRounds, map, gate, dvil }) {
   const [A, B] = matchup.split(':');
   const { createMatch } = await import('../../../src/match.js');
   const { memoryLog, replay } = await import('../../../src/log.js');
   const { setMap, DEFAULT_MAP } = await import('../../../src/board.js');
   const { setRarityGate } = await import('../../../src/cards.js');
+  const { setExperimentRules } = await import('../../../src/match.js');
   const { setupCulture, matchOptions, plan } = await import('./armies.mjs');
   setMap(map && map !== 'river_ford' ? (await import(pathToFileURL(resolve('experiments/maps', `${map}.js`)).href)).default : DEFAULT_MAP);
   setupCulture([A, B]);
   if (gate) setRarityGate({ uncommon: 3, rare: 6 });
+  if (dvil) setExperimentRules({ deployRangeVillage: dvil });
   const play = (seed, sides, log) => {
     const m = createMatch({ seed, maxRounds, log: log?.push, ...matchOptions(sides) });
     while (!m.over) { plan(m, 'blue', sides.blue); plan(m, 'red', sides.red); m.resolveRound(); }
@@ -44,7 +46,7 @@ async function runMatchup({ matchup, seeds, maxRounds, map, gate }) {
     const log = memoryLog();
     const m = play(seed, sides, doReplay ? log : null);
     if (doReplay) {
-      const check = replay(log.entries, { create: (h, push) => { setRarityGate(h.rarityGate || {}); return createMatch({ seed: h.seed, maxRounds: h.maxRounds, log: push, ...matchOptions(sides) }); } });
+      const check = replay(log.entries, { create: (h, push) => { setRarityGate(h.rarityGate || {}); setExperimentRules(h.experimentRules || {}); return createMatch({ seed: h.seed, maxRounds: h.maxRounds, log: push, ...matchOptions(sides) }); } });
       replayed += 1;
       if (!check.ok) { replayFail += 1; console.error(`REPLAY MISMATCH ${matchup} seed ${seed} ${assign}`, JSON.stringify(check.mismatches[0]).slice(0, 300)); }
     }
@@ -107,9 +109,10 @@ if (!isMainThread) {
   const opt = (n, d) => { const i = argv.indexOf(`--${n}`); return i >= 0 ? argv[i + 1] : d; };
   const seeds = Number(opt('seeds', 200)), maxRounds = Number(opt('max-rounds', 30)), map = opt('map', 'river_ford');
   const gate = opt('rarity', 'gate') !== 'off';
+  const dvil = Number(opt('dvil', 1));
   const only = opt('only', null)?.split(',') || MATCHUPS;
   const out = resolve(opt('out', 'docs/experiments/results/factions/hollow-court'));
-  const tag = opt('tag', `sim-${map}${gate ? '' : '-nogate'}`);
+  const tag = opt('tag', `sim-${map}${dvil > 1 ? `-dvil${dvil}` : ''}${gate ? '' : '-nogate'}`);
   mkdirSync(out, { recursive: true });
   const t0 = Date.now();
   const results = [];
@@ -118,7 +121,7 @@ if (!isMainThread) {
     while (queue.length) {
       const matchup = queue.shift();
       await new Promise((ok, fail) => {
-        const w = new Worker(fileURLToPath(import.meta.url), { workerData: { matchup, seeds, maxRounds, map, gate } });
+        const w = new Worker(fileURLToPath(import.meta.url), { workerData: { matchup, seeds, maxRounds, map, gate, dvil } });
         w.on('message', (msg) => { if (msg.ok) { results.push(msg.r); ok(); } else fail(new Error(msg.error)); });
         w.on('error', fail);
       });
@@ -128,14 +131,14 @@ if (!isMainThread) {
   const sums = results.map(summarise);
   const pct = (x) => `${(100 * x).toFixed(1)}%`;
   const ci = (v) => `${pct(v[0])}-${pct(v[1])}`;
-  const lines = [`# Hollow Court simulation: ${tag}`, '', `Map ${map}, max ${maxRounds} rounds, rarity gate ${gate ? 'uncommon 3 / rare 6' : 'off'}, ${seeds} seeds per matchup (${seeds} x 2 sides; mirrors ${seeds * 2} seeds once). Win rate is for the first army of the matchup. ${((Date.now() - t0) / 1000).toFixed(0)}s.`, '',
+  const lines = [`# Hollow Court simulation: ${tag}`, '', `Map ${map}, max ${maxRounds} rounds, rarity gate ${gate ? 'uncommon 3 / rare 6' : 'off'}, village deployment radius ${dvil}, ${seeds} seeds per matchup (${seeds} x 2 sides; mirrors ${seeds * 2} seeds once). Win rate is for the first army of the matchup. ${((Date.now() - t0) / 1000).toFixed(0)}s.`, '',
     '| matchup (A:B) | games | A wins | A win rate (95%) | B wins | draws | draw rate (95%) | mean rounds | keep-captured | army-destroyed | villages/game | units lost A / B | A wins as blue | A wins as red | replay |',
     '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|'];
   for (const s of sums) lines.push(`| ${s.matchup} | ${s.n} | ${s.wins} | ${pct(s.wins / s.n)} (${ci(s.winCI)}) | ${s.losses} | ${s.draws} | ${pct(s.draws / s.n)} (${ci(s.drawCI)}) | ${s.rounds.toFixed(1)} | ${s.keep} | ${s.wipe} | ${s.villages.toFixed(2)} | ${s.lostA.toFixed(1)} / ${s.lostB.toFixed(1)} | ${s.winsAsBlue == null ? '-' : pct(s.winsAsBlue)} | ${s.winsAsRed == null ? '-' : pct(s.winsAsRed)} | ${s.replayed - s.replayFail}/${s.replayed} ok |`);
   lines.push('', 'Death-mechanic counters (first 40 seeds of each side assignment, both armies counted):', '', '| matchup | games | corpses made | eaten | expired unused | Revenant returns | deaths |', '|---|---|---|---|---|---|---|');
   for (const s of sums) lines.push(`| ${s.matchup} | ${s.counters.games} | ${(s.counters.corpsesMade / s.counters.games).toFixed(2)} | ${(s.counters.corpsesEaten / s.counters.games).toFixed(2)} | ${(s.counters.corpsesExpired / s.counters.games).toFixed(2)} | ${(s.counters.returns / s.counters.games).toFixed(2)} | ${(s.counters.deaths / s.counters.games).toFixed(1)} |`);
   writeFileSync(join(out, `${tag}.md`), lines.join('\n') + '\n');
-  writeFileSync(join(out, `${tag}.json`), JSON.stringify({ seeds, maxRounds, map, gate, summaries: sums, rows: Object.fromEntries(results.map((r) => [r.matchup, r.rows])) }));
+  writeFileSync(join(out, `${tag}.json`), JSON.stringify({ seeds, maxRounds, map, gate, dvil, summaries: sums, rows: Object.fromEntries(results.map((r) => [r.matchup, r.rows])) }));
   console.log(lines.join('\n'));
   if (sums.some((s) => s.replayFail)) process.exit(1);
 }
