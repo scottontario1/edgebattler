@@ -8,9 +8,12 @@
 //               cls is a recruit class (pikeman | archer | cavalier) or a champion (brenna | dreg)
 //   loadouts    { blue: { pikeman: ['barrier', 'whetstone'] } }  type-wide equipment, installed before round 1
 //   reinforce   [{ faction, cls, id }]  unit cards placed in that side's hand (recruit + deploy them via script steps)
+//   hand        [{ faction, key, n }]  extra cards placed in that side's hand (key: fireburst | ward | mend | barrier | pikeman ...)
 //   script      planning steps applied at the start of `round` through match.apply, so they are logged and replayed:
 //               { round, faction, unit | cls, stance, tile: [c, r], abilities: [...], facing }
 //               { round, faction, card, deploy: [c, r] }  recruit the injected card and deploy it
+//               { round, faction, spell: 'fireburst', c, r } | { round, faction, spell: 'ward' | 'mend', unit }  queue a spell from the hand
+//               { round, faction, equip: 'barrier', unitType }  equip a skill card from the hand
 //
 // The definition is written into the log header, so any scenario log can be rebuilt from it
 // (replayScenario below, which uses log.js replay({ create })). Ordinary `tools/sim/run.mjs --verify` cannot replay
@@ -75,6 +78,13 @@ export function buildMatch(def, seed, log = null) {
     for (const [type, ids] of Object.entries(byType)) m.sides[faction].loadouts[type] = ids.map((id) => ({ ...skillCardFor(id), id }));
   }
   let n = 0;
+  for (const h of def.hand || []) {
+    for (let i = 0; i < (h.n || 1); i += 1) {
+      const card = structuredClone(cardFor(h.key));
+      card.instanceId = `card-hand-${h.faction}-${h.key}-${i}`;
+      m.sides[h.faction].cards.hand.push(card);
+    }
+  }
   for (const r of def.reinforce || []) {
     const card = structuredClone(cardFor(r.cls));
     card.instanceId = r.id || `card-inj-${++n}`;
@@ -93,6 +103,14 @@ function applyStep(m, step) {
   if (step.deploy) {
     const res = m.apply({ type: 'recruit', faction: f, cardId: step.card }, actor);
     if (res.ok) m.apply({ type: 'deploy', faction: f, reserveId: res.reserveId, c: step.deploy[0], r: step.deploy[1] }, actor);
+    return;
+  }
+  if (step.spell || step.equip) {
+    const id = step.spell ? `spell-${step.spell}` : `skill-${step.equip}`;
+    const card = m.sides[f].cards.hand.find((c) => c.id === id);
+    if (!card) return;
+    if (step.spell) m.apply({ type: 'spell', faction: f, cardId: card.instanceId, ...(step.unit ? { unitId: step.unit } : { c: step.c, r: step.r }) }, actor);
+    else m.apply({ type: 'equip', faction: f, cardId: card.instanceId, unitType: step.unitType }, actor);
     return;
   }
   for (const u of resolveTargets(m, step)) {
@@ -133,6 +151,7 @@ export function playScenario(def, seed, { keepLog = false } = {}) {
     strikes: hits.length, flankStrikes: hits.filter((s) => s.flank && s.flank !== 'front').length,
     spearBonus: hits.filter((s) => s.spearBonus).length, guarded: hits.filter((s) => s.mountedGuard).length,
     moves: moves.filter((e) => e.type === 'move').length, blocked: holdBecause(/no legal|occupied/), contested: holdBecause(/contested/),
+    planFails: log.entries.filter((e) => e.t === 'action' && !e.ok && String(e.actor).startsWith('script')).length,
     abilityUses: used.length, energySpent: used.reduce((s, e) => s + e.cost, 0),
   };
   if (keepLog) out.log = log;

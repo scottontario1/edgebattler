@@ -1,0 +1,410 @@
+[
+ {
+  "label": "N naive: default stances, no picks, no spells",
+  "budget": {
+   "blue": {
+    "supply": 16,
+    "equipment": 0,
+    "total": 16,
+    "pop": 10
+   },
+   "red": {
+    "supply": 14,
+    "equipment": 0,
+    "total": 14,
+    "pop": 11
+   }
+  },
+  "n": 400,
+  "blue": 0,
+  "red": 0,
+  "mutual": 0,
+  "none": 1,
+  "blueCI": [
+   0,
+   0.009512640599680667
+  ],
+  "rounds": 20,
+  "surv": {
+   "blue": 2.0725,
+   "red": 5.57
+  },
+  "hpLeft": {
+   "blue": 0.1869515306122456,
+   "red": 0.45958847736625513
+  },
+  "dealt": {
+   "blue": 178.5425,
+   "red": 190.2425
+  },
+  "firstStrike": 2,
+  "flank": 1.055,
+  "strikes": 85.545,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 23.0575,
+  "blocked": 23.205,
+  "contested": 13.985,
+  "planFails": 0,
+  "abilityUses": 32.44,
+  "energy": 64.88,
+  "decidedRounds": 0
+ },
+ {
+  "label": "S skilled: a marching block with Rally (never Brace: it forces Hold), then Fireburst on the garrison and Ward on the front while Mend keeps the 2-stars up",
+  "budget": {
+   "blue": {
+    "supply": 16,
+    "equipment": 0,
+    "total": 16,
+    "pop": 10
+   },
+   "red": {
+    "supply": 14,
+    "equipment": 0,
+    "total": 14,
+    "pop": 11
+   }
+  },
+  "n": 400,
+  "blue": 0.49,
+  "red": 0.0025,
+  "mutual": 0,
+  "none": 0.5075,
+  "blueCI": [
+   0.4413384044602659,
+   0.5388518483517277
+  ],
+  "rounds": 18.28,
+  "surv": {
+   "blue": 3.755,
+   "red": 5.225
+  },
+  "hpLeft": {
+   "blue": 0.4272959183673475,
+   "red": 0.3752983539094651
+  },
+  "dealt": {
+   "blue": 151.675,
+   "red": 256.19
+  },
+  "firstStrike": 2,
+  "flank": 0.0525,
+  "strikes": 106.0875,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 35.4525,
+  "blocked": 39.52,
+  "contested": 18.505,
+  "planFails": 0,
+  "abilityUses": 60.38,
+  "energy": 82.78,
+  "decidedRounds": 16.507614213197968
+ },
+ {
+  "label": "S-Rally skilled without Rally",
+  "budget": {
+   "blue": {
+    "supply": 16,
+    "equipment": 0,
+    "total": 16,
+    "pop": 10
+   },
+   "red": {
+    "supply": 14,
+    "equipment": 0,
+    "total": 14,
+    "pop": 11
+   }
+  },
+  "n": 400,
+  "blue": 0.435,
+  "red": 0.2625,
+  "mutual": 0,
+  "none": 0.3025,
+  "blueCI": [
+   0.3872618167504356,
+   0.4839748265275229
+  ],
+  "rounds": 17.895,
+  "surv": {
+   "blue": 1.42,
+   "red": 6.02
+  },
+  "hpLeft": {
+   "blue": 0.10594387755102043,
+   "red": 0.4398353909465013
+  },
+  "dealt": {
+   "blue": 135.1775,
+   "red": 220.515
+  },
+  "firstStrike": 2,
+  "flank": 0.065,
+  "strikes": 86.1925,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 35.4125,
+  "blocked": 29.985,
+  "contested": 17.9125,
+  "planFails": 0,
+  "abilityUses": 42.5575,
+  "energy": 85.115,
+  "decidedRounds": 16.982078853046595
+ },
+ {
+  "label": "S-Focused Shot skilled without Focused Shot",
+  "budget": {
+   "blue": {
+    "supply": 16,
+    "equipment": 0,
+    "total": 16,
+    "pop": 10
+   },
+   "red": {
+    "supply": 14,
+    "equipment": 0,
+    "total": 14,
+    "pop": 11
+   }
+  },
+  "n": 400,
+  "blue": 0.0525,
+  "red": 0,
+  "mutual": 0,
+  "none": 0.9475,
+  "blueCI": [
+   0.03459126500804263,
+   0.07892254832867157
+  ],
+  "rounds": 19.9075,
+  "surv": {
+   "blue": 3.5875,
+   "red": 5.905
+  },
+  "hpLeft": {
+   "blue": 0.39070153061224494,
+   "red": 0.42373456790123426
+  },
+  "dealt": {
+   "blue": 135.2775,
+   "red": 275.5275
+  },
+  "firstStrike": 2,
+  "flank": 0.04,
+  "strikes": 117.18,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 35.0725,
+  "blocked": 47.4925,
+  "contested": 17.4125,
+  "planFails": 0,
+  "abilityUses": 59.63,
+  "energy": 78.16,
+  "decidedRounds": 18.238095238095237
+ },
+ {
+  "label": "S-Fireburst skilled without Fireburst",
+  "budget": {
+   "blue": {
+    "supply": 16,
+    "equipment": 0,
+    "total": 16,
+    "pop": 10
+   },
+   "red": {
+    "supply": 14,
+    "equipment": 0,
+    "total": 14,
+    "pop": 11
+   }
+  },
+  "n": 400,
+  "blue": 0.245,
+  "red": 0,
+  "mutual": 0,
+  "none": 0.755,
+  "blueCI": [
+   0.20540805053884156,
+   0.28944339616699555
+  ],
+  "rounds": 19.545,
+  "surv": {
+   "blue": 3.39,
+   "red": 5.735
+  },
+  "hpLeft": {
+   "blue": 0.3871428571428577,
+   "red": 0.44325102880658435
+  },
+  "dealt": {
+   "blue": 171.8625,
+   "red": 271.55
+  },
+  "firstStrike": 2,
+  "flank": 0.0225,
+  "strikes": 111.5375,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 35.3375,
+  "blocked": 42.73,
+  "contested": 19.05,
+  "planFails": 0,
+  "abilityUses": 64.9525,
+  "energy": 90.485,
+  "decidedRounds": 18.142857142857142
+ },
+ {
+  "label": "S-Ward skilled without Ward",
+  "budget": {
+   "blue": {
+    "supply": 16,
+    "equipment": 0,
+    "total": 16,
+    "pop": 10
+   },
+   "red": {
+    "supply": 14,
+    "equipment": 0,
+    "total": 14,
+    "pop": 11
+   }
+  },
+  "n": 400,
+  "blue": 0.49,
+  "red": 0.0025,
+  "mutual": 0,
+  "none": 0.5075,
+  "blueCI": [
+   0.4413384044602659,
+   0.5388518483517277
+  ],
+  "rounds": 18.285,
+  "surv": {
+   "blue": 3.75,
+   "red": 5.2275
+  },
+  "hpLeft": {
+   "blue": 0.42672193877551073,
+   "red": 0.3753806584362141
+  },
+  "dealt": {
+   "blue": 151.6625,
+   "red": 257.695
+  },
+  "firstStrike": 2,
+  "flank": 0.0525,
+  "strikes": 106.13,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 35.45,
+  "blocked": 39.5475,
+  "contested": 18.4875,
+  "planFails": 0,
+  "abilityUses": 60.405,
+  "energy": 82.785,
+  "decidedRounds": 16.517766497461928
+ },
+ {
+  "label": "S-Mend skilled without Mend",
+  "budget": {
+   "blue": {
+    "supply": 16,
+    "equipment": 0,
+    "total": 16,
+    "pop": 10
+   },
+   "red": {
+    "supply": 14,
+    "equipment": 0,
+    "total": 14,
+    "pop": 11
+   }
+  },
+  "n": 400,
+  "blue": 0.4875,
+  "red": 0.0025,
+  "mutual": 0,
+  "none": 0.51,
+  "blueCI": [
+   0.4388676214712341,
+   0.536370194543758
+  ],
+  "rounds": 18.2825,
+  "surv": {
+   "blue": 3.755,
+   "red": 5.235
+  },
+  "hpLeft": {
+   "blue": 0.42688775510204136,
+   "red": 0.3760802469135804
+  },
+  "dealt": {
+   "blue": 151.3925,
+   "red": 256.0725
+  },
+  "firstStrike": 2,
+  "flank": 0.0525,
+  "strikes": 105.9875,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 35.4525,
+  "blocked": 39.52,
+  "contested": 18.48,
+  "planFails": 0,
+  "abilityUses": 60.505,
+  "energy": 82.82,
+  "decidedRounds": 16.494897959183675
+ },
+ {
+  "label": "C candidate Whetstone (+2 Str) on all Pikemen and Archers (+4 Supply)",
+  "budget": {
+   "blue": {
+    "supply": 16,
+    "equipment": 4,
+    "total": 20,
+    "pop": 10
+   },
+   "red": {
+    "supply": 14,
+    "equipment": 0,
+    "total": 14,
+    "pop": 11
+   }
+  },
+  "n": 400,
+  "blue": 0.9325,
+  "red": 0,
+  "mutual": 0,
+  "none": 0.0675,
+  "blueCI": [
+   0.9035727207806045,
+   0.9531988451006718
+  ],
+  "rounds": 14.27,
+  "surv": {
+   "blue": 4.51,
+   "red": 4.7125
+  },
+  "hpLeft": {
+   "blue": 0.5119260204081637,
+   "red": 0.3346090534979423
+  },
+  "dealt": {
+   "blue": 172.8,
+   "red": 204.4025
+  },
+  "firstStrike": 2,
+  "flank": 0.0475,
+  "strikes": 83.1425,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 35.0725,
+  "blocked": 25.915,
+  "contested": 19.54,
+  "planFails": 0,
+  "abilityUses": 48.365,
+  "energy": 65.4,
+  "decidedRounds": 13.855227882037534
+ }
+]

@@ -1,0 +1,257 @@
+[
+ {
+  "label": "N naive: default stances, no picks, no spells",
+  "budget": {
+   "blue": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 4
+   },
+   "red": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 4
+   }
+  },
+  "n": 400,
+  "blue": 0.0025,
+  "red": 0.9975,
+  "mutual": 0,
+  "none": 0,
+  "blueCI": [
+   0.00044143642943440895,
+   0.014023640967247855
+  ],
+  "rounds": 7.1725,
+  "surv": {
+   "blue": 0.0025,
+   "red": 2.935
+  },
+  "hpLeft": {
+   "blue": 0.0005357142857142856,
+   "red": 0.4972135416666665
+  },
+  "dealt": {
+   "blue": 52.6825,
+   "red": 129.415
+  },
+  "firstStrike": 1,
+  "flank": 1.22,
+  "strikes": 29.86,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 15.3825,
+  "blocked": 13.4525,
+  "contested": 3.4475,
+  "planFails": 0,
+  "abilityUses": 0,
+  "energy": 0,
+  "decidedRounds": 7.1725
+ },
+ {
+  "label": "S skilled: a Pikeman screen with Archers behind it, Focused Shot from round 2 and Brace on the screen",
+  "budget": {
+   "blue": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 4
+   },
+   "red": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 4
+   }
+  },
+  "n": 400,
+  "blue": 0.86,
+  "red": 0.09,
+  "mutual": 0.0025,
+  "none": 0.0475,
+  "blueCI": [
+   0.8225600194276628,
+   0.8905908793405672
+  ],
+  "rounds": 8.47,
+  "surv": {
+   "blue": 2.61,
+   "red": 0.185
+  },
+  "hpLeft": {
+   "blue": 0.5098511904761903,
+   "red": 0.020286458333333333
+  },
+  "dealt": {
+   "blue": 112.6675,
+   "red": 77.4125
+  },
+  "firstStrike": 2,
+  "flank": 1.4075,
+  "strikes": 34.9275,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 10.55,
+  "blocked": 9.7725,
+  "contested": 1.6025,
+  "planFails": 0,
+  "abilityUses": 19.2925,
+  "energy": 24.24,
+  "decidedRounds": 8.194225721784777
+ },
+ {
+  "label": "S-Focused Shot skilled without Focused Shot",
+  "budget": {
+   "blue": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 4
+   },
+   "red": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 4
+   }
+  },
+  "n": 400,
+  "blue": 0.495,
+  "red": 0.2975,
+  "mutual": 0,
+  "none": 0.2075,
+  "blueCI": [
+   0.44628359498707637,
+   0.5438115314189205
+  ],
+  "rounds": 10.5075,
+  "surv": {
+   "blue": 1.5225,
+   "red": 0.8225
+  },
+  "hpLeft": {
+   "blue": 0.300089285714286,
+   "red": 0.116015625
+  },
+  "dealt": {
+   "blue": 100.805,
+   "red": 110.0375
+  },
+  "firstStrike": 2,
+  "flank": 1.51,
+  "strikes": 43.455,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 11.775,
+  "blocked": 13.6275,
+  "contested": 2.0375,
+  "planFails": 0,
+  "abilityUses": 15.5125,
+  "energy": 15.105,
+  "decidedRounds": 9.593059936908517
+ },
+ {
+  "label": "S-Rally skilled without Rally",
+  "budget": {
+   "blue": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 4
+   },
+   "red": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 4
+   }
+  },
+  "n": 400,
+  "blue": 0.5575,
+  "red": 0.3675,
+  "mutual": 0.0375,
+  "none": 0.0375,
+  "blueCI": [
+   0.5085070928349432,
+   0.6053989534960934
+  ],
+  "rounds": 8.87,
+  "surv": {
+   "blue": 1.2925,
+   "red": 0.5525
+  },
+  "hpLeft": {
+   "blue": 0.18095238095238086,
+   "red": 0.05752604166666668
+  },
+  "dealt": {
+   "blue": 106.39,
+   "red": 89.275
+  },
+  "firstStrike": 2,
+  "flank": 1.355,
+  "strikes": 34.1375,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 11.4575,
+  "blocked": 9.31,
+  "contested": 1.765,
+  "planFails": 0,
+  "abilityUses": 11.2775,
+  "energy": 22.555,
+  "decidedRounds": 8.67012987012987
+ },
+ {
+  "label": "S-Brace skilled without Brace",
+  "budget": {
+   "blue": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 4
+   },
+   "red": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 4
+   }
+  },
+  "n": 400,
+  "blue": 0.78,
+  "red": 0.1575,
+  "mutual": 0.01,
+  "none": 0.0525,
+  "blueCI": [
+   0.7368461708224374,
+   0.8178267504417416
+  ],
+  "rounds": 8.595,
+  "surv": {
+   "blue": 2.095,
+   "red": 0.2875
+  },
+  "hpLeft": {
+   "blue": 0.3775892857142857,
+   "red": 0.030390625000000004
+  },
+  "dealt": {
+   "blue": 110.77,
+   "red": 99.6025
+  },
+  "firstStrike": 2,
+  "flank": 1.45,
+  "strikes": 34.625,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 10.935,
+  "blocked": 9.5875,
+  "contested": 1.6675,
+  "planFails": 0,
+  "abilityUses": 11.64,
+  "energy": 11.105,
+  "decidedRounds": 8.295514511873352
+ }
+]

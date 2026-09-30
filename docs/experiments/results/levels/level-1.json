@@ -1,0 +1,206 @@
+[
+ {
+  "label": "N naive: default stances, no picks, no spells",
+  "budget": {
+   "blue": {
+    "supply": 3,
+    "equipment": 0,
+    "total": 3,
+    "pop": 3
+   },
+   "red": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 6
+   }
+  },
+  "n": 400,
+  "blue": 0,
+  "red": 0.945,
+  "mutual": 0,
+  "none": 0.055,
+  "blueCI": [
+   0,
+   0.009512640599680667
+  ],
+  "rounds": 11.845,
+  "surv": {
+   "blue": 0.06,
+   "red": 3.8325
+  },
+  "hpLeft": {
+   "blue": 0.00833333333333333,
+   "red": 0.5136979166666671
+  },
+  "dealt": {
+   "blue": 82.565,
+   "red": 87.325
+  },
+  "firstStrike": 1.255,
+  "flank": 0,
+  "strikes": 30.605,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 17.0425,
+  "blocked": 19.68,
+  "contested": 21.0925,
+  "planFails": 0,
+  "abilityUses": 0,
+  "energy": 0,
+  "decidedRounds": 11.603174603174603
+ },
+ {
+  "label": "S skilled: holding the crossing mouth with Rally every round and Brace when they arrive",
+  "budget": {
+   "blue": {
+    "supply": 3,
+    "equipment": 0,
+    "total": 3,
+    "pop": 3
+   },
+   "red": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 6
+   }
+  },
+  "n": 400,
+  "blue": 0.98,
+  "red": 0,
+  "mutual": 0,
+  "none": 0.02,
+  "blueCI": [
+   0.9610361296222221,
+   0.9898317354020845
+  ],
+  "rounds": 13.735,
+  "surv": {
+   "blue": 2.9225,
+   "red": 0.02
+  },
+  "hpLeft": {
+   "blue": 0.8873263888888855,
+   "red": 0.0013888888888888892
+  },
+  "dealt": {
+   "blue": 209.9825,
+   "red": 49.6625
+  },
+  "firstStrike": 2,
+  "flank": 0,
+  "strikes": 50.545,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 17.4475,
+  "blocked": 6.725,
+  "contested": 10.325,
+  "planFails": 0,
+  "abilityUses": 40.86,
+  "energy": 39.28,
+  "decidedRounds": 13.688775510204081
+ },
+ {
+  "label": "S-Rally skilled without Rally",
+  "budget": {
+   "blue": {
+    "supply": 3,
+    "equipment": 0,
+    "total": 3,
+    "pop": 3
+   },
+   "red": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 6
+   }
+  },
+  "n": 400,
+  "blue": 0.6,
+  "red": 0.0625,
+  "mutual": 0,
+  "none": 0.3375,
+  "blueCI": [
+   0.5512581652462732,
+   0.6468393066337906
+  ],
+  "rounds": 15.065,
+  "surv": {
+   "blue": 1.3025,
+   "red": 0.4875
+  },
+  "hpLeft": {
+   "blue": 0.30854166666666616,
+   "red": 0.035069444444444466
+  },
+  "dealt": {
+   "blue": 189.0525,
+   "red": 56.095
+  },
+  "firstStrike": 2,
+  "flank": 0,
+  "strikes": 48.46,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 18.115,
+  "blocked": 8.345,
+  "contested": 10.335,
+  "planFails": 0,
+  "abilityUses": 17.7025,
+  "energy": 35.405,
+  "decidedRounds": 14.58867924528302
+ },
+ {
+  "label": "S-Brace skilled without Brace",
+  "budget": {
+   "blue": {
+    "supply": 3,
+    "equipment": 0,
+    "total": 3,
+    "pop": 3
+   },
+   "red": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 6
+   }
+  },
+  "n": 400,
+  "blue": 0.95,
+  "red": 0,
+  "mutual": 0,
+  "none": 0.05,
+  "blueCI": [
+   0.9240357990869275,
+   0.9674028243733599
+  ],
+  "rounds": 13.95,
+  "surv": {
+   "blue": 2.68,
+   "red": 0.0525
+  },
+  "hpLeft": {
+   "blue": 0.7371180555555564,
+   "red": 0.003281249999999998
+  },
+  "dealt": {
+   "blue": 208.005,
+   "red": 71.26
+  },
+  "firstStrike": 2,
+  "flank": 0,
+  "strikes": 50.5175,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 17.4925,
+  "blocked": 6.95,
+  "contested": 10.33,
+  "planFails": 0,
+  "abilityUses": 8.845,
+  "energy": 0,
+  "decidedRounds": 13.842105263157896
+ }
+]

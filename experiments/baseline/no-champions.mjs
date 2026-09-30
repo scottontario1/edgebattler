@@ -13,11 +13,13 @@ const argv = process.argv.slice(2);
 const games = Number(argv[argv.indexOf('--games') + 1] || 50);
 const roster = UNITS.filter((u) => !['brenna', 'dreg'].includes(u.id));
 
+const seize = argv.includes('--seize') ? Number(argv[argv.indexOf('--seize') + 1]) : undefined;
+const params = seize === undefined ? {} : { seizeRatio: seize };
 function play(seed, blue, red, withChampions) {
   const m = createMatch({ seed, maxRounds: 30, roster: withChampions ? UNITS : roster });
   while (!m.over) {
-    runCommander(m, 'blue', blue);
-    runCommander(m, 'red', red);
+    runCommander(m, 'blue', blue, params);
+    runCommander(m, 'red', red, params);
     m.resolveRound();
   }
   return { winner: m.winner || 'draw', reason: m.reason, rounds: m.reason === 'round-limit' ? m.round - 1 : m.round };

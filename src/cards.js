@@ -1,7 +1,7 @@
 import {UPGRADE_MAX_STARS,UPGRADE_POPULATION_BY_STARS} from './upgrades.js';
 /** Prototype card economy rules. Pure data helpers; rendering and board occupancy stay in callers. */
 
-export const CARD_LIMITS = Object.freeze({
+export const DEFAULT_CARD_LIMITS = Object.freeze({
   hand: 8,
   cyclesPerRound: 1,
   openingHand: 5,
@@ -12,6 +12,11 @@ export const CARD_LIMITS = Object.freeze({
   reserveCapacity: 8,
   populationCap: 10,
 });
+// The values the rules read. Always the defaults in the game; economy experiments (experiments/economy) override
+// them per process with setCardLimits() and put the result in the log header.
+export const CARD_LIMITS = { ...DEFAULT_CARD_LIMITS };
+export const setCardLimits = (overrides = {}) => Object.assign(CARD_LIMITS, DEFAULT_CARD_LIMITS, overrides);
+export const resetCardLimits = () => setCardLimits();
 
 /** Stable recruitment identities correspond to RECRUIT in src/units.js. */
 export const UNIT_CARDS = Object.freeze({

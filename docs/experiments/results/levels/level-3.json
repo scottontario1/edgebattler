@@ -1,0 +1,308 @@
+[
+ {
+  "label": "N naive: default stances, no picks, no spells",
+  "budget": {
+   "blue": {
+    "supply": 8,
+    "equipment": 0,
+    "total": 8,
+    "pop": 4
+   },
+   "red": {
+    "supply": 11,
+    "equipment": 0,
+    "total": 11,
+    "pop": 7
+   }
+  },
+  "n": 400,
+  "blue": 0,
+  "red": 1,
+  "mutual": 0,
+  "none": 0,
+  "blueCI": [
+   0,
+   0.009512640599680667
+  ],
+  "rounds": 6.9,
+  "surv": {
+   "blue": 0,
+   "red": 4.7175
+  },
+  "hpLeft": {
+   "blue": 0,
+   "red": 0.40973958333333343
+  },
+  "dealt": {
+   "blue": 121.5625,
+   "red": 114.575
+  },
+  "firstStrike": 1,
+  "flank": 7.3325,
+  "strikes": 41.8575,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 9.87,
+  "blocked": 10.1375,
+  "contested": 1,
+  "planFails": 0,
+  "abilityUses": 9.5125,
+  "energy": 19.025,
+  "decidedRounds": 6.9
+ },
+ {
+  "label": "S skilled: Pikemen pin the front while the Cavaliers wait a round, swing round the north end and Charge into the Archers' side",
+  "budget": {
+   "blue": {
+    "supply": 8,
+    "equipment": 0,
+    "total": 8,
+    "pop": 4
+   },
+   "red": {
+    "supply": 11,
+    "equipment": 0,
+    "total": 11,
+    "pop": 7
+   }
+  },
+  "n": 400,
+  "blue": 0.735,
+  "red": 0.195,
+  "mutual": 0.005,
+  "none": 0.065,
+  "blueCI": [
+   0.6896620712769463,
+   0.7758669876412037
+  ],
+  "rounds": 10.28,
+  "surv": {
+   "blue": 1.76,
+   "red": 0.6475
+  },
+  "hpLeft": {
+   "blue": 0.26781249999999984,
+   "red": 0.04423611111111114
+  },
+  "dealt": {
+   "blue": 188.8525,
+   "red": 156.1925
+  },
+  "firstStrike": 2,
+  "flank": 10.2225,
+  "strikes": 60.595,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 12.565,
+  "blocked": 17.305,
+  "contested": 1.645,
+  "planFails": 0,
+  "abilityUses": 26.35,
+  "energy": 32.7,
+  "decidedRounds": 10.02139037433155
+ },
+ {
+  "label": "S-Charge skilled without Charge",
+  "budget": {
+   "blue": {
+    "supply": 8,
+    "equipment": 0,
+    "total": 8,
+    "pop": 4
+   },
+   "red": {
+    "supply": 11,
+    "equipment": 0,
+    "total": 11,
+    "pop": 7
+   }
+  },
+  "n": 400,
+  "blue": 0.4325,
+  "red": 0.4125,
+  "mutual": 0.005,
+  "none": 0.15,
+  "blueCI": [
+   0.38481788076603707,
+   0.48146632571491976
+  ],
+  "rounds": 11.1575,
+  "surv": {
+   "blue": 0.995,
+   "red": 1.5775
+  },
+  "hpLeft": {
+   "blue": 0.15570312499999997,
+   "red": 0.10939236111111107
+  },
+  "dealt": {
+   "blue": 190.4125,
+   "red": 172.2
+  },
+  "firstStrike": 2,
+  "flank": 9.67,
+  "strikes": 65.45,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 11.8825,
+  "blocked": 18.9225,
+  "contested": 1.2925,
+  "planFails": 0,
+  "abilityUses": 23.9625,
+  "energy": 27.6925,
+  "decidedRounds": 10.655882352941177
+ },
+ {
+  "label": "S-Second Wind skilled without Second Wind",
+  "budget": {
+   "blue": {
+    "supply": 8,
+    "equipment": 0,
+    "total": 8,
+    "pop": 4
+   },
+   "red": {
+    "supply": 11,
+    "equipment": 0,
+    "total": 11,
+    "pop": 7
+   }
+  },
+  "n": 400,
+  "blue": 0.545,
+  "red": 0.325,
+  "mutual": 0.0075,
+  "none": 0.1225,
+  "blueCI": [
+   0.4960015667969213,
+   0.5931422955491075
+  ],
+  "rounds": 10.675,
+  "surv": {
+   "blue": 1.17,
+   "red": 1.1975
+  },
+  "hpLeft": {
+   "blue": 0.19007812499999996,
+   "red": 0.08809027777777771
+  },
+  "dealt": {
+   "blue": 174.6175,
+   "red": 155.7775
+  },
+  "firstStrike": 2,
+  "flank": 8.5075,
+  "strikes": 59.66,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 12.13,
+  "blocked": 16.785,
+  "contested": 1.3675,
+  "planFails": 0,
+  "abilityUses": 24.39,
+  "energy": 30.33,
+  "decidedRounds": 10.21082621082621
+ },
+ {
+  "label": "S-Rally skilled without Rally",
+  "budget": {
+   "blue": {
+    "supply": 8,
+    "equipment": 0,
+    "total": 8,
+    "pop": 4
+   },
+   "red": {
+    "supply": 11,
+    "equipment": 0,
+    "total": 11,
+    "pop": 7
+   }
+  },
+  "n": 400,
+  "blue": 0.2,
+  "red": 0.745,
+  "mutual": 0.035,
+  "none": 0.02,
+  "blueCI": [
+   0.16373644787133712,
+   0.24197113648847135
+  ],
+  "rounds": 9.695,
+  "surv": {
+   "blue": 0.265,
+   "red": 2.2025
+  },
+  "hpLeft": {
+   "blue": 0.02244791666666666,
+   "red": 0.17776041666666653
+  },
+  "dealt": {
+   "blue": 154.2775,
+   "red": 126.0875
+  },
+  "firstStrike": 2,
+  "flank": 11.15,
+  "strikes": 46.58,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 11.4025,
+  "blocked": 11.6775,
+  "contested": 1.055,
+  "planFails": 0,
+  "abilityUses": 18.3125,
+  "energy": 34.21,
+  "decidedRounds": 9.607142857142858
+ },
+ {
+  "label": "S-flank skilled without flank",
+  "budget": {
+   "blue": {
+    "supply": 8,
+    "equipment": 0,
+    "total": 8,
+    "pop": 4
+   },
+   "red": {
+    "supply": 11,
+    "equipment": 0,
+    "total": 11,
+    "pop": 7
+   }
+  },
+  "n": 400,
+  "blue": 0.5025,
+  "red": 0.365,
+  "mutual": 0.005,
+  "none": 0.1275,
+  "blueCI": [
+   0.4537104387832728,
+   0.5512419980137288
+  ],
+  "rounds": 10.705,
+  "surv": {
+   "blue": 1.08,
+   "red": 1.375
+  },
+  "hpLeft": {
+   "blue": 0.1799739583333334,
+   "red": 0.10284722222222217
+  },
+  "dealt": {
+   "blue": 170.49,
+   "red": 158.52
+  },
+  "firstStrike": 1,
+  "flank": 7.77,
+  "strikes": 59.84,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 12.04,
+  "blocked": 16.405,
+  "contested": 1.2975,
+  "planFails": 1,
+  "abilityUses": 24.775,
+  "energy": 30.48,
+  "decidedRounds": 10.223495702005732
+ }
+]

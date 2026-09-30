@@ -22,7 +22,7 @@ import { forecast, weaponOf } from './combat.js';
 import { CARD_LIMITS, UNIT_CARDS, skillCardFor, createCardState, drawOpeningHand, refreshRound, recruitUnit, canDeployReserve, seededRandom, cycleCard } from './cards.js';
 import { advanceAbilityRound, initializeAbilityState, queueSpell, cancelSpell, activatePhase, paidBundleReady, validateAbilitySelection, facingFromPath, FACING, battleMovement, ABILITY_RULES, ABILITIES, resolveQueuedSpells, equipTypeSkill, transferTypeSkill, skillsForUnitType } from './abilities.js';
 import { previewUpgrade, combineUnits } from './upgrades.js';
-import { resolveBattleRound, selectAttackTarget } from './battle.js';
+import { resolveBattleRound, selectAttackTarget, BATTLE_TUNING } from './battle.js';
 import { UNITS, createRecruitUnit, createHeroRespawnData, createGradedRecruitUnit } from './roster.js';
 
 export const SCHEMA = 3;
@@ -33,6 +33,8 @@ export const RULES = Object.freeze({
   reserveHeal: 4,      // HP a benched unit recovers per round
   reserveEnergy: 1,    // extra energy a benched unit gains per round
 });
+// Experiments only (experiments/economy): deployOnKeep false forbids deploying or respawning onto the keep tile itself.
+export const EXPERIMENT_RULES = { deployOnKeep: true };
 export const FACTIONS = ['blue', 'red'];
 // Candidate equipment adds to Str/Def for one battle's forecasts only (no-op unless statuses.equip* is set).
 const withEquip = (u) => (u.statuses?.equipStr || u.statuses?.equipDef ? { ...u, str: u.str + (u.statuses.equipStr || 0), def: u.def + (u.statuses.equipDef || 0) } : u);
@@ -100,7 +102,10 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
     for (const [loc, owner] of territory) {
       if (owner !== f) continue;
       const [c, r] = loc.split(',').map(Number);
-      for (const [dc, dr] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) if (inBounds(c + dc, r + dr)) out.set(`${c + dc},${r + dr}`, [c + dc, r + dr]);
+      for (const [dc, dr] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        if (!EXPERIMENT_RULES.deployOnKeep && 'CK'.includes(terrainAt(c + dc, r + dr) ?? '')) continue;
+        if (inBounds(c + dc, r + dr)) out.set(`${c + dc},${r + dr}`, [c + dc, r + dr]);
+      }
     }
     return [...out.values()];
   }
@@ -560,7 +565,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
   const statsEntry = () => ({ blue: clone(sides.blue.stats), red: clone(sides.red.stats) });
 
   for (const f of FACTIONS) sides[f].cards.population = population(f);
-  emit({ t: 'header', schema: SCHEMA, seed, maxRounds, map: MAP.id, rules: RULES, abilityRules: ABILITY_RULES, abilities: ABILITIES, cardLimits: CARD_LIMITS, ...meta });
+  emit({ t: 'header', schema: SCHEMA, seed, maxRounds, map: MAP.id, rules: RULES, abilityRules: ABILITY_RULES, abilities: ABILITIES, cardLimits: { ...CARD_LIMITS }, ...(BATTLE_TUNING.damageScale !== 1 ? { battleTuning: { ...BATTLE_TUNING } } : {}), ...(EXPERIMENT_RULES.deployOnKeep ? {} : { experimentRules: { ...EXPERIMENT_RULES } }), ...meta });
   emit(summaryEntry(0));
 
   Object.assign(m, {

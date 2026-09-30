@@ -1,6 +1,6 @@
 // Run the combat case-study suites on the shared engine.
 //   node experiments/combat/run.mjs [--suite pikes-v-cav|pike-archer-v-cav|three-v-2star|keep-assault|all]
-//                                   [--seeds 200] [--replay 20] [--out docs/experiments/results] [--evidence docs/experiments/evidence]
+//                                   [--file other-suites.mjs] [--seeds 200] [--replay 20] [--out docs/experiments/results] [--evidence docs/experiments/evidence]
 // Each variant is played for seeds 1..N (the seed drives every die and every movement tie-break; the
 // scenario itself is fixed). Prints one markdown table per suite with the outcome, survivors, duration, the
 // Supply/population each side paid, and the change from the baseline variant. --replay N rebuilds the first N
@@ -8,8 +8,11 @@
 // --evidence writes the seed-1 log of each suite's baseline and any variant flagged `evidence`.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { loadMaps, playScenario, budget, replayScenario } from './scenario.mjs';
-import { SUITES } from './suites.mjs';
+const suitesFile = argv_file();
+const { SUITES } = await import(suitesFile);
+function argv_file() { const a = process.argv.slice(2); const i = a.indexOf('--file'); return i >= 0 ? pathToFileURL(resolve(a[i + 1])).href : new URL('./suites.mjs', import.meta.url).href; }
 
 const argv = process.argv.slice(2);
 const opt = (n, d) => { const i = argv.indexOf(`--${n}`); return i >= 0 ? argv[i + 1] : d; };
@@ -40,6 +43,7 @@ function summarise(results) {
     flank: mean(results.map((r) => r.flankStrikes)), strikes: mean(results.map((r) => r.strikes)),
     spear: mean(results.map((r) => r.spearBonus)), guarded: mean(results.map((r) => r.guarded)),
     moves: mean(results.map((r) => r.moves)), blocked: mean(results.map((r) => r.blocked)), contested: mean(results.map((r) => r.contested)),
+    planFails: mean(results.map((r) => r.planFails)),
     abilityUses: mean(results.map((r) => r.abilityUses)), energy: mean(results.map((r) => r.energySpent)),
     decidedRounds: mean(decided.map((r) => r.rounds)),
   };
@@ -81,10 +85,12 @@ for (const suite of chosen) {
     }
     const s = summarise(results);
     if (!base) base = s;
-    rows.push({ variant, s, blueBudget: budget(variant.def, 'blue'), redBudget: budget(variant.def, 'red'), delta: delta(s, base) });
+    // A variant may compare itself with another by label prefix (`vs`), e.g. ablations against the skilled run.
+    const ref = variant.vs ? rows.find((x) => x.variant.label.startsWith(variant.vs + ' '))?.s : base;
+    rows.push({ variant, s, blueBudget: budget(variant.def, 'blue'), redBudget: budget(variant.def, 'red'), delta: delta(s, ref || base) });
   }
   const lines = [];
-  lines.push(`### ${suite.title}`, '', `_${suite.question}_`, '', `${seeds} seeds per variant. Blue win % has a 95% interval; Δ is the change in Blue win rate from A0 (ns = not significant at 95%).`, '');
+  lines.push(`### ${suite.title}`, '', `_${suite.question}_`, '', `${seeds} seeds per variant. Blue win % has a 95% interval; Δ is the change in Blue win rate from the first variant, or from the variant a row names with vs (ns = not significant at 95%).`, '');
   lines.push('| variant | Supply b / r | pop b / r | Blue win | Red win | mutual | none | rounds | survivors b / r | HP left b / r | Δ Blue win |');
   lines.push('|---|---|---|---|---|---|---|---|---|---|---|');
   for (const { variant, s, blueBudget: bb, redBudget: rb, delta: d } of rows) {
@@ -93,8 +99,8 @@ for (const suite of chosen) {
   }
   lines.push('', '| variant | first strike (round) | strikes / game | flank strikes | ability uses | energy spent | Set Spears bonus hits | bonuses ignored by Set Spears |', '|---|---|---|---|---|---|---|---|');
   for (const { variant, s } of rows) lines.push(`| ${variant.label.split(' ')[0]} | ${f1(s.firstStrike)} | ${f1(s.strikes)} | ${f1(s.flank)} | ${f1(s.abilityUses)} | ${f1(s.energy)} | ${f1(s.spear)} | ${f1(s.guarded)} |`);
-  lines.push('', '| variant | moves / game | blocked holds / game (no legal move) | contested destinations / game |', '|---|---|---|---|');
-  for (const { variant, s } of rows) lines.push(`| ${variant.label.split(' ')[0]} | ${f1(s.moves)} | ${f1(s.blocked)} | ${f1(s.contested)} |`);
+  lines.push('', '| variant | moves / game | blocked holds / game (no legal move) | contested destinations / game | failed plan steps / game |', '|---|---|---|---|---|');
+  for (const { variant, s } of rows) lines.push(`| ${variant.label.split(' ')[0]} | ${f1(s.moves)} | ${f1(s.blocked)} | ${f1(s.contested)} | ${f1(s.planFails)} |`);
   lines.push('');
   report.push({ suite: suite.id, text: lines.join('\n'), data: rows.map((r) => ({ label: r.variant.label, budget: { blue: r.blueBudget, red: r.redBudget }, ...r.s })) });
   console.log(lines.join('\n'));

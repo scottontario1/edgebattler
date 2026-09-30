@@ -10,6 +10,8 @@ import {flankSide, ABILITY_RULES} from './abilities.js';
  * records and immutable-style event data grouped into movement and combat
  * batches. Events are descriptions only and never mutate returned state.
  */
+// Experiments only (experiments/economy): scale all strike damage. 1 in the game; recorded in the log header when not 1.
+export const BATTLE_TUNING = { damageScale: 1 };
 const DIRECTIONS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 const manhattan = (a, b) => Math.abs(a.c - b.c) + Math.abs(a.r - b.r);
 const positionKey = (p) => `${p.c},${p.r}`;
@@ -169,7 +171,9 @@ export function resolveBattleRound({
     const mountedGuard = attacker.cls==='cavalier' && target.statuses?.setSpears>0;
     const spearBonus = target.cls==='cavalier' ? (attacker.statuses?.setSpears||0) : 0;
     const flankBonus = flank && flank!=='front' && !mountedGuard ? ABILITY_RULES.flankDamage : 0;
-    const rawDamage = hit ? Math.max(0,(f.atk.dmg??0)+(mountedGuard?0:(attacker.statuses?.attackBonus||0))+flankBonus+spearBonus)*(crit?3:1) : 0;
+    const scale = BATTLE_TUNING.damageScale;
+    const base = hit ? Math.max(0,(f.atk.dmg??0)+(mountedGuard?0:(attacker.statuses?.attackBonus||0))+flankBonus+spearBonus)*(crit?3:1) : 0;
+    const rawDamage = scale === 1 ? base : Math.round(base * scale);
     const warded = target.statuses?.ward === 'upcoming-battle';
     const mitigatedDamage = warded ? Math.floor(rawDamage / 2) : rawDamage;
     const barrier = target.statuses?.barrier;
