@@ -1,0 +1,442 @@
+[
+ {
+  "label": "N naive: default stances, no picks, no spells",
+  "budget": {
+   "blue": {
+    "supply": 6,
+    "pop": 3
+   },
+   "red": {
+    "supply": 5,
+    "pop": 5
+   }
+  },
+  "n": 400,
+  "blue": 0.21,
+  "red": 0.7575,
+  "mutual": 0.03,
+  "none": 0.0025,
+  "blueCI": [
+   0.17293709734247628,
+   0.2525802342053385
+  ],
+  "rounds": 8.745,
+  "surv": {
+   "blue": 0.425,
+   "red": 1.6675
+  },
+  "hpLeft": {
+   "blue": 0.0400595238095238,
+   "red": 0.19393749999999987
+  },
+  "margin": {
+   "mean": 26.6225,
+   "half": 3.7691034345020293
+  },
+  "first": {
+   "blue": 10.815,
+   "red": 9.72,
+   "round": 1.0075
+  },
+  "strikes": 21.25,
+  "landed": 16.2075,
+  "dmgBlue": 116.4275,
+  "dmgRed": 89.805,
+  "movedShare": 0,
+  "dmgPerHit": 7.175122983016745,
+  "dmgPerHitMoved": null,
+  "dmgPerHitHeld": 7.175122983016745,
+  "abilityUses": 0,
+  "energy": 0,
+  "abilityById": {},
+  "planFails": 0,
+  "tracked": {},
+  "diedShare": {
+   "rp3": {
+    "share": 0.7675,
+    "round": 5.4397394136807815
+   },
+   "bh2": {
+    "share": 0.8575,
+    "round": 7.174927113702624
+   },
+   "rp1": {
+    "share": 0.9075,
+    "round": 5.115702479338843
+   },
+   "rp5": {
+    "share": 0.51,
+    "round": 6.377450980392157
+   },
+   "bh1": {
+    "share": 0.9075,
+    "round": 7.118457300275482
+   },
+   "bh3": {
+    "share": 0.81,
+    "round": 7.185185185185185
+   },
+   "rp4": {
+    "share": 0.5125,
+    "round": 6.7560975609756095
+   },
+   "rp2": {
+    "share": 0.635,
+    "round": 6.149606299212598
+   }
+  }
+ },
+ {
+  "label": "S skilled: Axeguards holding the village with Iron Skin",
+  "budget": {
+   "blue": {
+    "supply": 6,
+    "pop": 3
+   },
+   "red": {
+    "supply": 5,
+    "pop": 5
+   }
+  },
+  "n": 400,
+  "blue": 0.825,
+  "red": 0.135,
+  "mutual": 0.025,
+  "none": 0.015,
+  "blueCI": [
+   0.7847204162241496,
+   0.859096367386058
+  ],
+  "rounds": 10.155,
+  "surv": {
+   "blue": 1.965,
+   "red": 0.245
+  },
+  "hpLeft": {
+   "blue": 0.21285714285714274,
+   "red": 0.025374999999999995
+  },
+  "margin": {
+   "mean": 79.215,
+   "half": 2.977730886950665
+  },
+  "first": {
+   "blue": 10.815,
+   "red": 5.0025,
+   "round": 1.0075
+  },
+  "strikes": 27.03,
+  "landed": 20.765,
+  "dmgBlue": 149.205,
+  "dmgRed": 69.99,
+  "movedShare": 0,
+  "dmgPerHit": 7.1902143639926,
+  "dmgPerHitMoved": null,
+  "dmgPerHitHeld": 7.1902143639926,
+  "abilityUses": 14.9225,
+  "energy": 14.9225,
+  "abilityById": {
+   "ironSkin": 14.922499999999948
+  },
+  "planFails": 0,
+  "tracked": {},
+  "diedShare": {
+   "rp3": {
+    "share": 0.9875,
+    "round": 6.159493670886076
+   },
+   "rp1": {
+    "share": 0.9975,
+    "round": 5.265664160401003
+   },
+   "rp5": {
+    "share": 0.9,
+    "round": 7.372222222222222
+   },
+   "rp4": {
+    "share": 0.915,
+    "round": 7.601092896174864
+   },
+   "bh1": {
+    "share": 0.52,
+    "round": 8.860576923076923
+   },
+   "rp2": {
+    "share": 0.955,
+    "round": 7.217277486910994
+   },
+   "bh3": {
+    "share": 0.275,
+    "round": 8.409090909090908
+   },
+   "bh2": {
+    "share": 0.24,
+    "round": 9.729166666666666
+   }
+  }
+ },
+ {
+  "label": "B baseline: plain Pikemen on Hold with Rally and Brace",
+  "budget": {
+   "blue": {
+    "supply": 3,
+    "pop": 3
+   },
+   "red": {
+    "supply": 5,
+    "pop": 5
+   }
+  },
+  "n": 400,
+  "blue": 0.9675,
+  "red": 0.03,
+  "mutual": 0,
+  "none": 0.0025,
+  "blueCI": [
+   0.9451953401262605,
+   0.9809103409130382
+  ],
+  "rounds": 9.8675,
+  "surv": {
+   "blue": 2.86,
+   "red": 0.08
+  },
+  "hpLeft": {
+   "blue": 0.8678819444444416,
+   "red": 0.010895833333333334
+  },
+  "margin": {
+   "mean": 76.765,
+   "half": 2.6857896788654174
+  },
+  "first": {
+   "blue": 10.815,
+   "red": 11.27,
+   "round": 1.0075
+  },
+  "strikes": 27.95,
+  "landed": 21.485,
+  "dmgBlue": 154.35,
+  "dmgRed": 77.585,
+  "movedShare": 0,
+  "dmgPerHit": 7.191051663172831,
+  "dmgPerHitMoved": null,
+  "dmgPerHitHeld": 7.191051663172831,
+  "abilityUses": 29.1925,
+  "energy": 27.71,
+  "abilityById": {
+   "rally": 15.33749999999992,
+   "brace": 13.854999999999919
+  },
+  "planFails": 0,
+  "tracked": {},
+  "diedShare": {
+   "rp3": {
+    "share": 0.9925,
+    "round": 6.181360201511335
+   },
+   "rp1": {
+    "share": 0.9975,
+    "round": 5.280701754385965
+   },
+   "rp5": {
+    "share": 0.97,
+    "round": 7.518041237113402
+   },
+   "rp4": {
+    "share": 0.975,
+    "round": 7.682051282051282
+   },
+   "rp2": {
+    "share": 0.985,
+    "round": 7.228426395939087
+   },
+   "bh3": {
+    "share": 0.045,
+    "round": 6.611111111111111
+   },
+   "bh1": {
+    "share": 0.06,
+    "round": 7.333333333333333
+   },
+   "bh2": {
+    "share": 0.035,
+    "round": 5.5
+   }
+  }
+ },
+ {
+  "label": "B0 baseline: plain Pikemen on Hold, no picks",
+  "budget": {
+   "blue": {
+    "supply": 3,
+    "pop": 3
+   },
+   "red": {
+    "supply": 5,
+    "pop": 5
+   }
+  },
+  "n": 400,
+  "blue": 0.03,
+  "red": 0.97,
+  "mutual": 0,
+  "none": 0,
+  "blueCI": [
+   0.017242849034032177,
+   0.05169903312966765
+  ],
+  "rounds": 6.6275,
+  "surv": {
+   "blue": 0.05,
+   "red": 2.975
+  },
+  "hpLeft": {
+   "blue": 0.004027777777777778,
+   "red": 0.3803333333333328
+  },
+  "margin": {
+   "mean": -5.6175,
+   "half": 2.615225425231065
+  },
+  "first": {
+   "blue": 10.815,
+   "red": 11.34,
+   "round": 1.0075
+  },
+  "strikes": 15.6175,
+  "landed": 11.865,
+  "dmgBlue": 84.84,
+  "dmgRed": 90.4575,
+  "movedShare": 0,
+  "dmgPerHit": 7.138562683425106,
+  "dmgPerHitMoved": null,
+  "dmgPerHitHeld": 7.138562683425106,
+  "abilityUses": 0,
+  "energy": 0,
+  "abilityById": {},
+  "planFails": 0,
+  "tracked": {},
+  "diedShare": {
+   "rp3": {
+    "share": 0.5375,
+    "round": 4.846511627906977
+   },
+   "bh2": {
+    "share": 0.9825,
+    "round": 5.264631043256998
+   },
+   "bh1": {
+    "share": 0.9925,
+    "round": 5.758186397984887
+   },
+   "rp5": {
+    "share": 0.175,
+    "round": 5.557142857142857
+   },
+   "bh3": {
+    "share": 0.975,
+    "round": 5.466666666666667
+   },
+   "rp1": {
+    "share": 0.745,
+    "round": 4.825503355704698
+   },
+   "rp4": {
+    "share": 0.195,
+    "round": 5.743589743589744
+   },
+   "rp2": {
+    "share": 0.3725,
+    "round": 4.557046979865772
+   }
+  }
+ },
+ {
+  "label": "R Reavers on Hold (the same holding job, cheaper unit)",
+  "budget": {
+   "blue": {
+    "supply": 3,
+    "pop": 3
+   },
+   "red": {
+    "supply": 5,
+    "pop": 5
+   }
+  },
+  "n": 400,
+  "blue": 0.03,
+  "red": 0.965,
+  "mutual": 0.005,
+  "none": 0,
+  "blueCI": [
+   0.017242849034032177,
+   0.05169903312966765
+  ],
+  "rounds": 5.2625,
+  "surv": {
+   "blue": 0.0625,
+   "red": 2.925
+  },
+  "hpLeft": {
+   "blue": 0.007083333333333334,
+   "red": 0.4136666666666667
+  },
+  "margin": {
+   "mean": -15.65,
+   "half": 2.576128108227538
+  },
+  "first": {
+   "blue": 12.36,
+   "red": 14.58,
+   "round": 1.0075
+  },
+  "strikes": 11.7,
+  "landed": 8.8975,
+  "dmgBlue": 72.82,
+  "dmgRed": 88.47,
+  "movedShare": 0,
+  "dmgPerHit": 8.155886629710158,
+  "dmgPerHitMoved": null,
+  "dmgPerHitHeld": 8.155886629710158,
+  "abilityUses": 0,
+  "energy": 0,
+  "abilityById": {},
+  "planFails": 0,
+  "tracked": {},
+  "diedShare": {
+   "rp3": {
+    "share": 0.565,
+    "round": 3.646017699115044
+   },
+   "bh2": {
+    "share": 0.975,
+    "round": 3.9153846153846152
+   },
+   "rp1": {
+    "share": 0.78,
+    "round": 3.5801282051282053
+   },
+   "rp5": {
+    "share": 0.1725,
+    "round": 4.666666666666667
+   },
+   "bh1": {
+    "share": 0.99,
+    "round": 4.558080808080808
+   },
+   "bh3": {
+    "share": 0.9725,
+    "round": 4.10025706940874
+   },
+   "rp2": {
+    "share": 0.3925,
+    "round": 3.8853503184713376
+   },
+   "rp4": {
+    "share": 0.165,
+    "round": 4.909090909090909
+   }
+  }
+ }
+]
