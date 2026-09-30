@@ -12,6 +12,21 @@ Items are graded against what the engine already does:
 - **Fixed facts:** energy max 4, +1 per round (+1 on the bench); Rally, Brace, Focused Shot, Charge, Second Wind are the shipped kits; champions (Brenna, Dreg) have no kit; all cards are common (no rarity rates exist); combining needs the same class, faction and stars; new classes wait until the three recruit classes support a complete match. So faction units are **variants of Pikeman, Archer or Cavalier** (a template plus one passive) until Scott says otherwise. Rarity below is a proposed power label only.
 - **Spec unit:** a unit entry = base class + stat delta + at most one passive + kit. A skill = a planning-selected ability. A spell = a one-shot card.
 
+## 1b. Decisions recorded 2026-09-30 (answers from Scott)
+
+These supersede the matching proposals and rejections below. Where a section still says otherwise, this section wins.
+
+| topic | decision | effect on this spec |
+|---|---|---|
+| Rarity | A **simple time gate**: rarer cards become more likely after a few turns. Chosen form: **round steps** (common from round 1, uncommon drawable from round 3, rare from round 6; both numbers tunable). No draw rates beyond that. | New shared hook (below). Rarity is now a gameplay gate, not just a label. |
+| Unit classes | **New classes** are approved (Bannerman, Relic Walker, Necromancer, Wight, etc.), not only variants. New classes borrow a base sprite with a faction tint and a name label until art is supplied (no new binary assets). | The Tier C rejection of new classes is lifted. Variants remain fine where a class is not needed. |
+| Tile objects | **Implement**, simply: a tile object occupies a tile, has 10 HP and no healing, blocks **enemy** movement, is attackable when it blocks the path, and friends walk through. Corpses use the same object with no blocking and a 3-round decay. "Wacky is fine": a 10 HP sprite is acceptable. | League barricades (Dig In) and Court Corpses move from deferred to in scope. |
+| Champions | **Both** Brenna and Dreg get active kits (Blood Challenge for Dreg), and the League and Hollow Court get champions too; agents propose a champion and kit for each for Scott to choose. | New shared hook (champion kits). |
+| Blood Challenge | **Mark plus penalty on other targets** (+4 damage against the mark, -4 against anything else); not a hard lock. | As specified in section 5. |
+| Argent Crown | **Simple Line Doctrine** first (+1 Defense per adjacent friendly infantry, up to +2). | As specified in section 4. |
+| Iron League | **Garrison Doctrine is removed.** Ancient tech is **flavour only**, not setting canon. | Section 6 faction rule dropped. |
+| Pools | **One faction per side.** Neutral cards may be added later. | `pools` hook is enough; shared spells (Mend, Ward, Fireburst) stay in each pool. |
+
 ## 2. Shared engine hooks
 
 **Built and verified 2026-09-30; see [docs/CULTURE_HOOKS.md](docs/CULTURE_HOOKS.md).** In code a faction is a *culture* (the engine's `faction` already means the side). Sub-agents on separate branches would conflict if each added these themselves, so the root built them first. The table records what each hook is for:
@@ -27,6 +42,16 @@ Items are graded against what the engine already does:
 | Marked target (`markTargetId`; no planning action yet) | White Fang | `src/match.js` |
 
 Recorded in the log header like `experimentRules`, so replays reconstruct them.
+### Additional hooks required by the 2026-09-30 decisions (not built yet)
+
+| hook | needed by | change |
+|---|---|---|
+| Rarity time gate: a card is drawable only from its rarity's unlock round (default off; uncommon round 3, rare round 6) | all | `src/cards.js` `drawCards` / `previewCycle`, `src/match.js` (round passed in), header records the gate |
+| New class registration: a culture registers a class template (stats, weapon, movement type, kit, sprite fallback and tint) beyond `pikeman`/`archer`/`cavalier` | all | `src/roster.js`, `src/cards.js`, `src/rules.js` (`MOVE_TYPE`), `src/sprites.js`, `src/models.js` |
+| Tile objects: `{ id, owner, c, r, hp, blocks, decay }`; blocks enemy movement, attackable when it blocks the path, decays; in the log and summaries | League, Court | `src/match.js`, `src/battle.js`, `src/rules.js`, `src/log.js`, UI overlay |
+| Champion kits: an ability kit keyed by champion id (Brenna, Dreg, plus new champions) instead of by class | Crown, White Fang, League, Court | `src/abilities.js`, `src/match.js` |
+| Mark action: a planning action that sets `markTargetId` (Blood Challenge) | White Fang | `src/match.js`, `src/ui.js`, AI commander |
+
 
 ## 3. Playstyle matrix
 
@@ -144,7 +169,7 @@ Recorded in the log header like `experimentRules`, so replays reconstruct them.
 | uncommon | Prepared Position | Crossbowman, Archer | 1 / 2 | enhancement | Requires Hold. Gain Prepared Shot now; the shot gains +2 more damage. If the unit moved this round, this does nothing. | A |
 | rare | Arc Burst | Relic Guard | 3 / 3 | enhancement | Requires Hold. One ranged strike (range 2) that ignores 3 Defense. **Overheat:** the unit cannot select it the next round (cooldown extended by 1) and takes 3 damage. | B |
 
-**Faction rule (proposal): Garrison Doctrine.** Pikemen standing on an owned keep or village start the battle with Brace applied for free. Tier B (`onControlled`). Flagged: interacts with the deployment-radius experiments (village control decides where the League fights) and could be strong.
+**Garrison Doctrine (free Brace on controlled tiles): removed by Scott, 2026-09-30.** The `onControlled` hook stays available for other uses.
 
 **Spells (mediocre by design)**
 
@@ -216,13 +241,12 @@ Proposed contract (each faction on its own branch, e.g. `faction/argent-crown`, 
 
 ## 9. Open questions
 
-1. Rarity: real system (rates, limits) or only a power label? No rates are confirmed.
-2. Faction units as variants of Pikeman / Archer / Cavalier for now, or approve new classes?
-3. One faction per player for a whole match with faction-only pools, or mixed pools?
-4. Do champions get kits (Brenna and Dreg have none; Blood Challenge needs one)?
-5. **Tile-object system (League barricades, Hollow Court Corpses):** worth building once, or drop both?
-6. Crown: adjacent-infantry Line Doctrine acceptable as the first version?
-7. White Fang: is a penalty on other targets acceptable for Blood Challenge, or only a mark and a bonus?
-8. Iron League: Garrison Doctrine (free Brace on controlled tiles) as a faction rule, or too strong?
-9. Iron League: does ancient technology fit the setting, or is it flavour only?
-10. Hollow Court: one Revenant per match and per unit only, or a wider return system later? Champion?
+Answered on 2026-09-30 (see section 1b): rarity, new classes, tile objects, champion kits, Blood Challenge, Crown Line Doctrine, Garrison Doctrine, pool mixing, League/Court champions, ancient-tech lore. Still open:
+
+1. Iron League: deterministic **Overheat** instead of random Malfunction (assumed; say if you want a random chance back).
+2. Is the League's **Sapper** a class (now allowed) or a skill any League unit carries?
+3. Hollow Court: **Revenant** on Mourning Knights only (proposed), or on any 2★+ Court unit?
+4. Champions for the League and the Hollow Court: agents propose options; pick from them.
+5. Timing of Corpse decay (3 rounds proposed) and whether Corpses can be occupied for capture.
+6. The time-gate numbers (uncommon round 3, rare round 6) are proposals to tune by simulation.
+7. Neutral cards later: shared spells only for now (Mend, Ward, Fireburst).
