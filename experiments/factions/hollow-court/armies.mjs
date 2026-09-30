@@ -11,19 +11,26 @@ import { buildHollowCourt, courtRoster, DEFAULT_CHAMPION } from '../../../src/fa
 import { courtCommander } from './commander.mjs';
 
 export const DEATH_OFF = { corpses: false, revenant: false, consume: false, corpsePassives: false };
+// Court builds by key (buildHollowCourt options); one build per worker process.
+export const BUILDS = { full: {}, off: DEATH_OFF, noRevenant: { revenant: false }, noPassives: { corpsePassives: false }, noConsume: { consume: false }, noCorpses: { corpses: false } };
 export const ARMIES = {
-  base: { label: 'Baseline (shipped classes)', culture: null, policy: 'heuristic' },
-  court: { label: 'Court', culture: () => buildHollowCourt(), policy: 'court' },
-  courtOff: { label: 'Court without death mechanics', culture: () => buildHollowCourt(DEATH_OFF), policy: 'court' },
-  courtPlain: { label: 'Court under the shipped heuristic', culture: () => buildHollowCourt(), policy: 'heuristic' },
+  base: { label: 'Baseline (shipped classes)', build: null, policy: 'heuristic' },
+  court: { label: 'Court', build: 'full', policy: 'court' },
+  courtOff: { label: 'Court without death mechanics', build: 'off', policy: 'court' },
+  courtPlain: { label: 'Court under the shipped heuristic', build: 'full', policy: 'heuristic' },
+  courtOffPlain: { label: 'Court without death mechanics, shipped heuristic', build: 'off', policy: 'heuristic' },
+  // single-mechanic ablations under the shipped heuristic (which never selects Court skills, so consume is inert there)
+  courtNoRevPlain: { label: 'Court without Revenant, shipped heuristic', build: 'noRevenant', policy: 'heuristic' },
+  courtNoPassPlain: { label: 'Court without corpse-reading passives, shipped heuristic', build: 'noPassives', policy: 'heuristic' },
+  courtNoCorpsePlain: { label: 'Court without corpses, shipped heuristic', build: 'noCorpses', policy: 'heuristic' },
 };
 
 /** Register the (single) culture the two armies need; throws if they need two different Court builds. */
 export function setupCulture(armyKeys) {
   resetCultures();
-  const wanted = [...new Set(armyKeys.map((k) => ARMIES[k].culture && k === 'courtOff' ? 'off' : ARMIES[k].culture ? 'full' : null).filter(Boolean))];
+  const wanted = [...new Set(armyKeys.map((k) => ARMIES[k].build).filter(Boolean))];
   if (wanted.length > 1) throw new Error('one Court build per process');
-  if (wanted.length) registerCulture(wanted[0] === 'off' ? buildHollowCourt(DEATH_OFF) : buildHollowCourt());
+  if (wanted.length) registerCulture(buildHollowCourt(BUILDS[wanted[0]]));
 }
 
 /** createMatch options for one game: sides = { blue: armyKey, red: armyKey }. Culture must already be registered. */
@@ -31,7 +38,7 @@ export function matchOptions(sides, champion = DEFAULT_CHAMPION) {
   let roster = UNITS;
   const champions = {}, pools = {};
   for (const f of ['blue', 'red']) {
-    if (!ARMIES[sides[f]].culture) continue;
+    if (!ARMIES[sides[f]].build) continue;
     roster = courtRoster(roster, f, createRecruitUnit, createChampionUnit, champion);
     champions[f] = champion;
     pools[f] = culturePool('court');
