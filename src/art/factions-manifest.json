@@ -1,0 +1,851 @@
+{
+  "schemaVersion": 1,
+  "units": {
+    "crownPike": {
+      "file": "sprites/factions/crownPike.png",
+      "portrait": "sprites/factions/crownPike-portrait.png",
+      "portraitCrop": [
+        0.3299492385786802,
+        0.1330827067669173,
+        0.862098138747885,
+        0.606015037593985
+      ],
+      "source": "design_assets/factions/argent_crown/pikeman_sprite.png",
+      "sourceSize": [
+        1182,
+        1330
+      ],
+      "cropBox": [
+        279,
+        132,
+        1130,
+        1205
+      ],
+      "size": [
+        277,
+        346
+      ],
+      "height": 1.112130177514793,
+      "visibleHeight": 334,
+      "anchor": [
+        0.49885181466686607,
+        0.9798200909806069
+      ],
+      "footWidth": 0.24644970414201184,
+      "headTop": 1.05,
+      "scaleClass": "human",
+      "alpha": "source cutout; preserved RGBA transparency; no hue shift"
+    },
+    "crownGuard": {
+      "file": "sprites/factions/crownGuard.png",
+      "portrait": "sprites/factions/crownGuard-portrait.png",
+      "portraitCrop": [
+        0.2673434856175973,
+        0.14511278195488722,
+        0.7766497461928934,
+        0.5977443609022557
+      ],
+      "source": "design_assets/factions/argent_crown/infantry.png",
+      "sourceSize": [
+        1182,
+        1330
+      ],
+      "cropBox": [
+        304,
+        284,
+        931,
+        1178
+      ],
+      "size": [
+        216,
+        302
+      ],
+      "height": 0.967816683831102,
+      "visibleHeight": 290,
+      "anchor": [
+        0.4986196933287562,
+        0.9780522571800767
+      ],
+      "footWidth": 0.19031925849639547,
+      "headTop": 1.05,
+      "scaleClass": "human",
+      "alpha": "source cutout; preserved RGBA transparency; no hue shift"
+    },
+    "oathsworn": {
+      "file": "sprites/factions/oathsworn.png",
+      "portrait": "sprites/factions/oathsworn-portrait.png",
+      "portraitCrop": [
+        0.2673434856175973,
+        0.1443609022556391,
+        0.799492385786802,
+        0.6172932330827068
+      ],
+      "source": "design_assets/factions/argent_crown/heavy infantry.png",
+      "sourceSize": [
+        1182,
+        1330
+      ],
+      "cropBox": [
+        229,
+        221,
+        1032,
+        1221
+      ],
+      "size": [
+        262,
+        323
+      ],
+      "height": 1.0365384615384616,
+      "visibleHeight": 311,
+      "anchor": [
+        0.4989554632097204,
+        0.978419770274974
+      ],
+      "footWidth": 0.2319526627218935,
+      "headTop": 1.05,
+      "scaleClass": "human",
+      "alpha": "source cutout; preserved RGBA transparency; no hue shift"
+    },
+    "crownArcher": {
+      "file": "sprites/factions/crownArcher.png",
+      "portrait": "sprites/factions/crownArcher-portrait.png",
+      "portraitCrop": [
+        0.28510998307952623,
+        0.1330827067669173,
+        0.8147208121827412,
+        0.6037593984962406
+      ],
+      "source": "design_assets/factions/argent_crown/archer_sprite.png",
+      "sourceSize": [
+        1182,
+        1330
+      ],
+      "cropBox": [
+        176,
+        257,
+        1124,
+        1199
+      ],
+      "size": [
+        308,
+        306
+      ],
+      "height": 0.9813181367690783,
+      "visibleHeight": 294,
+      "anchor": [
+        0.499929208551607,
+        0.9806642181153928
+      ],
+      "footWidth": 0.2757680872150644,
+      "headTop": 1.05,
+      "scaleClass": "human",
+      "alpha": "source cutout; preserved RGBA transparency; no hue shift"
+    },
+    "crownCavalier": {
+      "file": "sprites/factions/crownCavalier.png",
+      "portrait": "sprites/factions/crownCavalier-portrait.png",
+      "portraitCrop": [
+        0.3011844331641286,
+        0.16015037593984963,
+        0.8045685279187818,
+        0.6075187969924812
+      ],
+      "source": "design_assets/factions/argent_crown/cavalier_sprite.png",
+      "sourceSize": [
+        1182,
+        1330
+      ],
+      "cropBox": [
+        165,
+        228,
+        1141,
+        1184
+      ],
+      "size": [
+        434,
+        425
+      ],
+      "height": 1.3771220020855057,
+      "visibleHeight": 413,
+      "anchor": [
+        0.4992383579285258,
+        0.9851880022081826
+      ],
+      "footWidth": 0.3928467153284671,
+      "headTop": 1.38,
+      "scaleClass": "mounted",
+      "alpha": "source cutout; preserved RGBA transparency; no hue shift"
+    },
+    "fangReaver": {
+      "file": "sprites/factions/fangReaver.png",
+      "portrait": "sprites/factions/fangReaver-portrait.png",
+      "portraitCrop": [
+        0.24020016680567138,
+        0.13490853658536586,
+        0.7756463719766472,
+        0.6242378048780488
+      ],
+      "source": "design_assets/factions/white_fang/reaver_sprite.png",
+      "sourceSize": [
+        1199,
+        1312
+      ],
+      "cropBox": [
+        32,
+        98,
+        1185,
+        1227
+      ],
+      "size": [
+        363,
+        356
+      ],
+      "height": 1.146376811594203,
+      "visibleHeight": 344,
+      "anchor": [
+        0.49988022517666786,
+        0.9803370786516854
+      ],
+      "footWidth": 0.32666666666666666,
+      "headTop": 1.05,
+      "scaleClass": "human",
+      "alpha": "source cutout; preserved RGBA transparency; no hue shift"
+    },
+    "fangAxeguard": {
+      "file": "sprites/factions/fangAxeguard.png",
+      "portrait": "sprites/factions/fangAxeguard-portrait.png",
+      "portraitCrop": [
+        0.2553017944535073,
+        0.1387373343725643,
+        0.7487765089722676,
+        0.6102883865939205
+      ],
+      "source": "design_assets/factions/white_fang/axeguard_sprite.png",
+      "sourceSize": [
+        1226,
+        1283
+      ],
+      "cropBox": [
+        20,
+        180,
+        1211,
+        1167
+      ],
+      "size": [
+        397,
+        331
+      ],
+      "height": 1.0629098360655738,
+      "visibleHeight": 319,
+      "anchor": [
+        0.499232202584961,
+        0.9795391511069288
+      ],
+      "footWidth": 0.3593237704918033,
+      "headTop": 1.05,
+      "scaleClass": "human",
+      "alpha": "source cutout; preserved RGBA transparency; no hue shift"
+    },
+    "fangBerserker": {
+      "file": "sprites/factions/fangBerserker.png",
+      "portrait": "sprites/factions/fangBerserker-portrait.png",
+      "portraitCrop": [
+        0.28791565287915655,
+        0.1388235294117647,
+        0.8142741281427412,
+        0.647843137254902
+      ],
+      "source": "design_assets/factions/white_fang/berserker_sprite.png",
+      "sourceSize": [
+        1233,
+        1275
+      ],
+      "cropBox": [
+        145,
+        54,
+        1214,
+        1239
+      ],
+      "size": [
+        334,
+        369
+      ],
+      "height": 1.1905353728489485,
+      "visibleHeight": 357,
+      "anchor": [
+        0.49988979975040354,
+        0.9809106312860452
+      ],
+      "footWidth": 0.3011472275334608,
+      "headTop": 1.05,
+      "scaleClass": "human",
+      "alpha": "source cutout; preserved RGBA transparency; no hue shift"
+    },
+    "fangHunter": {
+      "file": "sprites/factions/fangHunter.png",
+      "portrait": "sprites/factions/fangHunter-portrait.png",
+      "portraitCrop": [
+        0.3017312448474856,
+        0.13580246913580246,
+        0.8606760098928277,
+        0.6589506172839507
+      ],
+      "source": "design_assets/factions/white_fang/fang_hunter_sprite.png",
+      "sourceSize": [
+        1213,
+        1296
+      ],
+      "cropBox": [
+        230,
+        5,
+        1179,
+        1284
+      ],
+      "size": [
+        286,
+        381
+      ],
+      "height": 1.2296431838975297,
+      "visibleHeight": 369,
+      "anchor": [
+        0.4991250743766754,
+        0.9824581625375509
+      ],
+      "footWidth": 0.2555352241537054,
+      "headTop": 1.05,
+      "scaleClass": "human",
+      "alpha": "source cutout; preserved RGBA transparency; no hue shift"
+    },
+    "pavise": {
+      "file": "sprites/factions/pavise.png",
+      "portrait": "sprites/factions/pavise-portrait.png",
+      "portraitCrop": [
+        0.24217462932454695,
+        0.14826254826254825,
+        0.771828665568369,
+        0.6447876447876448
+      ],
+      "source": "design_assets/factions/iron_throne/Pavise Guard.png",
+      "sourceSize": [
+        1214,
+        1295
+      ],
+      "cropBox": [
+        69,
+        19,
+        1162,
+        1243
+      ],
+      "size": [
+        344,
+        384
+      ],
+      "height": 1.2403567984570878,
+      "visibleHeight": 372,
+      "anchor": [
+        0.5000154179094437,
+        0.9830716610414658
+      ],
+      "footWidth": 0.3098360655737705,
+      "headTop": 1.05,
+      "scaleClass": "human",
+      "alpha": "source cutout; preserved RGBA transparency; no hue shift"
+    },
+    "coil": {
+      "file": "sprites/factions/coil.png",
+      "portrait": "sprites/factions/coil-portrait.png",
+      "portraitCrop": [
+        0.2552845528455285,
+        0.1541471048513302,
+        0.7861788617886178,
+        0.6651017214397497
+      ],
+      "source": "design_assets/factions/iron_throne/Coil Crossbow.png",
+      "sourceSize": [
+        1230,
+        1278
+      ],
+      "cropBox": [
+        56,
+        6,
+        1226,
+        1264
+      ],
+      "size": [
+        362,
+        389
+      ],
+      "height": 1.2554131054131055,
+      "visibleHeight": 377,
+      "anchor": [
+        0.5000000000000001,
+        0.9820710566211853
+      ],
+      "footWidth": 0.3260683760683761,
+      "headTop": 1.05,
+      "scaleClass": "human",
+      "alpha": "source cutout; preserved RGBA transparency; no hue shift"
+    },
+    "sapper": {
+      "file": "sprites/factions/sapper.png",
+      "portrait": "sprites/factions/sapper-portrait.png",
+      "portraitCrop": [
+        0.29573170731707316,
+        0.1651376146788991,
+        0.7545731707317073,
+        0.6672226855713094
+      ],
+      "source": "design_assets/factions/iron_throne/Sapper.png",
+      "sourceSize": [
+        1312,
+        1199
+      ],
+      "cropBox": [
+        226,
+        6,
+        1153,
+        1181
+      ],
+      "size": [
+        313,
+        394
+      ],
+      "height": 1.27167868177137,
+      "visibleHeight": 382,
+      "anchor": [
+        0.4995623891577802,
+        0.9826883165087017
+      ],
+      "footWidth": 0.28115345005149334,
+      "headTop": 1.05,
+      "scaleClass": "human",
+      "alpha": "source cutout; preserved RGBA transparency; no hue shift"
+    },
+    "relicWalker": {
+      "file": "sprites/factions/relicWalker.png",
+      "portrait": "sprites/factions/relicWalker-portrait.png",
+      "portraitCrop": [
+        0.2016260162601626,
+        0.10015649452269171,
+        0.7991869918699187,
+        0.6752738654147105
+      ],
+      "source": "design_assets/factions/iron_throne/Relic Walker.png",
+      "sourceSize": [
+        1230,
+        1278
+      ],
+      "cropBox": [
+        27,
+        48,
+        1205,
+        1235
+      ],
+      "size": [
+        503,
+        507
+      ],
+      "height": 1.65,
+      "visibleHeight": 495,
+      "anchor": [
+        0.49983432736911865,
+        0.9865220249835635
+      ],
+      "footWidth": 0.45694444444444443,
+      "headTop": null,
+      "scaleClass": "large",
+      "alpha": "source cutout; preserved RGBA transparency; no hue shift"
+    },
+    "feralGhoul": {
+      "file": "sprites/factions/feralGhoul.png",
+      "portrait": "sprites/factions/feralGhoul-portrait.png",
+      "portraitCrop": [
+        0.28341793570219964,
+        0.13383458646616542,
+        0.8087986463620981,
+        0.6007518796992481
+      ],
+      "source": "design_assets/factions/hollow_court/feral_ghoul_sprite.png",
+      "sourceSize": [
+        1182,
+        1330
+      ],
+      "cropBox": [
+        256,
+        259,
+        1035,
+        1193
+      ],
+      "size": [
+        257,
+        306
+      ],
+      "height": 0.9807692307692308,
+      "visibleHeight": 294,
+      "anchor": [
+        0.5002721014394167,
+        0.9780611545317427
+      ],
+      "footWidth": 0.2286713286713287,
+      "headTop": 1.05,
+      "scaleClass": "human",
+      "alpha": "source cutout; preserved RGBA transparency; no hue shift"
+    },
+    "necromancer": {
+      "file": "sprites/factions/necromancer.png",
+      "portrait": "sprites/factions/necromancer-portrait.png",
+      "portraitCrop": [
+        0.2155887230514096,
+        0.14340490797546013,
+        0.7694859038142621,
+        0.6556748466257669
+      ],
+      "source": "design_assets/factions/hollow_court/necromancer_sprite.png",
+      "sourceSize": [
+        1206,
+        1304
+      ],
+      "cropBox": [
+        242,
+        24,
+        945,
+        1279
+      ],
+      "size": [
+        218,
+        379
+      ],
+      "height": 1.2233766233766235,
+      "visibleHeight": 367,
+      "anchor": [
+        0.4986744906469678,
+        0.9826611383339617
+      ],
+      "footWidth": 0.19090909090909094,
+      "headTop": 1.05,
+      "scaleClass": "human",
+      "alpha": "source cutout; preserved RGBA transparency; no hue shift"
+    },
+    "mourningKnight": {
+      "file": "sprites/factions/mourningKnight.png",
+      "portrait": "sprites/factions/mourningKnight-portrait.png",
+      "portraitCrop": [
+        0.28341793570219964,
+        0.16015037593984963,
+        0.8096446700507615,
+        0.6278195488721805
+      ],
+      "source": "design_assets/factions/hollow_court/mourning_knight_sprite.png",
+      "sourceSize": [
+        1182,
+        1330
+      ],
+      "cropBox": [
+        129,
+        222,
+        1163,
+        1230
+      ],
+      "size": [
+        439,
+        428
+      ],
+      "height": 1.3868725099601593,
+      "visibleHeight": 416,
+      "anchor": [
+        0.4992830500322173,
+        0.984198719142123
+      ],
+      "footWidth": 0.39723107569721117,
+      "headTop": 1.38,
+      "scaleClass": "mounted",
+      "alpha": "source cutout; preserved RGBA transparency; no hue shift"
+    },
+    "corpsehound": {
+      "file": "sprites/factions/corpsehound.png",
+      "portrait": "sprites/factions/corpsehound-portrait.png",
+      "portraitCrop": [
+        0.6477864583333334,
+        0.298828125,
+        0.9296875,
+        0.7216796875
+      ],
+      "source": "design_assets/factions/hollow_court/corpsehound.png",
+      "sourceSize": [
+        1536,
+        1024
+      ],
+      "cropBox": [
+        31,
+        173,
+        1471,
+        873
+      ],
+      "size": [
+        703,
+        348
+      ],
+      "height": 1.12,
+      "visibleHeight": 336,
+      "anchor": [
+        0.4994409530786136,
+        0.9800039352648926
+      ],
+      "footWidth": 0.6438801711840229,
+      "headTop": null,
+      "scaleClass": "large",
+      "alpha": "source cutout; preserved RGBA transparency; no hue shift"
+    },
+    "monsterRat": {
+      "file": "sprites/factions/monsterRat.png",
+      "portrait": "sprites/factions/monsterRat-portrait.png",
+      "portraitCrop": [
+        0.6536458333333334,
+        0.271484375,
+        0.9772135416666666,
+        0.7568359375
+      ],
+      "source": "design_assets/factions/monsters/Rat.png",
+      "sourceSize": [
+        1536,
+        1024
+      ],
+      "cropBox": [
+        22,
+        125,
+        1523,
+        927
+      ],
+      "size": [
+        248,
+        138
+      ],
+      "height": 0.42,
+      "visibleHeight": 126,
+      "anchor": [
+        0.4990408950307315,
+        0.9542476582381287
+      ],
+      "footWidth": 0.21967621419676214,
+      "headTop": null,
+      "scaleClass": "large",
+      "alpha": "source cutout; preserved RGBA transparency; no hue shift"
+    },
+    "monsterSpider": {
+      "file": "sprites/factions/monsterSpider.png",
+      "portrait": "sprites/factions/monsterSpider-portrait.png",
+      "portraitCrop": [
+        0.3092447916666667,
+        0.07421875,
+        0.7037760416666666,
+        0.666015625
+      ],
+      "source": "design_assets/factions/monsters/Spider.png",
+      "sourceSize": [
+        1536,
+        1024
+      ],
+      "cropBox": [
+        50,
+        10,
+        1506,
+        988
+      ],
+      "size": [
+        271,
+        186
+      ],
+      "height": 0.58,
+      "visibleHeight": 174,
+      "anchor": [
+        0.49959104289715,
+        0.9658308346238755
+      ],
+      "footWidth": 0.24112359550561796,
+      "headTop": null,
+      "scaleClass": "large",
+      "alpha": "source cutout; preserved RGBA transparency; no hue shift"
+    },
+    "monsterHyenaGoblin": {
+      "file": "sprites/factions/monsterHyenaGoblin.png",
+      "portrait": "sprites/factions/monsterHyenaGoblin-portrait.png",
+      "portraitCrop": [
+        0.5058184639255237,
+        0.21703521703521703,
+        1.0783553141970519,
+        0.8214578214578214
+      ],
+      "source": "design_assets/factions/monsters/Hyena Goblin.png",
+      "sourceSize": [
+        1289,
+        1221
+      ],
+      "cropBox": [
+        17,
+        14,
+        1272,
+        1206
+      ],
+      "size": [
+        344,
+        327
+      ],
+      "height": 1.05,
+      "visibleHeight": 315,
+      "anchor": [
+        0.4990850211505098,
+        0.9800364511638997
+      ],
+      "footWidth": 0.3098072087175189,
+      "headTop": null,
+      "scaleClass": "large",
+      "alpha": "source cutout; preserved RGBA transparency; no hue shift"
+    },
+    "monsterBogGolem": {
+      "file": "sprites/factions/monsterBogGolem.png",
+      "portrait": "sprites/factions/monsterBogGolem-portrait.png",
+      "portraitCrop": [
+        0.17700578990901572,
+        0.07846153846153846,
+        0.8271298593879239,
+        0.683076923076923
+      ],
+      "source": "design_assets/factions/monsters/Bog Golem.png",
+      "sourceSize": [
+        1209,
+        1300
+      ],
+      "cropBox": [
+        17,
+        16,
+        1196,
+        1284
+      ],
+      "size": [
+        500,
+        537
+      ],
+      "height": 1.75,
+      "visibleHeight": 525,
+      "anchor": [
+        0.4997659574468086,
+        0.988056403009452
+      ],
+      "footWidth": 0.4550827423167849,
+      "headTop": null,
+      "scaleClass": "large",
+      "alpha": "source cutout; preserved RGBA transparency; no hue shift"
+    },
+    "monsterOgre": {
+      "file": "sprites/factions/monsterOgre.png",
+      "portrait": "sprites/factions/monsterOgre-portrait.png",
+      "portraitCrop": [
+        0.21117502054231718,
+        0.11842105263157894,
+        0.8044371405094495,
+        0.6772445820433437
+      ],
+      "source": "design_assets/factions/monsters/Ogre.png",
+      "sourceSize": [
+        1217,
+        1292
+      ],
+      "cropBox": [
+        53,
+        74,
+        1183,
+        1240
+      ],
+      "size": [
+        492,
+        507
+      ],
+      "height": 1.65,
+      "visibleHeight": 495,
+      "anchor": [
+        0.4992946266223587,
+        0.9864924476354175
+      ],
+      "footWidth": 0.4482005141388174,
+      "headTop": null,
+      "scaleClass": "large",
+      "alpha": "source cutout; preserved RGBA transparency; no hue shift"
+    },
+    "monsterWerewolf": {
+      "file": "sprites/factions/monsterWerewolf.png",
+      "portrait": "sprites/factions/monsterWerewolf-portrait.png",
+      "portraitCrop": [
+        0.2961082910321489,
+        0.29774436090225564,
+        0.7191201353637902,
+        0.6736842105263158
+      ],
+      "source": "design_assets/factions/monsters/werewolf.png",
+      "sourceSize": [
+        1182,
+        1330
+      ],
+      "cropBox": [
+        165,
+        341,
+        1035,
+        1150
+      ],
+      "size": [
+        406,
+        378
+      ],
+      "height": 1.22,
+      "visibleHeight": 366,
+      "anchor": [
+        0.4989053092501369,
+        0.9805408583186362
+      ],
+      "footWidth": 0.366,
+      "headTop": null,
+      "scaleClass": "large",
+      "alpha": "source cutout; preserved RGBA transparency; no hue shift"
+    },
+    "monsterMothBear": {
+      "file": "sprites/factions/monsterMothBear.png",
+      "portrait": "sprites/factions/monsterMothBear-portrait.png",
+      "portraitCrop": [
+        0.3656387665198238,
+        0.3142857142857143,
+        0.8810572687224669,
+        0.922077922077922
+      ],
+      "source": "design_assets/factions/monsters/Moth Bear_Rare.png",
+      "sourceSize": [
+        1362,
+        1155
+      ],
+      "cropBox": [
+        37,
+        11,
+        1346,
+        1145
+      ],
+      "size": [
+        462,
+        402
+      ],
+      "height": 1.3,
+      "visibleHeight": 390,
+      "anchor": [
+        0.499771153956176,
+        0.9825103557104347
+      ],
+      "footWidth": 0.41920704845814977,
+      "headTop": null,
+      "scaleClass": "large",
+      "alpha": "source cutout; preserved RGBA transparency; no hue shift"
+    }
+  },
+  "sourcesWithoutMatchingRosterIds": [],
+  "scaling": {
+    "humanHeadToFoot": 1.05,
+    "mountedHeadToHoof": 1.38,
+    "monsterHeights": "whole opaque drawing; per-entry height in world units"
+  }
+}

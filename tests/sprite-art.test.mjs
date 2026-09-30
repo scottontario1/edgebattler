@@ -1,12 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { FACTION_ART, spriteArt } from '../src/sprite-art.js';
 import { portraitSVG } from '../src/portraits.js';
 import { CAMPAIGN_LEVELS, createCampaignMatch } from '../src/campaign.js';
 import { FACTIONS } from '../src/setup.js';
 test('character identity overrides shared combat class and generated files exist', () => {
  assert.equal(Object.keys(FACTION_ART).length,24);
+ assert.deepEqual(FACTION_ART,JSON.parse(readFileSync(new URL('../public/sprites/factions-manifest.json',import.meta.url))).units);
  for(const [key,info] of Object.entries(FACTION_ART)) {
  const u={id:'recruit-42',variantId:key,cls:'pikeman',faction:'red',name:key};
  assert.equal(spriteArt(u).key,key);

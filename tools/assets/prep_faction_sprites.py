@@ -118,3 +118,8 @@ for key, (rel, kind, measure) in ENTRIES.items():
     }
     print(f'{key:20s} {size!s:14s} artHeight={height:.2f} anchor={manifest["units"][key]["anchor"]}')
 MANIFEST.write_text(json.dumps(manifest, indent=2)+'\n')
+
+# Vite imports metadata from src; public holds the same metadata beside downloadable assets.
+module_manifest = MANIFEST.parents[2] / 'src' / 'art' / 'factions-manifest.json'
+module_manifest.parent.mkdir(parents=True, exist_ok=True)
+module_manifest.write_text(json.dumps(manifest, indent=2)+'\n')

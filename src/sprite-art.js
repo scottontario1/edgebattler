@@ -1,6 +1,6 @@
 // Artwork identity is independent of combat class and team color. A variant or
 // enemy monster can share rules without borrowing another character's illustration.
-import manifest from '../public/sprites/factions-manifest.json' with { type: 'json' };
+import manifest from './art/factions-manifest.json' with { type: 'json' };
 
 export const FACTION_ART = manifest.units;
 export function spriteArt(unitOrKey) {
