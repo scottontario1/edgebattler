@@ -8,10 +8,12 @@
 //               cls is a recruit class (pikeman | archer | cavalier) or a champion (brenna | dreg)
 //   loadouts    { blue: { pikeman: ['barrier', 'whetstone'] } }  type-wide equipment, installed before round 1
 //   reinforce   [{ faction, cls, id }]  unit cards placed in that side's hand (recruit + deploy them via script steps)
+//   rules       experiment rule overrides, e.g. { deployRangeVillage: 4 } (see EXPERIMENT_RULES in src/match.js)
 //   hand        [{ faction, key, n }]  extra cards placed in that side's hand (key: fireburst | ward | mend | barrier | pikeman ...)
 //   script      planning steps applied at the start of `round` through match.apply, so they are logged and replayed:
 //               { round, faction, unit | cls, stance, tile: [c, r], abilities: [...], facing }
 //               { round, faction, card, deploy: [c, r] }  recruit the injected card and deploy it
+//               { round, faction, card, muster: [c, r], unit }  recruit the injected card and have <unit> muster it onto the adjacent tile
 //               { round, faction, spell: 'fireburst', c, r } | { round, faction, spell: 'ward' | 'mend', unit }  queue a spell from the hand
 //               { round, faction, equip: 'barrier', unitType }  equip a skill card from the hand
 //
@@ -20,7 +22,7 @@
 // these logs: it assumes the shipped roster, hands, map and rules.
 import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
-import { createMatch } from '../../src/match.js';
+import { createMatch, setExperimentRules } from '../../src/match.js';
 import { setMap, DEFAULT_MAP } from '../../src/board.js';
 import { UNITS, createRecruitUnit, createGradedRecruitUnit } from '../../src/roster.js';
 import { UNIT_CARDS, cardFor, skillCardFor } from '../../src/cards.js';
@@ -68,6 +70,7 @@ export function buildMatch(def, seed, log = null) {
   setMap(map);
   disableCandidates();
   enableCandidates(def.candidates || []);
+  setExperimentRules({ ...(def.rules || {}), muster: (def.candidates || []).includes('muster') ? { cost: 2, cooldown: 2, classes: ['pikeman', 'archer', 'cavalier'], ...(def.rules?.muster || {}) } : null });
   const m = createMatch({ seed, maxRounds: def.maxRounds ?? 12, log, roster: def.units.map(rosterUnit), meta: { source: 'scenario', scenario: def } });
   for (const u of def.units) {
     const rec = m.byId(u.id);
@@ -100,6 +103,11 @@ function resolveTargets(m, step) {
 function applyStep(m, step) {
   const f = step.faction;
   const actor = `script:${step.round}`;
+  if (step.muster) {
+    const res = m.apply({ type: 'recruit', faction: f, cardId: step.card }, actor);
+    if (res.ok) m.apply({ type: 'muster', faction: f, unitId: step.unit, reserveId: res.reserveId, c: step.muster[0], r: step.muster[1] }, actor);
+    return;
+  }
   if (step.deploy) {
     const res = m.apply({ type: 'recruit', faction: f, cardId: step.card }, actor);
     if (res.ok) m.apply({ type: 'deploy', faction: f, reserveId: res.reserveId, c: step.deploy[0], r: step.deploy[1] }, actor);

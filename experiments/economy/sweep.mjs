@@ -5,7 +5,7 @@
 //   node experiments/economy/sweep.mjs --grid pop=6,10,14,18,22,28 income=1,2,3,4,6,8 [--games 24] [--map flat_open]
 //        [--pair heuristic:heuristic] [--bank auto|N] [--hand 8] [--start 3] [--draw 3] [--lhs N] [--out file.csv]
 //
-// Grid axes (any subset; others stay at the shipped value): keepdeploy (1 = shipped, 0 = the keep tile itself cannot be deployed onto), seize (heuristic seizeRatio, the HP lead needed before it marches on the keep; both sides), dmg (strike damage multiplier), pop (population cap), income (Supply per round),
+// Grid axes (any subset; others stay at the shipped value): dkeep / dvil (deployment radius around keeps / villages, shipped 1), muster (1 = experimental Muster action on; musterCost = its energy cost), keepdeploy (1 = shipped, 0 = the keep tile itself cannot be deployed onto), seize (heuristic seizeRatio, the HP lead needed before it marches on the keep; both sides), dmg (strike damage multiplier), pop (population cap), income (Supply per round),
 // bank (Supply cap; `auto` = max(6, 2 x income)), hand (hand size), start (opening Supply), draw (cards per round).
 // --lhs N draws N Latin-hypercube points over the min..max of the listed values instead of the full mesh.
 // --pair a:b plays a (blue) v b (red); when they differ every seed is also played swapped.
@@ -22,13 +22,13 @@ async function playCell({ limits, map, blue, red, seeds, maxRounds, verify }) {
   const { runCommander } = await import('../../src/ai/commander.js');
   const { setCardLimits } = await import('../../src/cards.js');
   const { BATTLE_TUNING } = await import('../../src/battle.js');
-  const { EXPERIMENT_RULES } = await import('../../src/match.js');
+  const { setExperimentRules } = await import('../../src/match.js');
   const { setMap, DEFAULT_MAP } = await import('../../src/board.js');
   const { memoryLog, replay } = await import('../../src/log.js');
   setMap(map && map !== 'river_ford' ? (await import(pathToFileURL(resolve('experiments/maps', `${map}.js`)).href)).default : DEFAULT_MAP);
   setCardLimits(limits);
   BATTLE_TUNING.damageScale = limits.damageScale ?? 1;
-  EXPERIMENT_RULES.deployOnKeep = limits.deployOnKeep ?? true;
+  setExperimentRules(limits.rules || {});
   const params = limits.seizeRatio === undefined ? {} : { seizeRatio: limits.seizeRatio }; // heuristic tuning axis (`seize`)
   const acc = { games: 0, draws: 0, keep: 0, wipe: 0, rounds: 0, strikes: 0, deaths: 0, roundEnds: 0, atCap: 0, handFull: 0, bankFull: 0, blockedUnit: 0, units: 0, decisions: 0, replayFail: 0, replayed: 0 };
   const play = (seed, b, r, log) => {
@@ -65,7 +65,7 @@ async function playCell({ limits, map, blue, red, seeds, maxRounds, verify }) {
         first = false;
         const log = memoryLog();
         play(seed, b, r, log);
-        const check = replay(log.entries, { create: (h, push) => { setCardLimits(h.cardLimits); BATTLE_TUNING.damageScale = h.battleTuning?.damageScale ?? 1; EXPERIMENT_RULES.deployOnKeep = h.experimentRules?.deployOnKeep ?? true; return createMatch({ seed: h.seed, maxRounds: h.maxRounds, log: push }); } });
+        const check = replay(log.entries, { create: (h, push) => { setCardLimits(h.cardLimits); BATTLE_TUNING.damageScale = h.battleTuning?.damageScale ?? 1; setExperimentRules(h.experimentRules || {}); return createMatch({ seed: h.seed, maxRounds: h.maxRounds, log: push }); } });
         acc.replayed += 1;
         if (!check.ok) acc.replayFail += 1;
       } else play(seed, b, r, null);
@@ -112,7 +112,8 @@ async function main() {
     if (v.income === undefined) v.income = 3;
     if (v.pop === undefined) v.pop = 10;
     if (v.bank === undefined) v.bank = bankArg === 'auto' ? Math.max(6, 2 * v.income) : Number(bankArg);
-    const limits = { ...(v.keepdeploy === undefined ? {} : { deployOnKeep: !!v.keepdeploy }), ...(v.seize === undefined ? {} : { seizeRatio: v.seize }), damageScale: v.dmg ?? 1, populationCap: v.pop, supplyPerRound: v.income, maxSupply: v.bank, hand: v.hand, initialSupply: Math.min(v.start, v.bank), laterDraw: v.draw, reserveCapacity: 8 };
+    const rules = { ...(v.keepdeploy === undefined ? {} : { deployOnKeep: !!v.keepdeploy }), ...(v.dkeep === undefined ? {} : { deployRangeKeep: v.dkeep }), ...(v.dvil === undefined ? {} : { deployRangeVillage: v.dvil }), ...(v.muster ? { muster: { cost: v.musterCost ?? 2, cooldown: 2, classes: ['pikeman', 'archer', 'cavalier'] } } : {}) };
+    const limits = { rules, ...(v.seize === undefined ? {} : { seizeRatio: v.seize }), damageScale: v.dmg ?? 1, populationCap: v.pop, supplyPerRound: v.income, maxSupply: v.bank, hand: v.hand, initialSupply: Math.min(v.start, v.bank), laterDraw: v.draw, reserveCapacity: 8 };
     return { id, v, limits };
   });
 

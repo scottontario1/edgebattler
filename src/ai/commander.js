@@ -6,7 +6,8 @@
 //
 // Policies: passive (baseline, does nothing), greedy (units only: most expensive affordable card,
 // deployed nearest the front), heuristic (all card types, stances, withdraw, combine; tunable).
-import { findTile } from '../board.js';
+import { findTile, inBounds, terrainAt } from '../board.js';
+import { EXPERIMENT_RULES } from '../match.js';
 import { computeRange, MOVE_COST, MOVE_TYPE } from '../rules.js';
 import { UNIT_CARDS, CARD_LIMITS, previewCycle } from '../cards.js';
 import { findUpgradeMatches } from '../upgrades.js';
@@ -39,11 +40,36 @@ function deployReserve(m, f, act, reserve) {
   return tiles.length ? act({ type: 'deploy', faction: f, reserveId: reserve.id, c: tiles[0][0], r: tiles[0][1] }) : { ok: false };
 }
 
+// With the experimental Muster action on, a front-line unit with the energy places the reserve next to itself when that
+// tile is clearly closer to the enemy than any deployment tile; otherwise the reserve deploys as usual.
+function placeReserve(m, f, act, reserve) {
+  const cfg = EXPERIMENT_RULES.muster;
+  if (cfg) {
+    const cost = MOVE_COST[MOVE_TYPE[reserve.unitId] || 'foot'];
+    const deployBest = Math.min(99, ...m.deploymentTiles(f).filter(([c, r]) => m.canDeployAt(f, reserve.id, c, r).ok).map(([c, r]) => nearestFoeDistance(m, f, c, r)));
+    let best = null;
+    for (const u of m.alive(f)) {
+      if ((cfg.classes && !cfg.classes.includes(u.cls)) || (u.cooldowns?.muster || 0) > 0 || (u.energy || 0) < cfg.cost) continue;
+      for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const c = u.c + dc, r = u.r + dr;
+        if (!inBounds(c, r) || m.unitAt(c, r) || cost[terrainAt(c, r)] === undefined) continue;
+        const d = nearestFoeDistance(m, f, c, r);
+        if (!best || d < best.d) best = { unitId: u.id, c, r, d };
+      }
+    }
+    if (best && best.d <= deployBest - 2) {
+      const res = act({ type: 'muster', faction: f, unitId: best.unitId, reserveId: reserve.id, c: best.c, r: best.r });
+      if (res.ok) return res;
+    }
+  }
+  return deployReserve(m, f, act, reserve);
+}
+
 function recruitAndDeploy(m, f, act, card) {
   const res = act({ type: 'recruit', faction: f, cardId: card.instanceId });
   if (!res.ok) return false;
   const reserve = m.sides[f].cards.reserves.find((u) => u.id === res.reserveId);
-  deployReserve(m, f, act, reserve);
+  placeReserve(m, f, act, reserve);
   return true;
 }
 
@@ -146,7 +172,7 @@ export function heuristic(m, f, { act, params = {} }) {
 
   // 5. Redeploy rested reserves, then recruit toward the target mix.
   for (const reserve of [...side().cards.reserves]) {
-    if (reserve.hp == null || reserve.hp / reserve.maxHp >= 0.7) deployReserve(m, f, act, reserve);
+    if (reserve.hp == null || reserve.hp / reserve.maxHp >= 0.7) placeReserve(m, f, act, reserve);
   }
   for (let guard = 0; guard < 20; guard += 1) {
     const counts = {};

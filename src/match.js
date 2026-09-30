@@ -7,6 +7,7 @@
 // Actions (plain objects, identical for humans and AI):
 //   { type: 'recruit', faction, cardId }                     buy a unit card onto the reserve bench
 //   { type: 'deploy', faction, reserveId, c, r }             reserve -> controlled deployment tile
+//   { type: 'muster', faction, unitId, reserveId, c, r }      experimental: unit spends energy to place a bench unit on an adjacent tile
 //   { type: 'withdraw', faction, unitId }                    field unit on a controlled tile -> bench
 //   { type: 'move', faction, unitId, c, r }                  one planning move within MOV
 //   { type: 'stance', faction, unitId, stance, targetId?, tile? }  advance | hold | protect (targetId);
@@ -34,7 +35,13 @@ export const RULES = Object.freeze({
   reserveEnergy: 1,    // extra energy a benched unit gains per round
 });
 // Experiments only (experiments/economy): deployOnKeep false forbids deploying or respawning onto the keep tile itself.
-export const EXPERIMENT_RULES = { deployOnKeep: true };
+// deployRangeKeep / deployRangeVillage: Manhattan radius of the deployment area around an owned keep / village (shipped: 1).
+// muster: null, or { cost, cooldown, classes } enabling the Muster planning action (bench unit onto an adjacent empty tile).
+export const DEFAULT_EXPERIMENT_RULES = Object.freeze({ deployOnKeep: true, deployRangeKeep: 1, deployRangeVillage: 1, muster: null });
+export const EXPERIMENT_RULES = { ...DEFAULT_EXPERIMENT_RULES };
+export const setExperimentRules = (o = {}) => Object.assign(EXPERIMENT_RULES, DEFAULT_EXPERIMENT_RULES, o);
+// Offsets by ring: the shipped five first (order matters for ties), then wider rings.
+const OFFSETS = (() => { const out = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]; for (let d = 2; d <= 8; d += 1) for (let dc = -d; dc <= d; dc += 1) for (const dr of [d - Math.abs(dc), -(d - Math.abs(dc))]) if (dr !== 0 || Math.abs(dc) === d) { if (!out.some(([a, b]) => a === dc && b === dr)) out.push([dc, dr]); } return out; })();
 export const FACTIONS = ['blue', 'red'];
 // Candidate equipment adds to Str/Def for one battle's forecasts only (no-op unless statuses.equip* is set).
 const withEquip = (u) => (u.statuses?.equipStr || u.statuses?.equipDef ? { ...u, str: u.str + (u.statuses.equipStr || 0), def: u.def + (u.statuses.equipDef || 0) } : u);
@@ -102,7 +109,9 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
     for (const [loc, owner] of territory) {
       if (owner !== f) continue;
       const [c, r] = loc.split(',').map(Number);
-      for (const [dc, dr] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const range = 'CK'.includes(terrainAt(c, r)) ? EXPERIMENT_RULES.deployRangeKeep : EXPERIMENT_RULES.deployRangeVillage;
+      for (const [dc, dr] of OFFSETS) {
+        if (Math.abs(dc) + Math.abs(dr) > range) continue;
         if (!EXPERIMENT_RULES.deployOnKeep && 'CK'.includes(terrainAt(c + dc, r + dr) ?? '')) continue;
         if (inBounds(c + dc, r + dr)) out.set(`${c + dc},${r + dr}`, [c + dc, r + dr]);
       }
@@ -163,11 +172,11 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       side.stats.cycles[source]+=1;side.stats.supplyRefunded+=result.refund;
       return {ok:true,replacement:result.replacement,refund:result.refund,populationFreed:result.populationFreed};
     },
-    deploy({ faction: f, reserveId, c, r }) {
+    deploy({ faction: f, reserveId, c, r, free = false }) {
       const side = sides[f];
       const reserve = side.cards.reserves.find((u) => u.id === reserveId);
       if (!reserve) return fail('reserve-not-found');
-      const legal = canDeployAt(f, reserveId, c, r);
+      const legal = free ? canDeployReserve(side.cards, reserveId, { location: true, tile: { occupied: !!unitAt(c, r), traversable: MOVE_COST[MOVE_TYPE[reserve.unitId] || 'foot'][terrainAt(c, r)] !== undefined, terrain: terrainAt(c, r) === 'W' ? 'water' : terrainAt(c, r) } }) : canDeployAt(f, reserveId, c, r);
       if (!legal.ok) return fail(legal.reason);
       const id = reserve.fieldId && !byId(reserve.fieldId) ? reserve.fieldId : `${f}-u${++m.seq}-${reserve.unitId}`;
       const unit = createRecruitUnit(reserve.unitId, id, f, c, r, { stance: UNIT_CARDS[reserve.unitId]?.defaultStance });
@@ -181,6 +190,23 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       m.units.push(unit);
       side.stats.deployed += 1;
       return { ok: true, unitId: id };
+    },
+    // Experimental Muster: a field unit spends energy to put a bench unit on an empty tile next to it.
+    muster({ faction: f, unitId, reserveId, c, r }) {
+      const cfg = EXPERIMENT_RULES.muster;
+      if (!cfg) return fail('muster-unavailable');
+      const u = byId(unitId);
+      if (!u || u.faction !== f || u.hp <= 0) return fail('unit-not-found');
+      if (cfg.classes && !cfg.classes.includes(u.cls)) return fail('class-cannot-muster');
+      if ((u.cooldowns?.muster || 0) > 0) return fail('cooldown');
+      if ((u.energy || 0) < cfg.cost) return fail('insufficient-energy');
+      if (Math.abs(u.c - c) + Math.abs(u.r - r) !== 1) return fail('not-adjacent');
+      const res = handlers.deploy({ faction: f, reserveId, c, r, free: true });
+      if (!res.ok) return res;
+      u.energy -= cfg.cost;
+      u.cooldowns = { ...(u.cooldowns || {}), muster: cfg.cooldown };
+      sides[f].stats.mustered = (sides[f].stats.mustered || 0) + 1;
+      return { ok: true, unitId: res.unitId, by: u.id };
     },
     withdraw({ faction: f, unitId }) {
       const u = byId(unitId);
@@ -565,7 +591,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
   const statsEntry = () => ({ blue: clone(sides.blue.stats), red: clone(sides.red.stats) });
 
   for (const f of FACTIONS) sides[f].cards.population = population(f);
-  emit({ t: 'header', schema: SCHEMA, seed, maxRounds, map: MAP.id, rules: RULES, abilityRules: ABILITY_RULES, abilities: ABILITIES, cardLimits: { ...CARD_LIMITS }, ...(BATTLE_TUNING.damageScale !== 1 ? { battleTuning: { ...BATTLE_TUNING } } : {}), ...(EXPERIMENT_RULES.deployOnKeep ? {} : { experimentRules: { ...EXPERIMENT_RULES } }), ...meta });
+  emit({ t: 'header', schema: SCHEMA, seed, maxRounds, map: MAP.id, rules: RULES, abilityRules: ABILITY_RULES, abilities: ABILITIES, cardLimits: { ...CARD_LIMITS }, ...(BATTLE_TUNING.damageScale !== 1 ? { battleTuning: { ...BATTLE_TUNING } } : {}), ...(JSON.stringify(EXPERIMENT_RULES) === JSON.stringify(DEFAULT_EXPERIMENT_RULES) ? {} : { experimentRules: { ...EXPERIMENT_RULES } }), ...meta });
   emit(summaryEntry(0));
 
   Object.assign(m, {

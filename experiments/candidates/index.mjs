@@ -7,6 +7,7 @@
 //   cards      src/cards.js registerCandidateCards() + setRecruitmentPool()
 //   combat     src/battle.js (setSpears status), src/match.js withEquip() (equipStr / equipDef statuses)
 import { registerAbilities, resetAbilities } from '../../src/abilities.js';
+import { EXPERIMENT_RULES } from '../../src/match.js';
 import { registerCandidateCards, resetCandidateCards, setRecruitmentPool, RECRUITMENT_POOL } from '../../src/cards.js';
 
 export const CANDIDATE_ABILITIES = {
@@ -33,13 +34,20 @@ export const CANDIDATE_CARDS = {
     statMods: { def: 2 }, effect: 'All friendly units of this type take 2 less damage from every strike.' },
 };
 
-export const ALL_CANDIDATES = [...Object.keys(CANDIDATE_ABILITIES), ...Object.keys(CANDIDATE_CARDS)];
+// Planning actions rather than combat picks: switched on through EXPERIMENT_RULES.muster (src/match.js handler).
+export const CANDIDATE_ACTIONS = {
+  // Muster: a field recruit spends 2 energy (cooldown 2) to put one bench unit on an empty tile next to it.
+  muster: { cost: 2, cooldown: 2, classes: ['pikeman', 'archer', 'cavalier'] },
+};
+
+export const ALL_CANDIDATES = [...Object.keys(CANDIDATE_ABILITIES), ...Object.keys(CANDIDATE_CARDS), ...Object.keys(CANDIDATE_ACTIONS)];
 
 /** Register the named candidates (default: all). Cards join the draw pool with weight 1 each when `pool` is true. */
 export function enableCandidates(ids = ALL_CANDIDATES, { pool = false } = {}) {
   disableCandidates();
   const abilities = ids.filter((id) => CANDIDATE_ABILITIES[id]).map((id) => CANDIDATE_ABILITIES[id]);
   const cards = ids.filter((id) => CANDIDATE_CARDS[id]);
+  EXPERIMENT_RULES.muster = ids.includes('muster') ? { ...CANDIDATE_ACTIONS.muster } : null;
   registerAbilities(abilities);
   registerCandidateCards(Object.fromEntries(cards.map((id) => [id, CANDIDATE_CARDS[id]])));
   if (pool && cards.length) setRecruitmentPool([...RECRUITMENT_POOL, ...cards]);
@@ -47,6 +55,7 @@ export function enableCandidates(ids = ALL_CANDIDATES, { pool = false } = {}) {
 }
 
 export function disableCandidates() {
+  EXPERIMENT_RULES.muster = null;
   resetAbilities();
   resetCandidateCards();
 }

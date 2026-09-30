@@ -16,17 +16,17 @@ const NAMES = { rally: 'Rally', brace: 'Brace', focusedShot: 'Focused Shot', cha
 const without = (plan, id) => plan.map((s) => (s.abilities ? { ...s, abilities: s.abilities.filter((x) => x !== id) } : s));
 
 /** Build the variant list for one level: naive, skilled, then skilled minus each ability everywhere, minus each spell or manoeuvre. */
-function level({ id, title, teaches, map, maxRounds = 14, blue, red, hand = [], redScript = [], plan, extra = [] }) {
+function level({ id, title, teaches, map, maxRounds = 14, blue, red, hand = [], redScript = [], plan, extra = [], rules, candidates, reinforce, naivePlan = [], fallback = {} }) {
   const abilityIds = [...new Set(plan.flatMap((s) => s.abilities || []))];
   const tags = [...new Set(plan.filter((s) => s.tag && !s.abilities).map((s) => s.tag))];
-  const base = { id, map, maxRounds, hand };
+  const base = { id, map, maxRounds, hand, ...(rules ? { rules } : {}), ...(candidates ? { candidates } : {}), ...(reinforce ? { reinforce } : {}) };
   const skilledUnits = [...blue, ...red];
   const naiveUnits = [...blue.map((x) => ({ ...x, stance: DEFAULT_STANCE[x.cls] || x.stance, objective: undefined })), ...red];
   const variants = [
-    { evidence: true, label: 'N naive: default stances, no picks, no spells', def: { ...base, units: naiveUnits, script: redScript } },
+    { evidence: true, label: 'N naive: default stances, no picks, no spells', def: { ...base, units: naiveUnits, script: [...naivePlan, ...redScript] } },
     { evidence: true, vs: 'N', label: `S skilled: ${teaches}`, def: { ...base, units: skilledUnits, script: [...plan, ...redScript] } },
     ...abilityIds.map((ab) => ({ vs: 'S', label: `S-${NAMES[ab]} skilled without ${NAMES[ab]}`, def: { ...base, units: skilledUnits, script: [...without(plan, ab), ...redScript] } })),
-    ...tags.map((tag) => ({ vs: 'S', label: `S-${tag} skilled without ${tag}`, def: { ...base, units: skilledUnits, script: [...plan.filter((s) => s.tag !== tag), ...redScript] } })),
+    ...tags.map((tag) => ({ vs: 'S', label: `S-${tag} skilled without ${tag}`, def: { ...base, units: skilledUnits, script: [...plan.filter((s) => s.tag !== tag), ...(fallback[tag] || []), ...redScript] } })),
     ...extra.map((x) => ({ vs: 'S', label: x.label, def: { ...base, ...x.def, units: x.units || skilledUnits, script: [...(x.plan || plan), ...redScript] } })),
   ];
   return { id, title, question: `What does ${teaches} change?`, variants };
@@ -132,4 +132,46 @@ const L5 = level({
   extra: [{ label: 'C candidate Whetstone (+2 Str) on all Pikemen and Archers (+4 Supply)', def: { candidates: ['whetstone'], loadouts: { blue: { pikeman: ['whetstone'], archer: ['whetstone'] } } } }],
 });
 
-export const SUITES = [L1, L2, L3, L4, L5];
+// ---------- Level 6: Claim the Hamlet (villages extend the deployment area) ----------
+// On the Hamlets map each side has villages near its keep. Blue sends one Pikeman to claim the village at 7,10 in round 1;
+// from round 2 the reinforcements deploy up to four tiles out from it (village deployment range 4, keep range 1) instead
+// of at the keep, seven tiles behind, and meet six Pikemen already in contact. The village range itself is swept separately (docs/experiments/DEPLOY_AND_MUSTER.md).
+const L6_KEEP = [[3, 10], [2, 9], [1, 10]];
+const deployAt = (tag, round, ids, tiles) => ids.map((card, i) => step(tag, round, 'blue', { card, deploy: tiles[i] }));
+const L6_CARDS = [{ faction: 'blue', cls: 'pikeman', id: 'rein1' }, { faction: 'blue', cls: 'pikeman', id: 'rein2' }, { faction: 'blue', cls: 'pikeman', id: 'rein3' }];
+const L6_RED = [[11, 8], [11, 9], [11, 10], [12, 8], [12, 9], [12, 10]].map(([c, r], i) => u('rp' + (i + 1), 'red', 'pikeman', c, r, { stance: 'advance', facing: 'west' }));
+const L6 = level({
+  id: 'level-6', title: 'Level 6: Claim the Hamlet (village deployment range)', map: 'hamlets', maxRounds: 14,
+  teaches: 'claiming the village at 7,10 in round 1 and deploying the reserves four tiles out from it',
+  rules: { deployRangeKeep: 1, deployRangeVillage: 4 },
+  reinforce: L6_CARDS,
+  blue: [u('bp1', 'blue', 'pikeman', 5, 10, { stance: 'hold', facing: 'east' }), u('bp2', 'blue', 'pikeman', 6, 9, { stance: 'advance', facing: 'east' }), u('bp3', 'blue', 'pikeman', 6, 11, { stance: 'advance', facing: 'east' })],
+  red: L6_RED,
+  naivePlan: deployAt(null, 2, ['rein1', 'rein2', 'rein3'], L6_KEEP),
+  plan: [
+    step('claim', 1, 'blue', { unit: 'bp1', stance: 'advance', tile: [7, 10] }),
+    ...deployAt('forward', 2, ['rein1', 'rein2', 'rein3'], [[8, 10], [8, 9], [8, 11]]),
+    all('Rally', 1, 'blue', 'pikeman', { abilities: ['rally'] }),
+  ],
+  fallback: { claim: [step(null, 1, 'blue', { unit: 'bp1', stance: 'advance' }), ...deployAt(null, 2, ['rein1', 'rein2', 'rein3'], L6_KEEP)], forward: deployAt(null, 2, ['rein1', 'rein2', 'rein3'], L6_KEEP) },
+});
+
+// ---------- Level 7: Muster the Line (candidate Muster action) ----------
+// Five Pikemen advance on three holding Pikemen across open ground. With Muster (2 energy, cooldown 2) each front Pikeman
+// puts a bench Archer on the empty tile behind it in round 2, in time to shoot over the line at the first clash; without it the bench deploys at
+// the keep, nine tiles behind the line, and arrives after the first exchanges.
+const L7_CARDS = [{ faction: 'blue', cls: 'archer', id: 'rein1' }, { faction: 'blue', cls: 'archer', id: 'rein2' }, { faction: 'blue', cls: 'archer', id: 'rein3' }];
+const L7_RED = [[12, 4], [12, 5], [12, 6], [12, 7], [12, 8]].map(([c, r], i) => u('rp' + (i + 1), 'red', 'pikeman', c, r, { stance: 'advance', facing: 'west' }));
+const musterAt = (tag, round) => [step(tag, round, 'blue', { card: 'rein1', unit: 'bp1', muster: [5, 5] }), step(tag, round, 'blue', { card: 'rein2', unit: 'bp2', muster: [5, 6] }), step(tag, round, 'blue', { card: 'rein3', unit: 'bp3', muster: [5, 7] })];
+const L7 = level({
+  id: 'level-7', title: 'Level 7: Muster the Line (candidate: Muster)', map: 'flat_open', maxRounds: 14,
+  teaches: 'holding the line and mustering three bench Archers behind it in round 2',
+  candidates: ['muster'], reinforce: L7_CARDS,
+  blue: [u('bp1', 'blue', 'pikeman', 6, 5, { stance: 'hold', facing: 'east' }), u('bp2', 'blue', 'pikeman', 6, 6, { stance: 'hold', facing: 'east' }), u('bp3', 'blue', 'pikeman', 6, 7, { stance: 'hold', facing: 'east' })],
+  red: L7_RED,
+  naivePlan: deployAt(null, 2, ['rein1', 'rein2', 'rein3'], L6_KEEP),
+  plan: [...musterAt('Muster', 2), all('Rally', 1, 'blue', 'pikeman', { abilities: ['rally'] })],
+  fallback: { Muster: deployAt(null, 2, ['rein1', 'rein2', 'rein3'], L6_KEEP) },
+});
+
+export const SUITES = [L1, L2, L3, L4, L5, L6, L7];
