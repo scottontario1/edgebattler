@@ -36,12 +36,12 @@ test('invalid requests leave state and random stream untouched',()=>{
  }
 });
 test('bench cycling refunds actual investment, preserves grade, frees weighted population and permits overflow',()=>{
- const state=createCardState({supply:6,population:10,reserves:[reserve('paid',{stars:3,population:3,costPaid:9,hp:1,energy:4,cooldowns:{brace:2},selectedAbilities:['brace'],statuses:{ward:'upcoming-battle'}})]});
+ const state=createCardState({supply:CARD_LIMITS.maxSupply,population:10,reserves:[reserve('paid',{stars:3,population:3,costPaid:9,hp:1,energy:4,cooldowns:{brace:2},selectedAbilities:['brace'],statuses:{ward:'upcoming-battle'}})]});
  const r=cycleCard(state,{source:'bench',id:'paid'},()=>0.99);
- assert.ok(r.ok);assert.equal(r.state.supply,15);assert.equal(r.refund,9);assert.equal(r.state.population,7);
+ assert.ok(r.ok);assert.equal(r.state.supply,CARD_LIMITS.maxSupply+9);assert.equal(r.refund,9);assert.equal(r.state.population,7);
  assert.equal(r.state.reserves.length,0);assert.equal(r.replacement.stars,3);assert.equal(r.replacement.cost,27);assert.equal(r.replacement.population,3);
  assert.equal(r.replacement.hp,undefined);assert.equal(r.replacement.energy,undefined);assert.equal(r.replacement.cooldowns,undefined);
- const refreshed=refreshRound(r.state,seededRandom(1));assert.equal(refreshed.state.supply,15);assert.equal(refreshed.supplyGranted,0);assert.equal(refreshed.state.cyclesRemaining,1);
+ const refreshed=refreshRound(r.state,seededRandom(1));assert.equal(refreshed.state.supply,CARD_LIMITS.maxSupply+9);assert.equal(refreshed.supplyGranted,0);assert.equal(refreshed.state.cyclesRemaining,1);
 });
 test('graded repurchase enforces Supply and population; no hand ingredient participates in optional triples',()=>{
  const state=createCardState({supply:6,population:9,hand:[card(UNIT_CARDS.pikeman,'grade',{stars:2,population:2,cost:3})]});

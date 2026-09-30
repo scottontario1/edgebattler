@@ -288,3 +288,14 @@ Seven neutral creatures and the Hollow Court Corpsehound use prototype stat enve
 ## Monster kit prototype (2026-09-30)
 
 Scott requested a monster_unit_designer agent to create one or two simple abilities/passives per creature. The first playable slice gives each of the eight creatures one named automatic passive, using the existing post-movement/pre-strike passive system. It costs no energy and is evaluated afresh each battle. Inspect an enemy to read the exact trigger and effect. See docs/MONSTER_KITS.md for the complete kits and prototype numbers. Rat/Goblin reward adjacent allies; Spider rewards remaining stationary; Golem reduces incoming damage on Hold; Ogre pierces a little Defense; Werewolf and Moth Bear gain bonuses strictly below half HP; Corpsehound rewards nearby corpse markers. Monster base stats, wave compositions and player/skirmish defaults remain unchanged. These are prototype encounter mechanics for human playtesting, not final balance.
+
+
+## Human playtest feedback (2026-09-30)
+
+Scott's first campaign playtest requests a nearby action bar, left-side recruited-unit portraits with type management, character and army performance stats, lower GPU cost and a larger Supply bank. The default bank is now 30 (previously 6); income remains 3 per turn and refunds may still exceed the bank. Header-defined bank limits are honored when replaying older logs and restored afterward.
+
+Desktop actions follow the selected unit above its drawing. Friendly portraits are grouped by exact variant on the left, with counts for field/bench, next-unit selection, shared type ability planning, Advance/Hold group orders and reserve deployment. Ability group controls respect variant identity, rather than conflating units sharing a base combat class. Small screens retain their bottom action row and use a separate type-management popup.
+
+Selected units expose strike damage dealt/taken and successful active ability uses. Army Stats shows character totals and leaders for each team; fallen/combined-away characters retain their historical totals. Strike totals use logged post-mitigation damage, including overkill; spells belong to the army and passive evaluations are not active ability uses. A completed mission's report is saved locally for the Last completed mission button. Future missions overwrite that saved report; it is not a cross-mission save system. Existing development JSONL logs preserve older playtests.
+
+Rendering uses Three.js with Vite. Idle planning targets 30 fps; playback/dragging targets 60. The 3D backing buffer caps at 1.6M pixels, native HUD resolution is preserved, AO/denoise sample counts are 8, and disabled Painterly skips its pass. Larger canvas views can be slightly softer. Hardware GPU percentage remains a local playtest measurement; see docs/PERFORMANCE_PASS.md.

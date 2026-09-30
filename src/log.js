@@ -1,3 +1,4 @@
+import { CARD_LIMITS, setCardLimits } from './cards.js';
 // Game-data logging. The match controller (src/match.js) emits plain entries; these helpers collect
 // them as JSON Lines, ship them to the dev server (browser) and replay a log to check determinism.
 //
@@ -62,18 +63,22 @@ export function replay(entries, { create } = {}) {
   if(header.schema!==SCHEMA) return {ok:false,mismatches:[{reason:'unsupported-schema',schema:header.schema,expected:SCHEMA}]};
   if (!create && header.campaign) create = (h,push) => createCampaignMatch(CAMPAIGN_BY_ID[h.campaign.id], { faction: h.campaign.faction, seed: h.seed, log: push, enemyFactions: h.campaign.enemyFactions, encounters: h.campaign.stages });
   if (!create && header.map && header.map !== MAP.id) return { ok: false, mismatches: [{ reason: 'unsupported-map', map: header.map, active: MAP.id }] };
-  const out = memoryLog();
-  // Custom scenarios (other map, roster, candidate rules) pass create(header, log) to rebuild the same match.
-  const m = create ? create(header, out.push) : createMatch({ seed: header.seed, maxRounds: header.maxRounds, log: out.push, pools: header.pools ?? null });
-  for (const e of entries) {
-    if (e.t === 'action') m.apply(e.action, e.actor);
-    else if (e.t === 'round') m.resolveRound();
-  }
-  const pick = (list) => list.filter((e) => ['action','round','summary','result'].includes(e.t)).map((e) => JSON.stringify(e));
-  const want = pick(entries), got = pick(out.entries);
-  const mismatches = [];
-  for (let i = 0; i < Math.max(want.length, got.length); i += 1) {
-    if (want[i] !== got[i]) mismatches.push({ index: i, want: want[i] && JSON.parse(want[i]), got: got[i] && JSON.parse(got[i]) });
-  }
-  return { ok: !mismatches.length, mismatches, match: m };
+  const previousLimits={...CARD_LIMITS};
+  setCardLimits(header.cardLimits || previousLimits);
+  try {
+    const out = memoryLog();
+    // Custom scenarios (other map, roster, candidate rules) pass create(header, log) to rebuild the same match.
+    const m = create ? create(header, out.push) : createMatch({ seed: header.seed, maxRounds: header.maxRounds, log: out.push, pools: header.pools ?? null });
+    for (const e of entries) {
+      if (e.t === 'action') m.apply(e.action, e.actor);
+      else if (e.t === 'round') m.resolveRound();
+    }
+    const pick = (list) => list.filter((e) => ['action','round','summary','result'].includes(e.t)).map((e) => JSON.stringify(e));
+    const want = pick(entries), got = pick(out.entries);
+    const mismatches = [];
+    for (let i = 0; i < Math.max(want.length, got.length); i += 1) {
+      if (want[i] !== got[i]) mismatches.push({ index: i, want: want[i] && JSON.parse(want[i]), got: got[i] && JSON.parse(got[i]) });
+    }
+    return { ok: !mismatches.length, mismatches, match: m };
+  } finally {setCardLimits(previousLimits);}
 }

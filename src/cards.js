@@ -8,7 +8,7 @@ export const DEFAULT_CARD_LIMITS = Object.freeze({
   laterDraw: 3,
   initialSupply: 3,
   supplyPerRound: 3,
-  maxSupply: 6,
+  maxSupply: 30,
   reserveCapacity: 8,
   populationCap: 10,
 });

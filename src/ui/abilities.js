@@ -2,7 +2,7 @@ import {kitFor,selectedCost,FACING,battleMovement} from '../abilities.js';
 import {esc} from './util.js';
 export function abilityEditorHTML(u,{draft,targets,units,notice,groupOpen,lastResults=[]}) {
  const cost=selectedCost({selectedAbilities:draft});
- const group=units.filter(o=>o.cls===u.cls&&o.faction===u.faction&&o.hp>0);
+ const group=units.filter(o=>(o.variantId||o.cls)===(u.variantId||u.cls)&&o.faction===u.faction&&o.hp>0);
  const shortfall=Math.max(0,...group.filter(o=>targets.includes(o.id)).map(o=>cost-o.energy));
  return `<section class="ability-editor" aria-label="Battle plan">
   <h3>Battle plan</h3><p>Picks repeat when ready. Movement and basic attacks are free.</p>

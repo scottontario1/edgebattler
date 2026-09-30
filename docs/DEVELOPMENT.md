@@ -62,3 +62,6 @@ SYS-02 decision clarification (2026-09-29): bench units are already paid; cyclin
 
 
 User-promoted campaign slice (2026-09-30): supplied faction/creature art and mixed fixed engagements are playable. The user next requested simple monster kits; MON-01 adds one named passive per creature with existing battle hooks and visible enemy inspection. This scope takes precedence for the campaign playtest while skirmish CORE-02/03 remain open. Verify trigger boundaries, actual combat effects, campaign completion/replay and inspector readability; collect human playtest feedback before further tuning.
+
+
+Human campaign playtest feedback (2026-09-30) promotes PLAY-01 and PERF-01: nearby action controls, grouped friendly army management, battle statistics, bank30 at unchanged income3, and Three.js quick wins researched by Luna. Verify legal group actions, type identity, old/new replay compatibility, stats retention/save, visible controls across screen sizes and rendering workload. Current pass does not resolve skirmish victory/balance or cross-mission persistence.

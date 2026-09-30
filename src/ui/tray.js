@@ -23,7 +23,7 @@ export function trayHTML(m) {
   const gem = '<svg class="ledger-gem" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1 14 6 8 15 2 6Z" fill="#c9a24a"/><path d="M8 1 14 6H2Z" fill="#f2cf6b"/><path d="M8 15 5 6h6Z" fill="#e6bd55"/></svg>';
   const chevron = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="m3.5 6 4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   return `<div class="tray-ledger">
-      <div class="ledger-cell supply-readout"><span class="ledger-label">Supply</span><span class="ledger-value">${gem}<b>${m.supply}</b></span></div>
+      <div class="ledger-cell supply-readout"><span class="ledger-label">Supply</span><span class="ledger-value">${gem}<b>${m.supply}<small>/${m.maxSupply ?? 30}</small></b></span></div>
       <div class="ledger-cell population-readout${popState}"><span class="ledger-label">Population</span><span class="ledger-value"><b>${m.population}/${m.populationCap}</b><span class="pop-meter" role="meter" aria-label="Population" aria-valuemin="0" aria-valuemax="${cap}" aria-valuenow="${m.population}"><i style="width:${(ratio * 100).toFixed(1)}%"></i></span></span></div>
       <div class="ledger-cell reserve-readout${reserveFull}"><span class="ledger-label">Reserve</span><span class="ledger-value"><b>${m.reserveCount}/${m.reserveCapacity}</b></span></div>
       <div class="ledger-cell locations-readout"><span class="ledger-label">Cycle</span><span class="ledger-value"><b>${m.cyclesRemaining}/1</b></span></div>

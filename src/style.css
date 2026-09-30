@@ -258,3 +258,67 @@ html, body {
 @media (max-height: 500px) and (min-width: 561px) { .campaign-controls { top: 38px; } }
 
 .campaign-controls .key { display: none; }
+/* Playtest controls: friendly types stay within reach; actions follow the selected unit. */
+.army-rail { position: fixed; z-index: 14; left: 8px; top: 154px; bottom: calc(var(--tray-h, 150px) + 18px); width: 140px; overflow-y: auto; padding: 7px; }
+.army-heading { display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 6px; }
+.army-rail button, .report-tabs button { cursor: pointer; color: var(--ivory); background: #192337; border: 1px solid var(--panel-line); border-radius: 4px; min-height: 28px; font: 11px var(--font-ui); }
+.army-type { border: 1px solid transparent; margin-bottom: 5px; padding: 3px; border-radius: 4px; }
+.army-type.active { border-color: var(--gold); }
+.army-select { display:flex; width:100%; align-items:center; padding:0; gap:4px; text-align:left; }
+.army-face { width:42px; flex:none; height:48px; }
+.army-face svg { width:100%; height:100%; }
+.army-label { min-width:0; font-size:11px; line-height:1.3; }
+.army-label small { display:block; color:var(--muted); font-size:10px; margin-top:3px; }
+.army-manage { width:100%; margin-top:3px; }
+.army-options { display:grid; gap:3px; padding-top:4px; }
+.army-rail.locked .army-type { opacity:.55; }
+.battle-report { position:fixed; z-index:70; left:50%; top:50%; transform:translate(-50%,-50%); width:min(760px,calc(100vw - 24px)); max-height:calc(100dvh - 30px); overflow:auto; padding:20px; background:var(--panel-solid); pointer-events:auto; }
+.battle-report[hidden] { display:none; }
+.battle-report h2 { margin:0 25px 12px 0; font:600 20px var(--font-display); }
+.battle-report .close { position:absolute; right:8px; top:8px; }
+.report-tabs { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:12px; }
+.report-tabs button { padding:6px 10px; }
+.report-tabs [aria-pressed=true] { border-color:var(--gold); }
+.battle-leaders { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:14px; }
+.battle-leaders>div { background:#172137; padding:10px; border-radius:4px; }
+.battle-leaders small,.battle-leaders b { display:block; font-size:12px; line-height:1.5; }
+.battle-leaders small { color:var(--muted); }
+.report-scroll { overflow:auto; }
+.battle-report table { width:100%; border-collapse:collapse; text-align:left; font-size:12px; }
+.battle-report th,.battle-report td { padding:7px; border-bottom:1px solid var(--panel-line); }
+.battle-report td small { display:block; color:var(--muted); font-size:11px; max-width:260px; }
+.battle-report p { font-size:11px; color:var(--muted); }
+@media (min-width:821px) and (min-aspect-ratio:1/1) {
+ .actions { position:fixed; right:auto; bottom:auto; flex-direction:row; flex-wrap:wrap; justify-content:center; min-width:0; width:max-content; max-width:min(650px,calc(100vw - 170px)); transform:translate(-50%,-100%); padding:6px; background:var(--panel-solid); border:1px solid var(--panel-line); border-radius:5px; }
+ .actions .btn { width:auto; min-height:34px; padding:6px 10px; }
+ .actions .btn .lbl { display:inline; }
+ .actions .btn .key { display:none; }
+ .turn .mini.blue { display:none; }
+ .sheet { left:158px; }
+}
+@media (max-width:820px) {
+ .army-rail { top:200px; width:57px; padding:3px; bottom:calc(var(--tray-h,142px) + 160px); }
+ .army-heading { font-size:0; }
+ .army-heading button { width:100%; font-size:10px; }
+ .army-select { flex-direction:column; }
+ .army-label { font-size:0; }
+ .army-label small { font-size:10px; }
+ .army-label small { white-space:nowrap; }
+ .army-manage { font-size:10px; }
+ .army-options { position:fixed; top:260px; left:68px; width:130px; background:var(--panel-solid); padding:8px; border:1px solid var(--gold); }
+ .army-options button { min-height:38px; }
+ .battle-leaders { grid-template-columns:1fr; }
+ .battle-report { padding:14px; }
+}
+@media (min-width:821px) and (max-height:500px) { .army-rail { top:93px; width:110px; } }
+
+.card .battle-mini { font-size:11px; white-space:normal; line-height:1.3; }
+
+.army-popover[hidden] { display:none; }
+.army-popover { position:fixed; z-index:24; left:70px; top:235px; width:145px; padding:8px; max-height:310px; overflow:auto; background:var(--panel-solid); }
+.army-popover .army-options { position:static; width:auto; padding:0; border:none; }
+.army-popover button { min-height:44px; cursor:pointer; color:var(--ivory); background:#192337; border:1px solid var(--panel-line); border-radius:4px; }
+
+.battle-report-backdrop { position:fixed; inset:0; z-index:68; background:rgba(2,7,15,.55); }
+.battle-report-backdrop[hidden] { display:none; }
+@media(pointer:coarse) { .army-rail button { min-height:36px; } }

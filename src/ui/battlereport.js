@@ -1,0 +1,10 @@
+import {esc} from './util.js';
+import {ABILITY_CATALOG} from '../abilities.js';
+const rank=(rows,key)=>[...rows].sort((a,b)=>b[key]-a[key]||a.id.localeCompare(b.id));
+export function battleReportHTML(report,{side='blue',title='Battle statistics',previous=false}={}) {
+ const rows=report.units.filter(u=>u.faction===side),given=rank(rows,'damageDealt')[0],taken=rank(rows,'damageTaken')[0];
+ const uses={};for(const u of rows)for(const [id,n] of Object.entries(u.abilityUses))uses[id]=(uses[id]||0)+n;
+ const ability=Object.entries(uses).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))[0];
+ const leader=(label,u,key)=>`<div><small>${label}</small><b>${u?.[key]?esc(u.name)+' · '+u[key]:'No activity yet'}</b></div>`;
+ return `<button class="btn close" data-report="close" aria-label="Close statistics">×</button><h2>${esc(title)}</h2><div class="report-tabs"><button data-report="blue" aria-pressed="${side==='blue'}">Your army</button><button data-report="red" aria-pressed="${side==='red'}">Enemies</button><button data-report="${previous?'current':'previous'}">${previous?'Current battle':'Last completed mission'}</button></div><div class="battle-leaders">${leader('Most damage dealt',given,'damageDealt')}${leader('Most damage taken',taken,'damageTaken')}<div><small>Most used ability</small><b>${ability?esc(ABILITY_CATALOG[ability[0]]?.name||ability[0])+' · '+ability[1]:'No activations yet'}</b></div></div><div class="report-scroll"><table><thead><tr><th>Character</th><th>Dealt</th><th>Taken</th><th>Abilities</th></tr></thead><tbody>${rank(rows,'damageDealt').map(u=>`<tr><td>${esc(u.name)}<small>${u.hp===0?'Fallen':u.state==='reserve'?'On bench':Number.isFinite(u.c)&&Number.isFinite(u.r)?'Tile '+u.c+', '+u.r:''}</small></td><td>${u.damageDealt}</td><td>${u.damageTaken}</td><td>${Object.values(u.abilityUses).reduce((s,n)=>s+n,0)}<small>${Object.entries(u.abilityUses).map(([id,n])=>esc(ABILITY_CATALOG[id]?.name||id)+' ×'+n).join(', ')}</small></td></tr>`).join('')}</tbody></table></div><p>Strike damage after mitigation, including overkill. Successful active ability uses are counted; spells belong to the army.</p>`;
+}

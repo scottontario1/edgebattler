@@ -61,6 +61,7 @@ export function unitCardHTML(u, m) {
         <div class="name-row"><span class="name" title="${esc(u.name)}">${esc(u.name)}</span>${u.stars ? `<span class="rank" title="${u.stars}-star tier">${starPips(u.stars, u.stars, 12)}</span>` : ''}${u.boss ? '<span class="tag boss">BOSS</span>' : ''}<span class="tag side">${side}</span></div>
         <div class="cls" title="${esc(u.title)} · ${esc(categoryName(u))} · ${esc(u.weapon)}">${esc(u.title)} · Lv ${u.lv} · MOV ${u.mov}</div>
         <div class="hp"><span>HP</span><div class="bar"><i style="width:${pctOf(u.hp, u.maxHp)}%"></i></div><b>${u.hp}/${u.maxHp}</b></div>
+        ${m.stats?`<div class="cls battle-mini" title="Strike damage after mitigation, including overkill">DMG ${m.stats.damageDealt} · Taken ${m.stats.damageTaken} · Abilities ${Object.values(m.stats.abilityUses).reduce((a,b)=>a+b,0)}</div>`:''}
         <div class="sts">${stanceChip(u)}${energyChip(u)}<span class="schip" title="Authoritative facing">${esc(u.facing||'north')}</span>${statusChips(u, { iconOnly: many })}</div>
         <div class="cls">${(u.selectedAbilities||[]).map(id=>ABILITIES[id]?.name||id).join(' · ')||(monsterPassives(u).map(p=>esc(p.name)).join(' · ')||'Basic actions')}${selectedCost(u)>u.energy?' · Paid picks suspended':''}</div>
       </div>`;
@@ -126,6 +127,7 @@ export function sheetHTML(u, m) {
     tier ? row('Stars', tier) : '',
     abilities ? row('Abilities', abilities) : '',
     sts ? row('Statuses', sts, 'wide') : '',
+    m.stats ? row('Battle stats', `<b>${m.stats.damageDealt}</b> damage dealt · <b>${m.stats.damageTaken}</b> taken · <b>${Object.values(m.stats.abilityUses).reduce((a,b)=>a+b,0)}</b> ability uses`, 'wide') : '',
     monsterPassives(u).length ? row('Passives', monsterPassives(u).map(p=>`<div class="monster-passive"><b>${esc(p.name)}</b><span>${esc(p.description)}</span></div>`).join(''), 'wide') : '',
   ].join('');
   return `

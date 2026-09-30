@@ -1,0 +1,23 @@
+import {spawnSync} from 'node:child_process';
+const expression=`(async()=>{
+ const click=s=>document.querySelector(s).click();
+ click('[data-act=campaignOrder]');click('[data-act=resolve]');
+ while(__ui.state.busy)await new Promise(r=>setTimeout(r,100));
+ click('[data-army-action=stats]');
+ const id=__ui.state.selectedId,round=__game.match.round;
+ window.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
+ document.querySelector('canvas').dispatchEvent(new MouseEvent('click',{bubbles:true,clientX:700,clientY:400}));
+ if(__game.match.round!==round||__ui.state.selectedId!==id)throw Error('Stats input leaked');
+ const buttons=[...document.querySelectorAll('.battle-report button')];buttons.at(-1).focus();
+ window.dispatchEvent(new KeyboardEvent('keydown',{key:'Tab',bubbles:true,cancelable:true}));
+ if(document.activeElement!==buttons[0])throw Error('Stats focus escaped');
+ window.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+ if(__ui.state.reportOpen||__ui.state.selectedId!==id)throw Error('Escape leaked');
+ click('[data-army-action=stats]');click('.battle-report-backdrop');
+ if(__ui.state.reportOpen)throw Error('Backdrop failed');
+ click('[data-army-action=stats]');
+ if(!__game.match.battleStats().units.some(u=>u.damageDealt>0))throw Error('Missing combat stats');
+ return {modalInputsSafe:true,round};
+})()`;
+const r=spawnSync(process.execPath,['tools/shot.mjs','docs/campaign/evidence/playtest-statistics.png','2048','994','campaign=road&you=crown&speed=80','6000'],{env:{...process.env,STEPS:JSON.stringify([['eval',expression]])},stdio:'inherit',timeout:90000});
+process.exit(r.status??1);

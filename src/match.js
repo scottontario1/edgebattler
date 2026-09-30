@@ -1,3 +1,4 @@
+import { createBattleStats } from './battle-stats.js';
 // Match controller: the authoritative state of one game and the only code that changes it.
 // Pure data (no DOM, no Three.js), so the browser UI (src/ui.js) and the Node simulator
 // (tools/sim/) run exactly the same rules. Every change goes through `apply(action)` during
@@ -80,6 +81,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
     sides[f] = { cards, rng, loadouts: {}, queuedSpellCards: {}, heroRespawnAt: null,
       stats: { recruited: {}, spells: {}, skills: 0, deployed: 0, withdrawn: 0, combined: 0, lost: {}, killed: {}, supplySpent: 0, captures: 0, respawns: 0, blockedDraws: 0, abilities: {}, abilitySkips: {}, energySpent: 0, energyCapped: 0, cycles: {hand:0,bench:0}, supplyRefunded: 0 } };
   }
+  const battleStats = createBattleStats();
   const m = { seed, maxRounds, round: 1, phase: 'planning', over: false, winner: null, reason: null, units, territory, sides, seq: 0, objects: [] };
 
   if (campaign) {
@@ -456,6 +458,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
    */
   function resolveRound() {
     if (m.over || m.phase !== 'planning') return { batches: [], notes: [], over: m.over };
+    battleStats.register(m.units);
     m.phase = 'battle';
     const batches = [];
     const notes = [];
@@ -674,6 +677,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
     if (m.over) {
       results.push({ type: 'end', winner: m.winner, reason: m.reason });
       batches.push({ type: 'results', events: results });
+      battleStats.record(batches);
       emit({ t: 'round', round: m.round, batches });
       emit(summaryEntry());
       emit({ t: 'result', round: m.round, winner: m.winner, reason: m.reason, stats: statsEntry() });
@@ -722,6 +726,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
     m.phase = 'planning';
     if (m.maxRounds && m.round > m.maxRounds) { end(null, 'round-limit'); results.push({ type: 'end', winner: null, reason: 'round-limit' }); }
     batches.push({ type: 'results', events: results });
+    battleStats.record(batches);
     emit({ t: 'round', round: finished, batches });
     emit(summaryEntry(finished));
     if (m.over) emit({ t: 'result', round: finished, winner: m.winner, reason: m.reason, stats: statsEntry() });
@@ -802,6 +807,8 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
 
   Object.assign(m, {
     alive, byId, unitAt, objectAt, addObject, consumeObject, objectsNear, board, population, deploymentTiles, canDeployAt, canWithdraw, armyRecords,
+    battleStats: () => { battleStats.register([...m.units,...sides.blue.cards.reserves,...sides.red.cards.reserves]); return battleStats.snapshot(); },
+    unitStats: id => battleStats.forUnit(id),
     apply, resolveRound, summary: sideSummary, stats: statsEntry, champion: (f) => CHAMPION[f], home: (f) => HOME[f],
   });
   return m;

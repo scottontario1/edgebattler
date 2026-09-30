@@ -1,3 +1,5 @@
+import { armyGroups, armyHTML, unitType } from './ui/army.js';
+import { battleReportHTML } from './ui/battlereport.js';
 import { createObjectLayer } from './objects.js';
 import {abilityEditorHTML} from './ui/abilities.js';
 import {selectedCost,FACING,flankSide} from './abilities.js';
@@ -225,6 +227,11 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
   const actions = document.getElementById('actions');
   const planning = document.getElementById('planning');
   const sheet = document.getElementById('sheet');
+  const army = document.createElement('nav'); army.className='panel army-rail'; army.setAttribute('aria-label','Your recruited army'); document.body.appendChild(army);
+  const armyPopover=document.createElement('div');armyPopover.className='panel army-popover';armyPopover.hidden=true;document.body.appendChild(armyPopover);
+  const reportBackdrop=document.createElement('div');reportBackdrop.className='battle-report-backdrop';reportBackdrop.hidden=true;document.body.appendChild(reportBackdrop);
+  const reportPanel = document.createElement('section'); reportPanel.className='panel battle-report'; reportPanel.hidden=true;reportPanel.setAttribute('role','dialog');reportPanel.setAttribute('aria-modal','true');reportPanel.setAttribute('aria-label','Battle statistics');document.body.appendChild(reportPanel);
+
   const turnNo = document.getElementById('turn-no');
   const phaseEl = document.getElementById('phase');
   // Rules and state live in the match controller (src/match.js); this module is the view over it.
@@ -258,7 +265,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     mode: 'idle', // 'idle' | 'target'
     targetId: null,
     danger: false,
-    sheet: false,
+    sheet: false, managedType:null, reportOpen:false, reportSide:'blue', previousReport:false,
     abilityDraft:null, abilityTargets:[], abilityNotice:'', abilityGroupOpen:false, lastAbilityResults:{},
     selectedAt: 0,
     phase: 'player', // 'player' | 'enemy'
@@ -288,7 +295,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
 
   // ---------- Panels ----------
 
-  const unitCard = (u) => unitCardHTML(u, { portrait: portraits.get(u.id) });
+  const unitCard = (u) => unitCardHTML(u, { portrait: portraits.get(u.id), stats:match.unitStats(u.id) });
 
   function forecastCard(a, d) {
     const f = forecast(a, d, range.targets.get(d.id));
@@ -336,7 +343,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
         : state.upgradeChoice ? 'Choose the surviving copy and destination, then confirm.'
           : 'Select a card to recruit or prepare a spell.');
     const m = {
-      supply: blue().cards.supply, population: blue().cards.population, populationCap: CARD_LIMITS.populationCap,
+      supply: blue().cards.supply, maxSupply:CARD_LIMITS.maxSupply, population: blue().cards.population, populationCap: CARD_LIMITS.populationCap,
       reserveCount: blue().cards.reserves.length, reserveCapacity: CARD_LIMITS.reserveCapacity,
       cyclesRemaining:blue().cards.cyclesRemaining, locations: controlledCount, prompt, phase: state.phase, collapsed: state.trayCollapsed,
       hand: handHTML({
@@ -389,6 +396,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     sheet.className = `panel sheet ${u.faction}`;
     sheet.innerHTML = sheetHTML(u, {
       portrait: portraitSVG(u), weapon: weaponOf(u), terrain: TERRAIN[terrainAt(u.c, u.r)],
+      stats: match.unitStats(u.id),
       moveType: { armor: 'Armored', mounted: 'Mounted', foot: 'Foot' }[MOVE_TYPE[u.cls] || 'foot'],
     });
     if(u.faction==='blue'&&!state.busy&&!state.over) {
@@ -453,6 +461,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
       document.querySelector('.campaign-controls').innerHTML = controls;
     }
     actions.innerHTML = html;
+    positionActions();
   }
 
   function showTerrain(c, r) {
@@ -529,6 +538,9 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
 
   function refresh() {
     objectLayer.sync(match.objects);
+    match.battleStats();
+    renderArmy();
+    renderReport();
     renderOverlays();
     renderCard();
     renderSheet();
@@ -543,6 +555,66 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     feed.sync({ phase: state.phase, turn: state.turn, notice: state.notice, busy: state.busy, over: state.over });
     plates.sync(state);
   }
+
+  const groupsNow = () => armyGroups(match.alive('blue'),blue().cards.reserves);
+  function renderArmy() {
+    army.innerHTML=armyHTML(groupsNow(),{portraitFor:u=>portraitSVG(u),activeType:selected()?unitType(selected()):null,managedType:state.managedType});
+    army.classList.toggle('locked',state.busy);
+    armyPopover.replaceChildren();armyPopover.hidden=true;
+    if(innerWidth<=820){const options=army.querySelector('.army-options');if(options){armyPopover.hidden=false;armyPopover.appendChild(options);}}
+  }
+  function renderReport() {
+    reportPanel.hidden=!state.reportOpen;reportBackdrop.hidden=!state.reportOpen;if(!state.reportOpen)return;
+    let report=match.battleStats(),title='Battle statistics';
+    if(state.previousReport) {
+      try {const saved=JSON.parse(localStorage.getItem('battler:last-result')||'null');if(saved){report=saved.report;title=`${saved.title} · ${saved.round} rounds · ${saved.winner==='blue'?'Victory':'Defeat'}`;}else {report={units:[],abilities:{}};title='No completed mission saved yet';}}catch {report={units:[],abilities:{}};title='No completed mission saved yet';}
+    }
+    reportPanel.innerHTML=battleReportHTML(report,{side:state.reportSide,title,previous:state.previousReport});
+  }
+  function positionActions() {
+    if(innerWidth<=820||innerHeight>innerWidth){actions.style.left='';actions.style.top='';return;}
+    const u=selected(),entry=u?units.byId.get(u.id):null;
+    const p=entry?entry.group.position.clone().add(new THREE.Vector3(0,1.5,0)).project(camera):null;
+    const half=actions.offsetWidth/2,topMargin=match.campaign?142:85;
+    const x=p?(p.x+1)*innerWidth/2:innerWidth/2;
+    const y=p?(1-p.y)*innerHeight/2-12:innerHeight-(planning.offsetHeight||145)-20;
+    actions.style.left=Math.round(Math.max(half+150,Math.min(innerWidth-half-12,x)))+'px';
+    actions.style.top=Math.round(Math.max(topMargin+actions.offsetHeight,Math.min(innerHeight-100,y)))+'px';
+  }
+  function handleArmyClick(e) {
+    if(state.busy)return;
+    const b=e.target.closest('button');if(!b||b.disabled)return;
+    const key=b.dataset.armySelect||b.dataset.armyManage||b.dataset.type;
+    const g=groupsNow().find(g=>g.key===key);
+    if(b.dataset.armySelect){if(g.field.length)select(g.field[0].id);else if(g.reserves[0]){state.selectedReserveId=g.reserves[0].id;state.selectedCardId=null;state.mode='deploy';refresh();}return;}
+    if(b.dataset.armyManage){state.managedType=state.managedType===key?null:key;refresh();return;}
+    if(b.dataset.armyBench){state.selectedReserveId=b.dataset.armyBench;state.selectedCardId=null;state.mode='deploy';refresh();return;}
+    const action=b.dataset.armyAction;
+    if(action==='stats'){commands.battleStats();return;}
+    if(!g)return;
+    if(action==='next'&&g.field.length){const i=g.field.findIndex(u=>u.id===state.selectedId);select(g.field[(i+1)%g.field.length].id);}
+    if(action==='plan'&&g.field.length){select(g.field[0].id);state.sheet=true;state.abilityDraft={unitId:g.field[0].id,ids:[...(g.field[0].selectedAbilities||[])]};state.abilityTargets=g.field.map(u=>u.id);state.abilityGroupOpen=true;refresh();}
+    if(['advance','hold'].includes(action)){for(const u of g.field)act({type:'stance',unitId:u.id,stance:action});refresh();}
+  }
+  army.addEventListener('click',handleArmyClick);armyPopover.addEventListener('click',handleArmyClick);
+  addEventListener('resize',renderArmy);
+  reportPanel.addEventListener('click',e=>{const action=e.target.closest('[data-report]')?.dataset.report;if(!action)return;if(action==='close')state.reportOpen=false;else if(action==='previous'||action==='current')state.previousReport=action==='previous';else state.reportSide=action;renderReport();});
+  reportBackdrop.addEventListener('click',()=>{state.reportOpen=false;renderReport();army.querySelector('[data-army-action=stats]')?.focus();});
+  addEventListener('keydown',e=>{
+    if(state.reportOpen){
+      e.stopImmediatePropagation();
+      if(e.key==='Escape'){e.preventDefault();state.reportOpen=false;renderReport();army.querySelector('[data-army-action=stats]')?.focus();}
+      else if(e.key==='Tab'){
+        const buttons=[...reportPanel.querySelectorAll('button:not(:disabled),a[href]')];
+        const first=buttons[0],last=buttons.at(-1);
+        if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}
+        else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}
+      }
+      return;
+    }
+    if(e.key==='Escape'&&state.managedType){e.stopImmediatePropagation();e.preventDefault();state.managedType=null;refresh();}
+  },true);
+
 
   function addRosterUnit(unit) {
     portraits.set(unit.id, portraitSVG(unit));
@@ -583,6 +655,8 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     state.mode = 'idle';
     refresh();
     const won = match.winner === 'blue';
+    try {localStorage.setItem('battler:last-result',JSON.stringify({title:CAMPAIGN_LEVELS.find(l=>l.id===match.campaign?.id)?.title||'Skirmish',round:match.round,winner:match.winner,report:match.battleStats(),stats:match.stats()}));}catch {/* persistence must not block play */}
+
     const why = { 'keep-captured': won ? 'The enemy keep has fallen' : 'Your keep has fallen',
       'campaign-complete': 'The north road is secured', 'army-destroyed': won ? 'The enemy army is destroyed' : 'Your army has fallen', 'round-limit': 'The round limit was reached' }[match.reason] || '';
     banner(match.winner ? (won ? 'Victory' : 'Defeat') : 'Draw', why, 0);
@@ -821,6 +895,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
   }
 
   const commands = {
+    battleStats() {state.reportOpen=true;state.previousReport=false;renderReport();reportPanel.querySelector('[data-report=close]')?.focus();},
     resolve() { resolveBattle(); },
     recruit() { recruitSelectedCard(); },
     cycle() {
@@ -952,7 +1027,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
       const id=pick.dataset.ability,ids=state.abilityDraft.ids;
       state.abilityDraft.ids=ids.includes(id)?ids.filter(x=>x!==id):[...ids,id];state.abilityNotice='Unapplied picks';refresh();
     }
-    if(e.target.closest('[data-plan-class]')) {state.abilityTargets=match.alive('blue').filter(u=>u.cls===selected().cls).map(u=>u.id);refresh();}
+    if(e.target.closest('[data-plan-class]')) {state.abilityTargets=match.alive('blue').filter(u=>unitType(u)===unitType(selected())).map(u=>u.id);refresh();}
     if(e.target.closest('[data-plan-apply]')) {
       const result=act({type:'abilities',unitIds:state.abilityTargets,abilityIds:state.abilityDraft.ids});
       state.abilityNotice=result.ok?'Picks saved. They repeat when ready.':`Cannot apply: ${result.reason.replaceAll('-',' ')}. No units changed.`;refresh();
@@ -1057,6 +1132,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     cursor.visible = false;
   });
   canvas.addEventListener('click', (e) => {
+    if(state.reportOpen)return;
     if (view.consumeDrag()) return; // that press was a pan
     if (state.busy) return;
     const tile = pick(e);
@@ -1114,7 +1190,9 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
 
   return {
     activeId: () => state.hoverId || state.selectedId,
+    isBusy: () => state.busy,
     update(t) {
+      positionActions();
       const s = 1 + Math.sin(t * 5) * 0.04;
       cursor.scale.set(s, 1, s);
       // Selection snaps in from 1.35x over ~180 ms, then breathes gently.

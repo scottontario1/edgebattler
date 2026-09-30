@@ -31,7 +31,9 @@ const expression=`(async()=>{
   const next=document.querySelector('.campaign-controls a')?.getAttribute('href');
   const check=replay(__game.log.entries);
   if(!check.ok)throw new Error('Browser replay mismatch: '+JSON.stringify(check.mismatches.slice(0,1)));
-  return {level:m.campaign.id,faction:m.campaign.faction,winner:m.winner,round:m.round,regroupSeen,waves:[...waves],next,replay:check.ok};
+  const saved=JSON.parse(localStorage.getItem('battler:last-result'));
+  if(!saved||saved.winner!=='blue'||!saved.report.units.some(u=>u.damageDealt>0))throw new Error('Missing saved battle statistics');
+  return {savedStats:true,level:m.campaign.id,faction:m.campaign.faction,winner:m.winner,round:m.round,regroupSeen,waves:[...waves],next,replay:check.ok};
 })()`;
 const result=spawnSync(process.execPath,['tools/shot.mjs',`docs/campaign/evidence/${faction}-${level}-victory.png`,width,height,`campaign=${level}&you=${faction}&speed=80`,'4500'],{
   env:{...process.env,STEPS:JSON.stringify([['eval',expression]])},stdio:'inherit',timeout:240000,
