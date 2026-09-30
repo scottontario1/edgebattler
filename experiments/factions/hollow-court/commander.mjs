@@ -11,6 +11,7 @@
 import { heuristic, DEFAULT_PARAMS } from '../../../src/ai/commander.js';
 import { CARD_LIMITS } from '../../../src/cards.js';
 import { ABILITY_CATALOG } from '../../../src/abilities.js';
+import { findTile } from '../../../src/board.js';
 
 export const COURT_AI = Object.freeze({
   mix: { feralGhoul: 0.35, graveguard: 0.30, wight: 0.15, necromancer: 0.10, mourningKnight: 0.10 }, // target share of the field army
@@ -67,6 +68,9 @@ export function courtCommander(m, f, { act, params = {} }) {
 
   // 3. stances for Court classes (the Mourning Knight is a cavalier variant: the shipped code already handled it).
   const champ = m.byId(m.champion(f));
+  const hpOf = (list) => list.reduce((sum, o) => sum + o.hp, 0);
+  const seize = hpOf(mine()) >= hpOf(foes()) * DEFAULT_PARAMS.seizeRatio;
+  const enemyKeep = findTile(other(f) === 'red' ? 'K' : 'C');
   for (const u of mine()) {
     if (u.id === m.champion(f)) continue;
     let want = null;
@@ -75,10 +79,14 @@ export function courtCommander(m, f, { act, params = {} }) {
       const friend = mine().filter((o) => o.id !== u.id && o.cls !== 'necromancer' && o.id !== m.champion(f))
         .sort((a, b) => manhattan(a, u) - manhattan(b, u) || a.id.localeCompare(b.id))[0] || (champ && champ.hp > 0 ? champ : null);
       want = friend ? { stance: 'protect', targetId: friend.id } : { stance: 'hold' };
-    } else if (u.cls === 'graveguard') want = nearest <= P.guardHoldRange ? { stance: 'hold' } : { stance: 'advance' };
-    else if (u.cls === 'feralGhoul' || u.cls === 'wight') want = { stance: 'advance' };
+    } else if (u.cls === 'graveguard' && nearest <= P.guardHoldRange) want = { stance: 'hold' };
+    else if (u.cls === 'graveguard' || u.cls === 'feralGhoul' || u.cls === 'wight') {
+      // march on the enemy keep when well ahead on HP and no foe is close, exactly as the shipped heuristic does for its units
+      want = seize && enemyKeep && nearest > 3 ? { stance: 'advance', tile: enemyKeep } : { stance: 'advance' };
+    }
     if (!want) continue;
-    const same = u.stance === want.stance && (want.targetId ? u.objective?.targetId === want.targetId : true);
+    const same = u.stance === want.stance && (want.targetId ? u.objective?.targetId === want.targetId : true)
+      && (want.tile ? u.objective?.type === 'tile' && u.objective.c === want.tile[0] && u.objective.r === want.tile[1] : want.stance !== 'advance' || !u.objective);
     if (!same) act({ type: 'stance', faction: f, unitId: u.id, ...want });
   }
 
