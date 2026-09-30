@@ -57,7 +57,8 @@ export function registerCulture(def) {
   for (const [key, v] of Object.entries(def.variants || {})) {
     if (!UNIT_CARDS[v.base] && !cards[v.base]) throw new Error(`variant ${key}: unknown base class ${v.base}`);
     if (UNIT_CARDS[key]) throw new Error(`variant ${key} collides with a shipped unit`);
-    variants[key] = { ...v, culture: def.id };
+    // A variant card's default stance must reach the recruit template, or the reserve keeps the base class's stance.
+    variants[key] = { ...v, culture: def.id, ...(v.card?.defaultStance ? { stats: { ...(v.stats || {}), stance: v.card.defaultStance } } : {}) };
     const base = UNIT_CARDS[v.base] ?? cards[v.base];
     cards[key] = { id: `unit-${key}`, type: 'unit', rarity: 'common', unitId: key, base: v.base, name: v.name, cost: base.cost, class: base.class,
       typeLabel: base.typeLabel, stars: 1, range: base.range, defaultStance: base.defaultStance, ability: v.description || base.ability,
@@ -75,7 +76,9 @@ export function registerCulture(def) {
   }
   registerChampions(champs);
   registerVariants(variants);
-  registerAbilities(def.abilities || []);
+  const SHIPPED = ['pikeman', 'archer', 'cavalier'];
+  // Abilities on a shipped class stay inside their culture (abilityApplies); abilities on the culture's own classes need no tag.
+  registerAbilities((def.abilities || []).map((a) => (!a.culture && !a.anyUnit && a.classes?.some((c) => SHIPPED.includes(c)) ? { ...a, culture: def.id } : a)));
   record.abilities = (def.abilities || []).map((a) => a.id);
   const spells = [];
   for (const [key, sp] of Object.entries(def.spells || {})) {

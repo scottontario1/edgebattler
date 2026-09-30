@@ -25,9 +25,9 @@ const FIXTURE = {
     fxGrit: { base: 'pikeman', name: 'Fixture Grit', passives: [{ id: 'grit', effect: { energyWhenStruck: 1 } }] },
   },
   abilities: [
-    { id: 'fxLow', name: 'Fixture Low', classes: ['pikeman'], cost: 0, cooldown: 1, phase: 'recovery', requires: { hpBelow: 0.5 }, effect: { damageDealt: 3 } },
-    { id: 'fxHigh', name: 'Fixture High', classes: ['pikeman'], cost: 0, cooldown: 1, phase: 'recovery', requires: { hpAbove: 0.5 }, effect: { damageDealt: 1 } },
-    { id: 'fxHome', name: 'Fixture Home', classes: ['pikeman'], cost: 0, cooldown: 1, phase: 'defense', requires: { onControlled: true }, effect: { damageTaken: 1 } },
+    { id: 'fxLow', name: 'Fixture Low', classes: ['pikeman'], anyUnit: true, cost: 0, cooldown: 1, phase: 'recovery', requires: { hpBelow: 0.5 }, effect: { damageDealt: 3 } },
+    { id: 'fxHigh', name: 'Fixture High', classes: ['pikeman'], anyUnit: true, cost: 0, cooldown: 1, phase: 'recovery', requires: { hpAbove: 0.5 }, effect: { damageDealt: 1 } },
+    { id: 'fxHome', name: 'Fixture Home', classes: ['pikeman'], anyUnit: true, cost: 0, cooldown: 1, phase: 'defense', requires: { onControlled: true }, effect: { damageTaken: 1 } },
   ],
   spells: { fxCry: { spell: { id: 'fxCry', name: 'Fixture Cry', type: 'spell', cost: 1, target: 'friendly-unit', duration: 'upcoming-battle', effect: { type: 'status', status: 'damageDealt', duration: 2 } }, card: { rarity: 'common', effect: 'test' } } },
   pool: ['fxGuard', 'fxBanner', 'fxCry'],

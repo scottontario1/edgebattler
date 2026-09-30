@@ -111,7 +111,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       selectedAbilities: u.selectedAbilities || [],
     }));
     u.costPaid=u.costPaid??0;
-    u.rarity=u.rarity??unitCardFor(u.cls)?.rarity??'common';
+    u.rarity=u.rarity??unitCardFor(u.variantId ?? u.cls)?.rarity??'common';
     u.state = 'field';
     u.population = u.population ?? 1;
     u.planningMoved = false;
@@ -242,7 +242,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
     withdraw({ faction: f, unitId }) {
       const u = byId(unitId);
       if (!canWithdraw(f, u)) return fail(u?.id === CHAMPION[f] ? 'champion-cannot-bench' : 'not-on-controlled-tile');
-      const reserve = { ...clone(u), id: `${f}-r${++m.seq}-${u.cls}`, fieldId: u.id, unitId: u.cls, faction: f, state: 'reserve' };
+      const reserve = { ...clone(u), id: `${f}-r${++m.seq}-${u.variantId ?? u.cls}`, fieldId: u.id, unitId: u.variantId ?? u.cls, faction: f, state: 'reserve' };
       for (const k of ['c', 'r', 'planningMoved', 'done', 'moved']) delete reserve[k];
       m.units = m.units.filter((x) => x !== u);
       sides[f].cards = { ...sides[f].cards, reserves: [...sides[f].cards.reserves, reserve] };

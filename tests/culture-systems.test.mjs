@@ -26,7 +26,7 @@ const CULTURE = {
   champions: { sysCaptain: { name: 'Captain Sys', cls: 'sysSapper', stats: { hp: 30, def: 9 }, look: { skin: '#e8b995', hair: '#222', eyes: '#333', style: 'short' }, faction: 'blue' } },
   variants: { sysPlain: { base: 'pikeman', name: 'Sys Plain', delta: { hp: 1 }, card: { rarity: 'common' } } },
   abilities: [
-    { id: 'sysDig', name: 'Sys Dig', classes: ['sysSapper', 'pikeman'], cost: 0, cooldown: 1, phase: 'defense', spawn: { kind: 'barricade', hp: 10, blocks: true }, description: 'test' },
+    { id: 'sysDig', name: 'Sys Dig', classes: ['sysSapper', 'pikeman'], anyUnit: true, cost: 0, cooldown: 1, phase: 'defense', spawn: { kind: 'barricade', hp: 10, blocks: true }, description: 'test' },
     { id: 'sysChallenge', name: 'Sys Challenge', units: ['sysCaptain'], classes: [], cost: 0, cooldown: 1, phase: 'defense', mark: { radius: 6 }, effect: { damageDealt: 4, offTargetPenalty: 8 }, description: 'test' },
     { id: 'sysEat', name: 'Sys Eat', classes: ['sysSapper'], cost: 0, cooldown: 1, phase: 'recovery', requires: { objectNear: { kind: 'corpse', radius: 3 } }, consume: { kind: 'corpse', radius: 3, count: 1, heal: { radius: 2, amount: 8 } }, description: 'test' },
     { id: 'sysPaladin', name: 'Sys Paladin Kit', classes: ['paladin', 'barbarian'], cost: 0, cooldown: 1, phase: 'recovery', effect: { damageDealt: 1 }, description: 'test' },

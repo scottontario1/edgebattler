@@ -514,7 +514,7 @@ test('the clan commander uses the kit: Reaving Rush, Blood Challenge with a mark
   });
 });
 
-test('ENGINE ISSUE 1 (documented, worked around): a variant card\'s defaultStance is ignored at deploy unless the template says it too', () => {
+test('a variant card\'s defaultStance reaches the deployed unit (engine fixed on faction_overhaul; the Fang Hunter workaround is now redundant)', () => {
   const probe = { id: 'probe', variants: { probeArcher: { base: 'archer', name: 'Probe', delta: {}, card: { rarity: 'common', defaultStance: 'advance' } } } };
   const deploy = () => {
     const m = createMatch({ seed: 9, pools: { blue: ['probeArcher'] } });
@@ -529,7 +529,7 @@ test('ENGINE ISSUE 1 (documented, worked around): a variant card\'s defaultStanc
     assert.equal(unitCardFor('probeArcher').defaultStance, 'advance');
     // Expected 'advance'; the engine deploys 'hold' because the reserve record carries the graded Archer template's stance. If this
     // assertion starts failing the engine was fixed: delete `stats: { stance: 'advance' }` from the Fang Hunter and this test.
-    assert.equal(deploy().stance, 'hold');
+    assert.equal(deploy().stance, 'advance');
   } finally { resetCultures(); }
   registerCulture({ ...probe, variants: { probeArcher: { ...probe.variants.probeArcher, stats: { stance: 'advance' } } } });
   try { assert.equal(deploy().stance, 'advance', 'the workaround used by the Fang Hunter'); } finally { resetCultures(); }

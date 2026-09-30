@@ -229,7 +229,7 @@ test('Close Ranks: Pikeman class (Crown Pikeman and Crown Guard), 1 energy / coo
   assert.ok(kitFor(g).some((a) => a.id === 'closeRanks'));
   for (const key of ['bannerman', 'oathsworn', 'archer', 'cavalier']) assert.equal(kitFor(rec(key, 'z', 'blue', 1, 1)).some((a) => a.id === 'closeRanks'), false, `${key} has no Close Ranks`);
   for (const key of ['crownGuard', 'crownPike']) assert.equal(kitFor(rec(key, 'z', 'blue', 1, 1)).some((a) => a.id === 'closeRanks'), true, `${key} has Close Ranks`);
-  assert.equal(kitFor(rec('pikeman', 'z', 'blue', 1, 1)).some((a) => a.id === 'closeRanks'), true, 'KNOWN LIMITATION: kits are class-keyed, so a plain Pikeman could select it too (engine request: kits by variant)');
+  assert.equal(kitFor(rec('pikeman', 'z', 'blue', 1, 1)).some((a) => a.id === 'closeRanks'), false, 'a plain Pikeman does not get Crown skills (culture filter in abilityApplies)');
   assert.equal(validateAbilitySelection(g, ['closeRanks']).ok, true);
   assert.equal(validateAbilitySelection({ ...g, energy: 0 }, ['closeRanks']).reason, 'insufficient-energy');
   assert.equal(validateAbilitySelection(rec('archer', 'p', 'blue', 1, 1, { energy: 4 }), ['closeRanks']).reason, 'invalid-ability');
@@ -445,7 +445,7 @@ test('gap check: a variant card\'s defaultStance alone does not set the unit\'s 
   const reserve = m.summary('blue').reserveState.at(-1);
   const tile = m.deploymentTiles('blue').find(([c, r]) => !m.unitAt(c, r));
   const unit = m.byId(m.apply({ type: 'deploy', faction: 'blue', reserveId: reserve.id, c: tile[0], r: tile[1] }).unitId);
-  assert.equal(unit.stance, 'advance', 'ENGINE GAP: the deployed unit ignores its card\'s default stance (if this fails, the engine fixed it and `stats.stance` in the Crown Guard variant can go)');
+  assert.equal(unit.stance, 'hold', 'a variant card\'s default stance now reaches the deployed unit (engine fixed on faction_overhaul)');
   assert.equal(createRecruitUnit('gapHold2', 'x', 'blue', 1, 1).stance, 'hold', 'stats.stance is the workaround');
   resetCultures();
 });

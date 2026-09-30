@@ -16,7 +16,9 @@ export const resetAbilities = () => { for(const id of Object.keys(ABILITY_CATALO
 export const DEFAULT_ABILITY_STATE = Object.freeze({energy:0,maxEnergy:4,cooldowns:{},selectedAbilities:[],stance:'advance',objective:null,energyGainNextTurn:0,statuses:{}});
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,Number(v)||0));
 // An ability applies to a class (`classes`) and/or to named units such as champions (`units`: ['dreg']).
-export const abilityApplies = (a,unit) => Boolean(a.classes?.includes(unit.cls)||a.units?.includes(unit.id));
+// A culture ability (`culture` set) that targets shipped classes only applies to that culture's own units, so the League's Set
+// Position never reaches a plain Pikeman or another culture's Pikeman. Named `units` (champions) always apply.
+export const abilityApplies = (a,unit) => Boolean(a.units?.includes(unit.id)||(a.classes?.includes(unit.cls)&&(!a.culture||unit.culture===a.culture)));
 export const kitFor = unit => Object.values(ABILITY_CATALOG).filter(a=>abilityApplies(a,unit));
 export const selectedCost = unit => (unit.selectedAbilities||[]).reduce((n,id)=>n+(ABILITY_CATALOG[id]?.cost||0),0);
 export const battleMovement = unit => unit.stance==='hold'?0:unit.stance==='advance'?Math.max(1,Math.round(unit.mov*ABILITY_RULES.advanceFraction)):unit.mov;
