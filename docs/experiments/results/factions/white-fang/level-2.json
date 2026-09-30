@@ -1,0 +1,697 @@
+[
+ {
+  "label": "N naive: default stances, no picks, no spells",
+  "budget": {
+   "blue": {
+    "supply": 2,
+    "pop": 3
+   },
+   "red": {
+    "supply": 8,
+    "pop": 5
+   }
+  },
+  "n": 400,
+  "blue": 0.775,
+  "red": 0,
+  "mutual": 0,
+  "none": 0.225,
+  "blueCI": [
+   0.7315721378719925,
+   0.8131959097981832
+  ],
+  "rounds": 11.8975,
+  "surv": {
+   "blue": 1.2225,
+   "red": 0.275
+  },
+  "hpLeft": {
+   "blue": 0.3068666666666658,
+   "red": 0.026397058823529395
+  },
+  "margin": {
+   "mean": 87.7275,
+   "half": 2.5376763530787376
+  },
+  "first": {
+   "blue": 18.17,
+   "red": 11.8175,
+   "round": 2.0125
+  },
+  "strikes": 16.855,
+  "landed": 12.1675,
+  "dmgBlue": 147.7575,
+  "dmgRed": 60.03,
+  "movedShare": 0.35723685749449996,
+  "dmgPerHit": 12.148495594683094,
+  "dmgPerHitMoved": 13.064861558658542,
+  "dmgPerHitHeld": 11.602164862914863,
+  "abilityUses": 0,
+  "energy": 0,
+  "abilityById": {},
+  "planFails": 0,
+  "tracked": {
+   "rp1": {
+    "hits": 0.75,
+    "dmg": 7.7,
+    "perHit": 10.266666666666667
+   },
+   "rp2": {
+    "hits": 1.645,
+    "dmg": 17.1,
+    "perHit": 10.395136778115502
+   },
+   "ra1": {
+    "hits": 1.485,
+    "dmg": 22.275,
+    "perHit": 15
+   },
+   "ra2": {
+    "hits": 1.1675,
+    "dmg": 17.5125,
+    "perHit": 15
+   },
+   "ra3": {
+    "hits": 1.66,
+    "dmg": 24.9,
+    "perHit": 15
+   }
+  },
+  "diedShare": {
+   "bf1": {
+    "share": 0.835,
+    "round": 4.940119760479042
+   },
+   "ra2": {
+    "share": 1,
+    "round": 4.0175
+   },
+   "bf2": {
+    "share": 0.9425,
+    "round": 4.5570291777188325
+   },
+   "rp1": {
+    "share": 0.9975,
+    "round": 4.649122807017544
+   },
+   "rp2": {
+    "share": 0.9825,
+    "round": 6.860050890585241
+   },
+   "ra3": {
+    "share": 0.955,
+    "round": 9.395287958115183
+   },
+   "ra1": {
+    "share": 0.79,
+    "round": 11.079113924050633
+   },
+   "dreg": {
+    "share": 0.0225,
+    "round": 10.88888888888889
+   }
+  }
+ },
+ {
+  "label": "S skilled: Dreg marking the exposed Archer (Blood Challenge) with the Reavers advancing beside him",
+  "budget": {
+   "blue": {
+    "supply": 2,
+    "pop": 3
+   },
+   "red": {
+    "supply": 8,
+    "pop": 5
+   }
+  },
+  "n": 400,
+  "blue": 0.9275,
+  "red": 0,
+  "mutual": 0,
+  "none": 0.0725,
+  "blueCI": [
+   0.8978168807373348,
+   0.9490498115499382
+  ],
+  "rounds": 9.515,
+  "surv": {
+   "blue": 1.585,
+   "red": 0.095
+  },
+  "hpLeft": {
+   "blue": 0.3809333333333332,
+   "red": 0.00904411764705882
+  },
+  "margin": {
+   "mean": 96.5575,
+   "half": 2.4697005135795305
+  },
+  "first": {
+   "blue": 24.6,
+   "red": 11.8175,
+   "round": 2.0125
+  },
+  "strikes": 14.8025,
+  "landed": 10.7625,
+  "dmgBlue": 148.8425,
+  "dmgRed": 52.285,
+  "movedShare": 0.4329352622566631,
+  "dmgPerHit": 13.88745448995449,
+  "dmgPerHitMoved": 16.3717806420814,
+  "dmgPerHitHeld": 11.832230880230874,
+  "abilityUses": 7.46,
+  "energy": 11.01,
+  "abilityById": {
+   "bloodChallenge": 3.5499999999999825,
+   "reavingRush": 3.0749999999999784,
+   "warlordsRush": 0.8349999999999932
+  },
+  "planFails": 0.645,
+  "tracked": {
+   "rp1": {
+    "hits": 0.87,
+    "dmg": 11.25,
+    "perHit": 12.931034482758621
+   },
+   "rp2": {
+    "hits": 1.4425,
+    "dmg": 17.55,
+    "perHit": 12.166377816291162
+   },
+   "ra1": {
+    "hits": 1.2075,
+    "dmg": 19.7425,
+    "perHit": 16.349896480331264
+   },
+   "ra2": {
+    "hits": 0.7575,
+    "dmg": 13.9675,
+    "perHit": 18.43894389438944
+   },
+   "ra3": {
+    "hits": 1.0025,
+    "dmg": 16.4875,
+    "perHit": 16.44638403990025
+   }
+  },
+  "diedShare": {
+   "ra2": {
+    "share": 1,
+    "round": 3.015
+   },
+   "rp1": {
+    "share": 1,
+    "round": 3.9125
+   },
+   "bf1": {
+    "share": 0.5975,
+    "round": 4.928870292887029
+   },
+   "rp2": {
+    "share": 0.99,
+    "round": 5.709595959595959
+   },
+   "ra3": {
+    "share": 0.9825,
+    "round": 7.67175572519084
+   },
+   "ra1": {
+    "share": 0.9325,
+    "round": 8.857908847184987
+   },
+   "bf2": {
+    "share": 0.8175,
+    "round": 4.458715596330276
+   },
+   "dreg": {
+    "share": 0.0125,
+    "round": 10.8
+   }
+  }
+ },
+ {
+  "label": "S-Blood Challenge skilled without Blood Challenge",
+  "budget": {
+   "blue": {
+    "supply": 2,
+    "pop": 3
+   },
+   "red": {
+    "supply": 8,
+    "pop": 5
+   }
+  },
+  "n": 400,
+  "blue": 0.9175,
+  "red": 0,
+  "mutual": 0,
+  "none": 0.0825,
+  "blueCI": [
+   0.8864024616066086,
+   0.940654483492658
+  ],
+  "rounds": 9.14,
+  "surv": {
+   "blue": 1.6075,
+   "red": 0.11
+  },
+  "hpLeft": {
+   "blue": 0.3796333333333331,
+   "red": 0.012156862745098035
+  },
+  "margin": {
+   "mean": 89.91,
+   "half": 2.4221407282814917
+  },
+  "first": {
+   "blue": 24.6,
+   "red": 11.8175,
+   "round": 2.0125
+  },
+  "strikes": 14.31,
+  "landed": 10.465,
+  "dmgBlue": 142.185,
+  "dmgRed": 52.275,
+  "movedShare": 0.44412093187170576,
+  "dmgPerHit": 13.644211836774343,
+  "dmgPerHitMoved": 17.32617555794248,
+  "dmgPerHitHeld": 10.858585317460314,
+  "abilityUses": 5.1575,
+  "energy": 5.1575,
+  "abilityById": {
+   "reavingRush": 3.007499999999979,
+   "warlordsRush": 2.1499999999999835
+  },
+  "planFails": 0,
+  "tracked": {
+   "rp1": {
+    "hits": 0.8575,
+    "dmg": 10.57,
+    "perHit": 12.326530612244898
+   },
+   "rp2": {
+    "hits": 1.4625,
+    "dmg": 15.765,
+    "perHit": 10.77948717948718
+   },
+   "ra1": {
+    "hits": 1.085,
+    "dmg": 18.21,
+    "perHit": 16.783410138248847
+   },
+   "ra2": {
+    "hits": 0.8,
+    "dmg": 14.325,
+    "perHit": 17.90625
+   },
+   "ra3": {
+    "hits": 0.885,
+    "dmg": 15.405,
+    "perHit": 17.406779661016948
+   }
+  },
+  "diedShare": {
+   "ra2": {
+    "share": 1,
+    "round": 3.065
+   },
+   "rp1": {
+    "share": 1,
+    "round": 3.935
+   },
+   "bf1": {
+    "share": 0.585,
+    "round": 4.867521367521367
+   },
+   "rp2": {
+    "share": 0.99,
+    "round": 5.775252525252525
+   },
+   "ra1": {
+    "share": 0.9225,
+    "round": 8.365853658536585
+   },
+   "ra3": {
+    "share": 0.9775,
+    "round": 7.391304347826087
+   },
+   "bf2": {
+    "share": 0.8075,
+    "round": 4.439628482972136
+   },
+   "dreg": {
+    "share": 0.015,
+    "round": 11
+   }
+  }
+ },
+ {
+  "label": "S-Warlord's Rush skilled without Warlord's Rush",
+  "budget": {
+   "blue": {
+    "supply": 2,
+    "pop": 3
+   },
+   "red": {
+    "supply": 8,
+    "pop": 5
+   }
+  },
+  "n": 400,
+  "blue": 0.91,
+  "red": 0,
+  "mutual": 0,
+  "none": 0.09,
+  "blueCI": [
+   0.877916547675384,
+   0.9342830870328781
+  ],
+  "rounds": 10.1275,
+  "surv": {
+   "blue": 1.45,
+   "red": 0.115
+  },
+  "hpLeft": {
+   "blue": 0.356233333333333,
+   "red": 0.009999999999999995
+  },
+  "margin": {
+   "mean": 95.9675,
+   "half": 2.4719544627227656
+  },
+  "first": {
+   "blue": 22.56,
+   "red": 11.8175,
+   "round": 2.0125
+  },
+  "strikes": 15.455,
+  "landed": 11.245,
+  "dmgBlue": 151.0525,
+  "dmgRed": 55.085,
+  "movedShare": 0.4025675933973149,
+  "dmgPerHit": 13.455098269785774,
+  "dmgPerHitMoved": 15.417000835421895,
+  "dmgPerHitHeld": 11.99429617604617,
+  "abilityUses": 6.57,
+  "energy": 10.315,
+  "abilityById": {
+   "bloodChallenge": 3.744999999999984,
+   "reavingRush": 2.824999999999979
+  },
+  "planFails": 0.5275,
+  "tracked": {
+   "rp1": {
+    "hits": 0.7725,
+    "dmg": 9.095,
+    "perHit": 11.77346278317152
+   },
+   "rp2": {
+    "hits": 1.38,
+    "dmg": 16.24,
+    "perHit": 11.768115942028986
+   },
+   "ra1": {
+    "hits": 1.35,
+    "dmg": 22.01,
+    "perHit": 16.303703703703704
+   },
+   "ra2": {
+    "hits": 1.09,
+    "dmg": 17.21,
+    "perHit": 15.788990825688073
+   },
+   "ra3": {
+    "hits": 1.1325,
+    "dmg": 18.7875,
+    "perHit": 16.589403973509935
+   }
+  },
+  "diedShare": {
+   "ra2": {
+    "share": 1,
+    "round": 3.5275
+   },
+   "rp1": {
+    "share": 1,
+    "round": 4.275
+   },
+   "bf1": {
+    "share": 0.6875,
+    "round": 4.7709090909090905
+   },
+   "rp2": {
+    "share": 0.99,
+    "round": 6.0227272727272725
+   },
+   "ra3": {
+    "share": 0.98,
+    "round": 8.119897959183673
+   },
+   "ra1": {
+    "share": 0.915,
+    "round": 9.44535519125683
+   },
+   "bf2": {
+    "share": 0.8625,
+    "round": 4.489855072463768
+   },
+   "dreg": {
+    "share": 0.0125,
+    "round": 10.8
+   }
+  }
+ },
+ {
+  "label": "S-Reaving Rush skilled without Reaving Rush",
+  "budget": {
+   "blue": {
+    "supply": 2,
+    "pop": 3
+   },
+   "red": {
+    "supply": 8,
+    "pop": 5
+   }
+  },
+  "n": 400,
+  "blue": 0.8875,
+  "red": 0,
+  "mutual": 0,
+  "none": 0.1125,
+  "blueCI": [
+   0.8527757236239129,
+   0.9148519799113346
+  ],
+  "rounds": 10.795,
+  "surv": {
+   "blue": 1.3325,
+   "red": 0.15
+  },
+  "hpLeft": {
+   "blue": 0.33506666666666596,
+   "red": 0.014436274509803917
+  },
+  "margin": {
+   "mean": 90.275,
+   "half": 2.421699522546096
+  },
+  "first": {
+   "blue": 20.21,
+   "red": 11.8175,
+   "round": 2.0125
+  },
+  "strikes": 15.7075,
+  "landed": 11.395,
+  "dmgBlue": 147.4375,
+  "dmgRed": 57.1625,
+  "movedShare": 0.39758080905807297,
+  "dmgPerHit": 12.966141393328904,
+  "dmgPerHitMoved": 14.155185583005142,
+  "dmgPerHitHeld": 12.146208513708515,
+  "abilityUses": 4.4875,
+  "energy": 8.4325,
+  "abilityById": {
+   "bloodChallenge": 3.9449999999999847,
+   "warlordsRush": 0.5424999999999994
+  },
+  "planFails": 0.545,
+  "tracked": {
+   "rp1": {
+    "hits": 0.895,
+    "dmg": 10.88,
+    "perHit": 12.156424581005586
+   },
+   "rp2": {
+    "hits": 1.545,
+    "dmg": 18.13,
+    "perHit": 11.73462783171521
+   },
+   "ra1": {
+    "hits": 1.3125,
+    "dmg": 21.3075,
+    "perHit": 16.234285714285715
+   },
+   "ra2": {
+    "hits": 0.785,
+    "dmg": 14.415,
+    "perHit": 18.363057324840764
+   },
+   "ra3": {
+    "hits": 1.45,
+    "dmg": 23.77,
+    "perHit": 16.393103448275863
+   }
+  },
+  "diedShare": {
+   "bf1": {
+    "share": 0.75,
+    "round": 4.993333333333333
+   },
+   "ra2": {
+    "share": 1,
+    "round": 3.4425
+   },
+   "bf2": {
+    "share": 0.9175,
+    "round": 4.536784741144414
+   },
+   "rp1": {
+    "share": 0.9975,
+    "round": 4.305764411027569
+   },
+   "rp2": {
+    "share": 0.9825,
+    "round": 6.315521628498728
+   },
+   "ra3": {
+    "share": 0.9725,
+    "round": 8.609254498714654
+   },
+   "ra1": {
+    "share": 0.8975,
+    "round": 10.167130919220055
+   },
+   "dreg": {
+    "share": 0.02,
+    "round": 10.75
+   }
+  }
+ },
+ {
+  "label": "M-Pikeman mark the nearest Pikeman (rp1) instead of the Archer",
+  "budget": {
+   "blue": {
+    "supply": 2,
+    "pop": 3
+   },
+   "red": {
+    "supply": 8,
+    "pop": 5
+   }
+  },
+  "n": 400,
+  "blue": 0.945,
+  "red": 0,
+  "mutual": 0,
+  "none": 0.055,
+  "blueCI": [
+   0.9181319717303434,
+   0.9634017781359406
+  ],
+  "rounds": 9.5125,
+  "surv": {
+   "blue": 1.5575,
+   "red": 0.075
+  },
+  "hpLeft": {
+   "blue": 0.38989999999999975,
+   "red": 0.007205882352941174
+  },
+  "margin": {
+   "mean": 100.5825,
+   "half": 2.4120907720844578
+  },
+  "first": {
+   "blue": 26.605,
+   "red": 14.4675,
+   "round": 2.0125
+  },
+  "strikes": 14.8825,
+  "landed": 11.015,
+  "dmgBlue": 152.175,
+  "dmgRed": 51.5925,
+  "movedShare": 0.48275322398619586,
+  "dmgPerHit": 13.844366591741588,
+  "dmgPerHitMoved": 16.051708333333337,
+  "dmgPerHitHeld": 11.52214114357865,
+  "abilityUses": 7.5525,
+  "energy": 11.1275,
+  "abilityById": {
+   "bloodChallenge": 3.574999999999981,
+   "reavingRush": 3.134999999999978,
+   "warlordsRush": 0.842499999999993
+  },
+  "planFails": 0.6875,
+  "tracked": {
+   "rp1": {
+    "hits": 1.275,
+    "dmg": 17.705,
+    "perHit": 13.886274509803922
+   },
+   "rp2": {
+    "hits": 1.4575,
+    "dmg": 17.42,
+    "perHit": 11.95197255574614
+   },
+   "ra1": {
+    "hits": 1.2225,
+    "dmg": 20.1275,
+    "perHit": 16.464212678936605
+   },
+   "ra2": {
+    "hits": 0.16,
+    "dmg": 2.71,
+    "perHit": 16.9375
+   },
+   "ra3": {
+    "hits": 1.0925,
+    "dmg": 17.5375,
+    "perHit": 16.05263157894737
+   }
+  },
+  "diedShare": {
+   "ra2": {
+    "share": 1,
+    "round": 2.825
+   },
+   "rp1": {
+    "share": 1,
+    "round": 3.3925
+   },
+   "bf1": {
+    "share": 0.735,
+    "round": 5.459183673469388
+   },
+   "rp2": {
+    "share": 0.9925,
+    "round": 6.166246851385391
+   },
+   "ra3": {
+    "share": 0.9825,
+    "round": 7.727735368956743
+   },
+   "ra1": {
+    "share": 0.95,
+    "round": 8.839473684210526
+   },
+   "bf2": {
+    "share": 0.7075,
+    "round": 4.021201413427562
+   },
+   "dreg": {
+    "share": 0.005,
+    "round": 11
+   }
+  }
+ }
+]

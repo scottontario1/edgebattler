@@ -1,0 +1,1101 @@
+[
+ {
+  "id": "fang-cmd",
+  "title": "White Fang (clan commander) v baseline",
+  "all": {
+   "games": 200,
+   "wins": 19,
+   "losses": 28,
+   "draws": 153,
+   "winRate": 0.095,
+   "winCI": [
+    0.06166261364986359,
+    0.14360265114397636
+   ],
+   "lossRate": 0.14,
+   "drawRate": 0.765,
+   "drawCI": [
+    0.7015850701327535,
+    0.8184265467305365
+   ],
+   "rounds": 25.935,
+   "decidedRounds": 12.702127659574469,
+   "decided": 47,
+   "keepWins": 19,
+   "wipeWins": 0,
+   "capSubj": 2.11,
+   "capOpp": 1.735,
+   "anyCap": 1,
+   "lostSubj": 13.12,
+   "lostOpp": 12.265,
+   "hpSubj": 88.14,
+   "hpOpp": 121.56,
+   "recruited": {
+    "fangReaver": 9.769999999999998,
+    "fangHunter": 5.519999999999997,
+    "fangAxeguard": 5.534999999999995,
+    "fangBerserker": 1.3049999999999997,
+    "cavalier": 0.075
+   },
+   "abilities": {
+    "bloodChallenge": 7.844999999999988,
+    "focusedShot": 12.600000000000001,
+    "reavingRush": 5.829999999999994,
+    "charge": 1.06,
+    "warlordsRush": 2.9349999999999943,
+    "ironSkin": 14.939999999999996,
+    "frenzy": 0.4450000000000003
+   },
+   "spells": {
+    "warCry": 3.5249999999999955,
+    "bloodOath": 2.839999999999996,
+    "ward": 3.1499999999999946,
+    "hunt": 3.1899999999999955,
+    "fireburst": 3.0949999999999944,
+    "mend": 3.014999999999993
+   },
+   "energySpent": 67.605
+  },
+  "asBlue": {
+   "games": 100,
+   "wins": 7,
+   "losses": 21,
+   "draws": 72,
+   "winRate": 0.07,
+   "winCI": [
+    0.034318824364064096,
+    0.13749671006529757
+   ],
+   "lossRate": 0.21,
+   "drawRate": 0.72,
+   "drawCI": [
+    0.6251178763865427,
+    0.7986044083240164
+   ],
+   "rounds": 25.03,
+   "decidedRounds": 12.25,
+   "decided": 28,
+   "keepWins": 7,
+   "wipeWins": 0,
+   "capSubj": 2.8,
+   "capOpp": 1.22,
+   "anyCap": 1,
+   "lostSubj": 12.32,
+   "lostOpp": 10.73,
+   "hpSubj": 80.2,
+   "hpOpp": 121.17,
+   "recruited": {
+    "fangReaver": 10.149999999999997,
+    "fangHunter": 5.109999999999997,
+    "fangAxeguard": 5.2399999999999975,
+    "fangBerserker": 1.1100000000000005,
+    "cavalier": 0.07
+   },
+   "abilities": {
+    "bloodChallenge": 7.729999999999991,
+    "focusedShot": 10.260000000000003,
+    "reavingRush": 6.44,
+    "charge": 1.0900000000000007,
+    "warlordsRush": 3.439999999999997,
+    "ironSkin": 12.839999999999996,
+    "frenzy": 0.3800000000000001
+   },
+   "spells": {
+    "warCry": 2.8799999999999986,
+    "bloodOath": 2.6300000000000003,
+    "ward": 2.989999999999997,
+    "hunt": 3.0999999999999988,
+    "fireburst": 3.1399999999999983,
+    "mend": 2.919999999999999
+   },
+   "energySpent": 61.64
+  },
+  "asRed": {
+   "games": 100,
+   "wins": 12,
+   "losses": 7,
+   "draws": 81,
+   "winRate": 0.12,
+   "winCI": [
+    0.06999337365267776,
+    0.19812268002908368
+   ],
+   "lossRate": 0.07,
+   "drawRate": 0.81,
+   "drawCI": [
+    0.7222097592919214,
+    0.8748534600729574
+   ],
+   "rounds": 26.84,
+   "decidedRounds": 13.368421052631579,
+   "decided": 19,
+   "keepWins": 12,
+   "wipeWins": 0,
+   "capSubj": 1.42,
+   "capOpp": 2.25,
+   "anyCap": 1,
+   "lostSubj": 13.92,
+   "lostOpp": 13.8,
+   "hpSubj": 96.08,
+   "hpOpp": 121.95,
+   "recruited": {
+    "fangBerserker": 1.5000000000000009,
+    "fangReaver": 9.389999999999995,
+    "fangAxeguard": 5.829999999999999,
+    "fangHunter": 5.929999999999996,
+    "cavalier": 0.08
+   },
+   "abilities": {
+    "bloodChallenge": 7.959999999999995,
+    "focusedShot": 14.939999999999996,
+    "warlordsRush": 2.4299999999999993,
+    "reavingRush": 5.219999999999996,
+    "ironSkin": 17.040000000000006,
+    "frenzy": 0.5100000000000002,
+    "charge": 1.0300000000000007
+   },
+   "spells": {
+    "hunt": 3.279999999999997,
+    "ward": 3.309999999999998,
+    "mend": 3.109999999999998,
+    "warCry": 4.169999999999996,
+    "fireburst": 3.049999999999998,
+    "bloodOath": 3.049999999999998
+   },
+   "energySpent": 73.57
+  }
+ },
+ {
+  "id": "fang-heur",
+  "title": "White Fang (shipped heuristic) v baseline",
+  "all": {
+   "games": 200,
+   "wins": 22,
+   "losses": 68,
+   "draws": 110,
+   "winRate": 0.11,
+   "winCI": [
+    0.07377190160716048,
+    0.16092798300912986
+   ],
+   "lossRate": 0.34,
+   "drawRate": 0.55,
+   "drawCI": [
+    0.48075488574571107,
+    0.6173605136624569
+   ],
+   "rounds": 25.035,
+   "decidedRounds": 18.966666666666665,
+   "decided": 90,
+   "keepWins": 22,
+   "wipeWins": 0,
+   "capSubj": 1.915,
+   "capOpp": 1.685,
+   "anyCap": 1,
+   "lostSubj": 13.225,
+   "lostOpp": 7.79,
+   "hpSubj": 61.31,
+   "hpOpp": 142.61,
+   "recruited": {
+    "fangBerserker": 2.229999999999996,
+    "fangReaver": 6.40999999999999,
+    "fangAxeguard": 4.434999999999994,
+    "fangHunter": 4.869999999999991,
+    "cavalier": 1.719999999999997
+   },
+   "abilities": {
+    "charge": 1.9449999999999952,
+    "secondWind": 2.0349999999999953,
+    "focusedShot": 5.329999999999999
+   },
+   "spells": {
+    "fireburst": 2.0299999999999963,
+    "ward": 2.0949999999999958,
+    "mend": 1.764999999999997
+   },
+   "energySpent": 16.585
+  },
+  "asBlue": {
+   "games": 100,
+   "wins": 1,
+   "losses": 42,
+   "draws": 57,
+   "winRate": 0.01,
+   "winCI": [
+    0.0017673865655472645,
+    0.0544875247609346
+   ],
+   "lossRate": 0.42,
+   "drawRate": 0.57,
+   "drawCI": [
+    0.4721521169586435,
+    0.6626686099947162
+   ],
+   "rounds": 25.99,
+   "decidedRounds": 20.674418604651162,
+   "decided": 43,
+   "keepWins": 1,
+   "wipeWins": 0,
+   "capSubj": 2.58,
+   "capOpp": 1.14,
+   "anyCap": 1,
+   "lostSubj": 13.95,
+   "lostOpp": 7.7,
+   "hpSubj": 56.78,
+   "hpOpp": 147.14,
+   "recruited": {
+    "fangBerserker": 2.459999999999999,
+    "fangReaver": 7.729999999999998,
+    "fangAxeguard": 4.819999999999998,
+    "fangHunter": 5.4099999999999975,
+    "cavalier": 1.8800000000000012
+   },
+   "abilities": {
+    "charge": 2.1400000000000006,
+    "secondWind": 2.150000000000001,
+    "focusedShot": 3.3299999999999974
+   },
+   "spells": {
+    "fireburst": 2.180000000000001,
+    "ward": 2.21,
+    "mend": 1.8100000000000012
+   },
+   "energySpent": 13.09
+  },
+  "asRed": {
+   "games": 100,
+   "wins": 21,
+   "losses": 26,
+   "draws": 53,
+   "winRate": 0.21,
+   "winCI": [
+    0.14165549531645788,
+    0.2998014930196232
+   ],
+   "lossRate": 0.26,
+   "drawRate": 0.53,
+   "drawCI": [
+    0.4328868313724773,
+    0.6248934801789626
+   ],
+   "rounds": 24.08,
+   "decidedRounds": 17.404255319148938,
+   "decided": 47,
+   "keepWins": 21,
+   "wipeWins": 0,
+   "capSubj": 1.25,
+   "capOpp": 2.23,
+   "anyCap": 1,
+   "lostSubj": 12.5,
+   "lostOpp": 7.88,
+   "hpSubj": 65.84,
+   "hpOpp": 138.08,
+   "recruited": {
+    "fangBerserker": 2.0000000000000013,
+    "fangAxeguard": 4.049999999999997,
+    "fangReaver": 5.090000000000001,
+    "cavalier": 1.560000000000001,
+    "fangHunter": 4.3299999999999965
+   },
+   "abilities": {
+    "focusedShot": 7.329999999999996,
+    "secondWind": 1.9200000000000013,
+    "charge": 1.750000000000001
+   },
+   "spells": {
+    "ward": 1.9800000000000013,
+    "mend": 1.720000000000001,
+    "fireburst": 1.8800000000000012
+   },
+   "energySpent": 20.08
+  }
+ },
+ {
+  "id": "mirror",
+  "title": "White Fang mirror (clan commander both sides)",
+  "all": {
+   "games": 200,
+   "wins": 35,
+   "losses": 35,
+   "draws": 130,
+   "winRate": 0.175,
+   "winCI": [
+    0.12860441174608936,
+    0.23364549210081922
+   ],
+   "lossRate": 0.175,
+   "drawRate": 0.65,
+   "drawCI": [
+    0.5816333576186576,
+    0.712712840605846
+   ],
+   "rounds": 23.63,
+   "decidedRounds": 11.8,
+   "decided": 70,
+   "keepWins": 35,
+   "wipeWins": 0,
+   "capSubj": 2.045,
+   "capOpp": 2.045,
+   "anyCap": 1,
+   "lostSubj": 16.08,
+   "lostOpp": 16.08,
+   "hpSubj": 91.065,
+   "hpOpp": 91.065,
+   "recruited": {
+    "fangReaver": 9.969999999999995,
+    "fangAxeguard": 5.4549999999999965,
+    "fangHunter": 5.744999999999997,
+    "fangBerserker": 1.7149999999999983,
+    "cavalier": 0.12000000000000002
+   },
+   "abilities": {
+    "bloodChallenge": 6.879999999999992,
+    "focusedShot": 10.134999999999987,
+    "charge": 0.9800000000000006,
+    "reavingRush": 6.399999999999997,
+    "warlordsRush": 3.0399999999999965,
+    "ironSkin": 12.835,
+    "frenzy": 0.38500000000000023
+   },
+   "spells": {
+    "warCry": 3.4699999999999958,
+    "bloodOath": 2.8349999999999964,
+    "hunt": 3.1999999999999944,
+    "fireburst": 3.054999999999996,
+    "ward": 3.1949999999999954,
+    "mend": 3.0399999999999947
+   },
+   "energySpent": 59.035
+  },
+  "asBlue": {
+   "games": 100,
+   "wins": 13,
+   "losses": 22,
+   "draws": 65,
+   "winRate": 0.13,
+   "winCI": [
+    0.07757093858414264,
+    0.20980521894809878
+   ],
+   "lossRate": 0.22,
+   "drawRate": 0.65,
+   "drawCI": [
+    0.5525426042919797,
+    0.7363589534652197
+   ],
+   "rounds": 23.63,
+   "decidedRounds": 11.8,
+   "decided": 35,
+   "keepWins": 13,
+   "wipeWins": 0,
+   "capSubj": 2.82,
+   "capOpp": 1.27,
+   "anyCap": 1,
+   "lostSubj": 15.57,
+   "lostOpp": 16.59,
+   "hpSubj": 82.44,
+   "hpOpp": 99.69,
+   "recruited": {
+    "fangReaver": 10.590000000000002,
+    "fangAxeguard": 5.319999999999996,
+    "fangHunter": 5.7399999999999975,
+    "fangBerserker": 1.730000000000001,
+    "cavalier": 0.09
+   },
+   "abilities": {
+    "bloodChallenge": 7.159999999999992,
+    "focusedShot": 8.639999999999992,
+    "charge": 1.2900000000000007,
+    "reavingRush": 8.029999999999998,
+    "warlordsRush": 3.449999999999998,
+    "ironSkin": 11.849999999999994,
+    "frenzy": 0.32000000000000006
+   },
+   "spells": {
+    "warCry": 3.069999999999999,
+    "bloodOath": 2.719999999999999,
+    "hunt": 3.3299999999999987,
+    "fireburst": 3.1199999999999983,
+    "ward": 3.2399999999999975,
+    "mend": 3.04
+   },
+   "energySpent": 58.15
+  },
+  "asRed": {
+   "games": 100,
+   "wins": 22,
+   "losses": 13,
+   "draws": 65,
+   "winRate": 0.22,
+   "winCI": [
+    0.15001174503655804,
+    0.3107053471500031
+   ],
+   "lossRate": 0.13,
+   "drawRate": 0.65,
+   "drawCI": [
+    0.5525426042919797,
+    0.7363589534652197
+   ],
+   "rounds": 23.63,
+   "decidedRounds": 11.8,
+   "decided": 35,
+   "keepWins": 22,
+   "wipeWins": 0,
+   "capSubj": 1.27,
+   "capOpp": 2.82,
+   "anyCap": 1,
+   "lostSubj": 16.59,
+   "lostOpp": 15.57,
+   "hpSubj": 99.69,
+   "hpOpp": 82.44,
+   "recruited": {
+    "fangBerserker": 1.7000000000000008,
+    "fangReaver": 9.349999999999994,
+    "fangAxeguard": 5.589999999999996,
+    "fangHunter": 5.749999999999997,
+    "cavalier": 0.15000000000000002
+   },
+   "abilities": {
+    "bloodChallenge": 6.599999999999996,
+    "focusedShot": 11.63,
+    "reavingRush": 4.769999999999999,
+    "ironSkin": 13.819999999999999,
+    "warlordsRush": 2.6299999999999986,
+    "charge": 0.6700000000000005,
+    "frenzy": 0.4500000000000002
+   },
+   "spells": {
+    "hunt": 3.069999999999999,
+    "mend": 3.0399999999999987,
+    "ward": 3.149999999999998,
+    "warCry": 3.8699999999999966,
+    "fireburst": 2.989999999999998,
+    "bloodOath": 2.949999999999999
+   },
+   "energySpent": 59.92
+  }
+ },
+ {
+  "id": "control",
+  "title": "Control: plain classes + Dreg v plain classes + Brenna (no clan cards)",
+  "all": {
+   "games": 200,
+   "wins": 30,
+   "losses": 35,
+   "draws": 135,
+   "winRate": 0.15,
+   "winCI": [
+    0.107135265876273,
+    0.20605693826655166
+   ],
+   "lossRate": 0.175,
+   "drawRate": 0.675,
+   "drawCI": [
+    0.6073185684304498,
+    0.736085329498138
+   ],
+   "rounds": 23.125,
+   "decidedRounds": 8.846153846153847,
+   "decided": 65,
+   "keepWins": 30,
+   "wipeWins": 0,
+   "capSubj": 1.505,
+   "capOpp": 1.625,
+   "anyCap": 1,
+   "lostSubj": 6.405,
+   "lostOpp": 7.6,
+   "hpSubj": 135.345,
+   "hpOpp": 129.4,
+   "recruited": {
+    "pikeman": 9.02,
+    "archer": 4.779999999999992,
+    "cavalier": 1.5199999999999985
+   },
+   "abilities": {
+    "rally": 30.73000000000001,
+    "charge": 2.0349999999999944,
+    "brace": 12.925000000000004,
+    "secondWind": 1.884999999999996,
+    "focusedShot": 6.259999999999995
+   },
+   "spells": {
+    "fireburst": 3.2599999999999927,
+    "ward": 3.5349999999999935,
+    "mend": 3.1549999999999954
+   },
+   "energySpent": 44.325
+  },
+  "asBlue": {
+   "games": 100,
+   "wins": 1,
+   "losses": 31,
+   "draws": 68,
+   "winRate": 0.01,
+   "winCI": [
+    0.0017673865655472645,
+    0.0544875247609346
+   ],
+   "lossRate": 0.31,
+   "drawRate": 0.68,
+   "drawCI": [
+    0.5833719774632081,
+    0.7633098918454312
+   ],
+   "rounds": 23.32,
+   "decidedRounds": 9.125,
+   "decided": 32,
+   "keepWins": 1,
+   "wipeWins": 0,
+   "capSubj": 2.05,
+   "capOpp": 1.07,
+   "anyCap": 1,
+   "lostSubj": 7.05,
+   "lostOpp": 7.05,
+   "hpSubj": 127.53,
+   "hpOpp": 138.31,
+   "recruited": {
+    "pikeman": 9.799999999999997,
+    "archer": 5.589999999999997,
+    "cavalier": 1.620000000000001
+   },
+   "abilities": {
+    "rally": 32.829999999999984,
+    "charge": 2.0600000000000014,
+    "brace": 14.150000000000004,
+    "secondWind": 2.050000000000001,
+    "focusedShot": 3.7899999999999965
+   },
+   "spells": {
+    "fireburst": 3.2199999999999966,
+    "ward": 3.5399999999999983,
+    "mend": 2.7899999999999996
+   },
+   "energySpent": 42.05
+  },
+  "asRed": {
+   "games": 100,
+   "wins": 29,
+   "losses": 4,
+   "draws": 67,
+   "winRate": 0.29,
+   "winCI": [
+    0.21014706973984146,
+    0.38539074940007934
+   ],
+   "lossRate": 0.04,
+   "drawRate": 0.67,
+   "drawCI": [
+    0.5730516033971139,
+    0.7543701620610456
+   ],
+   "rounds": 22.93,
+   "decidedRounds": 8.575757575757576,
+   "decided": 33,
+   "keepWins": 29,
+   "wipeWins": 0,
+   "capSubj": 0.96,
+   "capOpp": 2.18,
+   "anyCap": 1,
+   "lostSubj": 5.76,
+   "lostOpp": 8.15,
+   "hpSubj": 143.16,
+   "hpOpp": 120.49,
+   "recruited": {
+    "pikeman": 8.24,
+    "archer": 3.969999999999998,
+    "cavalier": 1.4200000000000008
+   },
+   "abilities": {
+    "rally": 28.629999999999995,
+    "brace": 11.699999999999996,
+    "focusedShot": 8.729999999999999,
+    "charge": 2.010000000000001,
+    "secondWind": 1.720000000000001
+   },
+   "spells": {
+    "fireburst": 3.299999999999999,
+    "ward": 3.529999999999997,
+    "mend": 3.5199999999999965
+   },
+   "energySpent": 46.6
+  }
+ },
+ {
+  "id": "fang-axe",
+  "title": "Sensitivity: clan axes use the axe weapon triangle",
+  "all": {
+   "games": 200,
+   "wins": 23,
+   "losses": 24,
+   "draws": 153,
+   "winRate": 0.115,
+   "winCI": [
+    0.07786317221824318,
+    0.16664825233886393
+   ],
+   "lossRate": 0.12,
+   "drawRate": 0.765,
+   "drawCI": [
+    0.7015850701327535,
+    0.8184265467305365
+   ],
+   "rounds": 25.785,
+   "decidedRounds": 12.063829787234043,
+   "decided": 47,
+   "keepWins": 23,
+   "wipeWins": 0,
+   "capSubj": 2.13,
+   "capOpp": 1.8,
+   "anyCap": 1,
+   "lostSubj": 11.21,
+   "lostOpp": 13.775,
+   "hpSubj": 97.96,
+   "hpOpp": 117.805,
+   "recruited": {
+    "fangReaver": 9.019999999999992,
+    "fangHunter": 5.189999999999997,
+    "fangAxeguard": 5.1249999999999964,
+    "fangBerserker": 1.115,
+    "cavalier": 0.04
+   },
+   "abilities": {
+    "bloodChallenge": 7.834999999999986,
+    "focusedShot": 12.374999999999998,
+    "reavingRush": 6.0199999999999925,
+    "charge": 1.1099999999999994,
+    "warlordsRush": 3.039999999999996,
+    "ironSkin": 15.584999999999994,
+    "frenzy": 0.3550000000000002
+   },
+   "spells": {
+    "warCry": 3.3949999999999956,
+    "bloodOath": 2.6749999999999954,
+    "ward": 2.974999999999994,
+    "hunt": 3.0349999999999944,
+    "fireburst": 2.9049999999999954,
+    "mend": 2.744999999999994
+   },
+   "energySpent": 67.995
+  },
+  "asBlue": {
+   "games": 100,
+   "wins": 7,
+   "losses": 18,
+   "draws": 75,
+   "winRate": 0.07,
+   "winCI": [
+    0.034318824364064096,
+    0.13749671006529757
+   ],
+   "lossRate": 0.18,
+   "drawRate": 0.75,
+   "drawCI": [
+    0.6569535362992417,
+    0.8245490599627573
+   ],
+   "rounds": 25.69,
+   "decidedRounds": 12.76,
+   "decided": 25,
+   "keepWins": 7,
+   "wipeWins": 0,
+   "capSubj": 2.93,
+   "capOpp": 1.32,
+   "anyCap": 1,
+   "lostSubj": 10.93,
+   "lostOpp": 12.36,
+   "hpSubj": 86.87,
+   "hpOpp": 122.28,
+   "recruited": {
+    "fangReaver": 9.539999999999994,
+    "fangHunter": 5.079999999999999,
+    "fangAxeguard": 4.819999999999997,
+    "fangBerserker": 0.9800000000000005,
+    "cavalier": 0.02
+   },
+   "abilities": {
+    "bloodChallenge": 7.999999999999989,
+    "focusedShot": 10.349999999999996,
+    "reavingRush": 6.95,
+    "charge": 1.2000000000000008,
+    "warlordsRush": 3.4299999999999966,
+    "ironSkin": 14.47,
+    "frenzy": 0.32000000000000006
+   },
+   "spells": {
+    "warCry": 2.8499999999999996,
+    "bloodOath": 2.55,
+    "ward": 2.869999999999998,
+    "hunt": 3.08,
+    "fireburst": 3.0299999999999994,
+    "mend": 2.7299999999999986
+   },
+   "energySpent": 64.59
+  },
+  "asRed": {
+   "games": 100,
+   "wins": 16,
+   "losses": 6,
+   "draws": 78,
+   "winRate": 0.16,
+   "winCI": [
+    0.10095202349473717,
+    0.24420444558894414
+   ],
+   "lossRate": 0.06,
+   "drawRate": 0.78,
+   "drawCI": [
+    0.6892946528499969,
+    0.849988254963442
+   ],
+   "rounds": 25.88,
+   "decidedRounds": 11.272727272727273,
+   "decided": 22,
+   "keepWins": 16,
+   "wipeWins": 0,
+   "capSubj": 1.33,
+   "capOpp": 2.28,
+   "anyCap": 1,
+   "lostSubj": 11.49,
+   "lostOpp": 15.19,
+   "hpSubj": 109.05,
+   "hpOpp": 113.33,
+   "recruited": {
+    "fangBerserker": 1.2500000000000007,
+    "fangReaver": 8.499999999999996,
+    "fangAxeguard": 5.43,
+    "fangHunter": 5.299999999999996,
+    "cavalier": 0.060000000000000005
+   },
+   "abilities": {
+    "bloodChallenge": 7.669999999999995,
+    "focusedShot": 14.400000000000007,
+    "warlordsRush": 2.6499999999999986,
+    "charge": 1.0200000000000007,
+    "ironSkin": 16.7,
+    "reavingRush": 5.089999999999999,
+    "frenzy": 0.3900000000000001
+   },
+   "spells": {
+    "hunt": 2.9899999999999993,
+    "ward": 3.079999999999998,
+    "mend": 2.7599999999999993,
+    "warCry": 3.939999999999996,
+    "fireburst": 2.7799999999999985,
+    "bloodOath": 2.7999999999999994
+   },
+   "energySpent": 71.4
+  }
+ },
+ {
+  "id": "fang-mov2",
+  "title": "Sensitivity: Reaver Mov +2",
+  "all": {
+   "games": 200,
+   "wins": 13,
+   "losses": 19,
+   "draws": 168,
+   "winRate": 0.065,
+   "winCI": [
+    0.03837598764975976,
+    0.10802003749917945
+   ],
+   "lossRate": 0.095,
+   "drawRate": 0.84,
+   "drawCI": [
+    0.7828581380609876,
+    0.8843265779145542
+   ],
+   "rounds": 27.865,
+   "decidedRounds": 16.65625,
+   "decided": 32,
+   "keepWins": 13,
+   "wipeWins": 0,
+   "capSubj": 1.61,
+   "capOpp": 1.755,
+   "anyCap": 1,
+   "lostSubj": 14.495,
+   "lostOpp": 13.03,
+   "hpSubj": 97.85,
+   "hpOpp": 126.51,
+   "recruited": {
+    "fangReaver": 10.554999999999994,
+    "fangAxeguard": 6.184999999999998,
+    "fangHunter": 6.269999999999997,
+    "fangBerserker": 1.5949999999999982,
+    "cavalier": 0.075
+   },
+   "abilities": {
+    "bloodChallenge": 8.42999999999999,
+    "focusedShot": 14.389999999999995,
+    "reavingRush": 6.809999999999996,
+    "charge": 1.0300000000000002,
+    "warlordsRush": 3.724999999999996,
+    "ironSkin": 16.930000000000007,
+    "frenzy": 0.48000000000000026
+   },
+   "spells": {
+    "warCry": 3.759999999999996,
+    "bloodOath": 3.0699999999999945,
+    "hunt": 3.4199999999999946,
+    "fireburst": 3.389999999999993,
+    "ward": 3.3799999999999923,
+    "mend": 3.2349999999999945
+   },
+   "energySpent": 76.125
+  },
+  "asBlue": {
+   "games": 100,
+   "wins": 5,
+   "losses": 8,
+   "draws": 87,
+   "winRate": 0.05,
+   "winCI": [
+    0.02154336145631356,
+    0.11175196527208817
+   ],
+   "lossRate": 0.08,
+   "drawRate": 0.87,
+   "drawCI": [
+    0.7901947810519012,
+    0.9224290614158575
+   ],
+   "rounds": 28.49,
+   "decidedRounds": 18.384615384615383,
+   "decided": 13,
+   "keepWins": 5,
+   "wipeWins": 0,
+   "capSubj": 1.83,
+   "capOpp": 1.35,
+   "anyCap": 1,
+   "lostSubj": 15.26,
+   "lostOpp": 13.29,
+   "hpSubj": 88.35,
+   "hpOpp": 127.13,
+   "recruited": {
+    "fangReaver": 11.5,
+    "fangAxeguard": 6.249999999999996,
+    "fangHunter": 6.559999999999996,
+    "fangBerserker": 1.6200000000000008,
+    "cavalier": 0.05
+   },
+   "abilities": {
+    "bloodChallenge": 8.78999999999999,
+    "focusedShot": 13.099999999999998,
+    "reavingRush": 8.159999999999995,
+    "charge": 1.0300000000000007,
+    "warlordsRush": 3.9699999999999966,
+    "ironSkin": 16.549999999999997,
+    "frenzy": 0.47000000000000014
+   },
+   "spells": {
+    "warCry": 3.4899999999999975,
+    "bloodOath": 3.1199999999999988,
+    "hunt": 3.609999999999998,
+    "fireburst": 3.5499999999999976,
+    "ward": 3.4699999999999966,
+    "mend": 3.4199999999999995
+   },
+   "energySpent": 75.46
+  },
+  "asRed": {
+   "games": 100,
+   "wins": 8,
+   "losses": 11,
+   "draws": 81,
+   "winRate": 0.08,
+   "winCI": [
+    0.04109296948581091,
+    0.14998266879403072
+   ],
+   "lossRate": 0.11,
+   "drawRate": 0.81,
+   "drawCI": [
+    0.7222097592919214,
+    0.8748534600729574
+   ],
+   "rounds": 27.24,
+   "decidedRounds": 15.473684210526315,
+   "decided": 19,
+   "keepWins": 8,
+   "wipeWins": 0,
+   "capSubj": 1.39,
+   "capOpp": 2.16,
+   "anyCap": 1,
+   "lostSubj": 13.73,
+   "lostOpp": 12.77,
+   "hpSubj": 107.35,
+   "hpOpp": 125.89,
+   "recruited": {
+    "fangBerserker": 1.5700000000000007,
+    "fangReaver": 9.609999999999996,
+    "fangAxeguard": 6.1199999999999966,
+    "fangHunter": 5.979999999999998,
+    "cavalier": 0.09999999999999999
+   },
+   "abilities": {
+    "bloodChallenge": 8.069999999999995,
+    "focusedShot": 15.68000000000001,
+    "ironSkin": 17.310000000000002,
+    "charge": 1.0300000000000007,
+    "reavingRush": 5.459999999999997,
+    "warlordsRush": 3.479999999999998,
+    "frenzy": 0.49000000000000016
+   },
+   "spells": {
+    "hunt": 3.229999999999998,
+    "ward": 3.2899999999999983,
+    "mend": 3.0499999999999985,
+    "warCry": 4.029999999999996,
+    "fireburst": 3.229999999999998,
+    "bloodOath": 3.019999999999998
+   },
+   "energySpent": 76.79
+  }
+ },
+ {
+  "id": "fang-nopool",
+  "title": "Sensitivity: clan units and kits, shared card pool",
+  "all": {
+   "games": 200,
+   "wins": 34,
+   "losses": 39,
+   "draws": 127,
+   "winRate": 0.17,
+   "winCI": [
+    0.12427835351105657,
+    0.22816001039503528
+   ],
+   "lossRate": 0.195,
+   "drawRate": 0.635,
+   "drawCI": [
+    0.5663157405897017,
+    0.6985958378123518
+   ],
+   "rounds": 22.925,
+   "decidedRounds": 10.616438356164384,
+   "decided": 73,
+   "keepWins": 34,
+   "wipeWins": 0,
+   "capSubj": 1.76,
+   "capOpp": 1.745,
+   "anyCap": 1,
+   "lostSubj": 11.475,
+   "lostOpp": 11.33,
+   "hpSubj": 95.945,
+   "hpOpp": 120.9,
+   "recruited": {
+    "pikeman": 9.25,
+    "cavalier": 3.3649999999999975,
+    "archer": 6.404999999999993
+   },
+   "abilities": {
+    "bloodChallenge": 6.989999999999984,
+    "focusedShot": 15.280000000000001,
+    "reavingRush": 1.9549999999999987,
+    "charge": 2.344999999999995,
+    "warlordsRush": 2.9299999999999957
+   },
+   "spells": {
+    "mend": 4.2649999999999935,
+    "ward": 3.6699999999999955,
+    "fireburst": 3.734999999999996
+   },
+   "energySpent": 54.115
+  },
+  "asBlue": {
+   "games": 100,
+   "wins": 7,
+   "losses": 31,
+   "draws": 62,
+   "winRate": 0.07,
+   "winCI": [
+    0.034318824364064096,
+    0.13749671006529757
+   ],
+   "lossRate": 0.31,
+   "drawRate": 0.62,
+   "drawCI": [
+    0.5220957382071033,
+    0.7090255079986562
+   ],
+   "rounds": 22.19,
+   "decidedRounds": 9.447368421052632,
+   "decided": 38,
+   "keepWins": 7,
+   "wipeWins": 0,
+   "capSubj": 2.43,
+   "capOpp": 1.29,
+   "anyCap": 1,
+   "lostSubj": 10.76,
+   "lostOpp": 10.42,
+   "hpSubj": 91.76,
+   "hpOpp": 122.8,
+   "recruited": {
+    "pikeman": 8.939999999999996,
+    "cavalier": 3.0999999999999996,
+    "archer": 6.049999999999996
+   },
+   "abilities": {
+    "bloodChallenge": 6.879999999999989,
+    "focusedShot": 13.08,
+    "reavingRush": 3.8499999999999983,
+    "charge": 2.1800000000000006,
+    "warlordsRush": 3.4999999999999982
+   },
+   "spells": {
+    "mend": 3.539999999999998,
+    "ward": 3.5699999999999994,
+    "fireburst": 3.479999999999998
+   },
+   "energySpent": 51.63
+  },
+  "asRed": {
+   "games": 100,
+   "wins": 27,
+   "losses": 8,
+   "draws": 65,
+   "winRate": 0.27,
+   "winCI": [
+    0.1926946091766482,
+    0.3643230022623127
+   ],
+   "lossRate": 0.08,
+   "drawRate": 0.65,
+   "drawCI": [
+    0.5525426042919797,
+    0.7363589534652197
+   ],
+   "rounds": 23.66,
+   "decidedRounds": 11.885714285714286,
+   "decided": 35,
+   "keepWins": 27,
+   "wipeWins": 0,
+   "capSubj": 1.09,
+   "capOpp": 2.2,
+   "anyCap": 1,
+   "lostSubj": 12.19,
+   "lostOpp": 12.24,
+   "hpSubj": 100.13,
+   "hpOpp": 119,
+   "recruited": {
+    "pikeman": 9.559999999999997,
+    "archer": 6.759999999999999,
+    "cavalier": 3.6299999999999972
+   },
+   "abilities": {
+    "bloodChallenge": 7.099999999999995,
+    "focusedShot": 17.479999999999993,
+    "warlordsRush": 2.3600000000000003,
+    "reavingRush": 0.060000000000000005,
+    "charge": 2.509999999999999
+   },
+   "spells": {
+    "fireburst": 3.9899999999999975,
+    "ward": 3.7699999999999974,
+    "mend": 4.989999999999997
+   },
+   "energySpent": 56.6
+  }
+ }
+]

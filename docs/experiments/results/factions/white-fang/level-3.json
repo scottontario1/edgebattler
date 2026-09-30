@@ -1,0 +1,459 @@
+[
+ {
+  "label": "N naive: default stances, no picks, no spells",
+  "budget": {
+   "blue": {
+    "supply": 1,
+    "pop": 2
+   },
+   "red": {
+    "supply": 4,
+    "pop": 3
+   }
+  },
+  "n": 400,
+  "blue": 0,
+  "red": 0,
+  "mutual": 0,
+  "none": 1,
+  "blueCI": [
+   0,
+   0.009512640599680667
+  ],
+  "rounds": 1,
+  "surv": {
+   "blue": 1.995,
+   "red": 2.97
+  },
+  "hpLeft": {
+   "blue": 0.8223529411764647,
+   "red": 0.7447727272727248
+  },
+  "margin": {
+   "mean": 8.15,
+   "half": 0.752832019775991
+  },
+  "first": {
+   "blue": 17.225,
+   "red": 9.075,
+   "round": 1
+  },
+  "strikes": 2,
+  "landed": 1.6625,
+  "dmgBlue": 17.225,
+  "dmgRed": 9.075,
+  "movedShare": 0.5,
+  "dmgPerHit": 10.41025641025641,
+  "dmgPerHitMoved": 10.31055900621118,
+  "dmgPerHitHeld": 10.408163265306122,
+  "abilityUses": 0,
+  "energy": 0,
+  "abilityById": {},
+  "planFails": 0,
+  "tracked": {
+   "rp1": {
+    "hits": 0.8575,
+    "dmg": 8.925,
+    "perHit": 10.408163265306122
+   },
+   "rp2": {
+    "hits": 0,
+    "dmg": 0,
+    "perHit": null
+   },
+   "ra1": {
+    "hits": 0,
+    "dmg": 0,
+    "perHit": null
+   }
+  },
+  "diedShare": {
+   "rp1": {
+    "share": 0.03,
+    "round": 1
+   },
+   "bf1": {
+    "share": 0.005,
+    "round": 1
+   }
+  }
+ },
+ {
+  "label": "S skilled: Blood Challenge marking the south Pikeman",
+  "budget": {
+   "blue": {
+    "supply": 1,
+    "pop": 2
+   },
+   "red": {
+    "supply": 4,
+    "pop": 3
+   }
+  },
+  "n": 400,
+  "blue": 0,
+  "red": 0,
+  "mutual": 0,
+  "none": 1,
+  "blueCI": [
+   0,
+   0.009512640599680667
+  ],
+  "rounds": 1,
+  "surv": {
+   "blue": 2,
+   "red": 2.9825
+  },
+  "hpLeft": {
+   "blue": 0.917499999999996,
+   "red": 0.8154545454545464
+  },
+  "margin": {
+   "mean": 8.2875,
+   "half": 0.6696336755084829
+  },
+  "first": {
+   "blue": 12.495,
+   "red": 4.2075,
+   "round": 1
+  },
+  "strikes": 1,
+  "landed": 0.8575,
+  "dmgBlue": 12.495,
+  "dmgRed": 4.2075,
+  "movedShare": 0,
+  "dmgPerHit": 14.571428571428571,
+  "dmgPerHitMoved": null,
+  "dmgPerHitHeld": 14.571428571428571,
+  "abilityUses": 1,
+  "energy": 2,
+  "abilityById": {
+   "bloodChallenge": 0.9999999999999897
+  },
+  "planFails": 0,
+  "tracked": {
+   "rp1": {
+    "hits": 0,
+    "dmg": 0,
+    "perHit": null
+   },
+   "rp2": {
+    "hits": 0.8575,
+    "dmg": 12.495,
+    "perHit": 14.571428571428571
+   },
+   "ra1": {
+    "hits": 0,
+    "dmg": 0,
+    "perHit": null
+   }
+  },
+  "diedShare": {
+   "rp2": {
+    "share": 0.0175,
+    "round": 1
+   }
+  }
+ },
+ {
+  "label": "U no Blood Challenge (Dreg strikes the nearest: ties go to rp1)",
+  "budget": {
+   "blue": {
+    "supply": 1,
+    "pop": 2
+   },
+   "red": {
+    "supply": 4,
+    "pop": 3
+   }
+  },
+  "n": 400,
+  "blue": 0,
+  "red": 0,
+  "mutual": 0,
+  "none": 1,
+  "blueCI": [
+   0,
+   0.009512640599680667
+  ],
+  "rounds": 1,
+  "surv": {
+   "blue": 2,
+   "red": 2.9825
+  },
+  "hpLeft": {
+   "blue": 0.917499999999996,
+   "red": 0.8663636363636397
+  },
+  "margin": {
+   "mean": 4.7175,
+   "half": 0.5075008677578792
+  },
+  "first": {
+   "blue": 8.925,
+   "red": 4.2075,
+   "round": 1
+  },
+  "strikes": 1,
+  "landed": 0.8575,
+  "dmgBlue": 8.925,
+  "dmgRed": 4.2075,
+  "movedShare": 0,
+  "dmgPerHit": 10.408163265306122,
+  "dmgPerHitMoved": null,
+  "dmgPerHitHeld": 10.408163265306122,
+  "abilityUses": 0,
+  "energy": 0,
+  "abilityById": {},
+  "planFails": 0,
+  "tracked": {
+   "rp1": {
+    "hits": 0.8575,
+    "dmg": 8.925,
+    "perHit": 10.408163265306122
+   },
+   "rp2": {
+    "hits": 0,
+    "dmg": 0,
+    "perHit": null
+   },
+   "ra1": {
+    "hits": 0,
+    "dmg": 0,
+    "perHit": null
+   }
+  },
+  "diedShare": {
+   "rp1": {
+    "share": 0.0175,
+    "round": 1
+   }
+  }
+ },
+ {
+  "label": "D default mark: Blood Challenge with no aim (the nearest enemy is marked)",
+  "budget": {
+   "blue": {
+    "supply": 1,
+    "pop": 2
+   },
+   "red": {
+    "supply": 4,
+    "pop": 3
+   }
+  },
+  "n": 400,
+  "blue": 0,
+  "red": 0,
+  "mutual": 0,
+  "none": 1,
+  "blueCI": [
+   0,
+   0.009512640599680667
+  ],
+  "rounds": 1,
+  "surv": {
+   "blue": 2,
+   "red": 2.9825
+  },
+  "hpLeft": {
+   "blue": 0.917499999999996,
+   "red": 0.8154545454545464
+  },
+  "margin": {
+   "mean": 8.2875,
+   "half": 0.6696336755084829
+  },
+  "first": {
+   "blue": 12.495,
+   "red": 4.2075,
+   "round": 1
+  },
+  "strikes": 1,
+  "landed": 0.8575,
+  "dmgBlue": 12.495,
+  "dmgRed": 4.2075,
+  "movedShare": 0,
+  "dmgPerHit": 14.571428571428571,
+  "dmgPerHitMoved": null,
+  "dmgPerHitHeld": 14.571428571428571,
+  "abilityUses": 1,
+  "energy": 2,
+  "abilityById": {
+   "bloodChallenge": 0.9999999999999897
+  },
+  "planFails": 0,
+  "tracked": {
+   "rp1": {
+    "hits": 0.8575,
+    "dmg": 12.495,
+    "perHit": 14.571428571428571
+   },
+   "rp2": {
+    "hits": 0,
+    "dmg": 0,
+    "perHit": null
+   },
+   "ra1": {
+    "hits": 0,
+    "dmg": 0,
+    "perHit": null
+   }
+  },
+  "diedShare": {
+   "rp1": {
+    "share": 0.0175,
+    "round": 1
+   }
+  }
+ },
+ {
+  "label": "A mark the north Pikeman",
+  "budget": {
+   "blue": {
+    "supply": 1,
+    "pop": 2
+   },
+   "red": {
+    "supply": 4,
+    "pop": 3
+   }
+  },
+  "n": 400,
+  "blue": 0,
+  "red": 0,
+  "mutual": 0,
+  "none": 1,
+  "blueCI": [
+   0,
+   0.009512640599680667
+  ],
+  "rounds": 1,
+  "surv": {
+   "blue": 2,
+   "red": 2.9825
+  },
+  "hpLeft": {
+   "blue": 0.917499999999996,
+   "red": 0.8154545454545464
+  },
+  "margin": {
+   "mean": 8.2875,
+   "half": 0.6696336755084829
+  },
+  "first": {
+   "blue": 12.495,
+   "red": 4.2075,
+   "round": 1
+  },
+  "strikes": 1,
+  "landed": 0.8575,
+  "dmgBlue": 12.495,
+  "dmgRed": 4.2075,
+  "movedShare": 0,
+  "dmgPerHit": 14.571428571428571,
+  "dmgPerHitMoved": null,
+  "dmgPerHitHeld": 14.571428571428571,
+  "abilityUses": 1,
+  "energy": 2,
+  "abilityById": {
+   "bloodChallenge": 0.9999999999999897
+  },
+  "planFails": 0,
+  "tracked": {
+   "rp1": {
+    "hits": 0.8575,
+    "dmg": 12.495,
+    "perHit": 14.571428571428571
+   },
+   "rp2": {
+    "hits": 0,
+    "dmg": 0,
+    "perHit": null
+   },
+   "ra1": {
+    "hits": 0,
+    "dmg": 0,
+    "perHit": null
+   }
+  },
+  "diedShare": {
+   "rp1": {
+    "share": 0.0175,
+    "round": 1
+   }
+  }
+ },
+ {
+  "label": "F mark the Archer he cannot reach on Hold (off-target strikes take -4)",
+  "budget": {
+   "blue": {
+    "supply": 1,
+    "pop": 2
+   },
+   "red": {
+    "supply": 4,
+    "pop": 3
+   }
+  },
+  "n": 400,
+  "blue": 0,
+  "red": 0,
+  "mutual": 0,
+  "none": 1,
+  "blueCI": [
+   0,
+   0.009512640599680667
+  ],
+  "rounds": 1,
+  "surv": {
+   "blue": 2,
+   "red": 3
+  },
+  "hpLeft": {
+   "blue": 0.917499999999996,
+   "red": 0.9188636363636417
+  },
+  "margin": {
+   "mean": 1.1475,
+   "half": 0.35841406637435386
+  },
+  "first": {
+   "blue": 5.355,
+   "red": 4.2075,
+   "round": 1
+  },
+  "strikes": 1,
+  "landed": 0.8575,
+  "dmgBlue": 5.355,
+  "dmgRed": 4.2075,
+  "movedShare": 0,
+  "dmgPerHit": 6.244897959183674,
+  "dmgPerHitMoved": null,
+  "dmgPerHitHeld": 6.244897959183674,
+  "abilityUses": 1,
+  "energy": 2,
+  "abilityById": {
+   "bloodChallenge": 0.9999999999999897
+  },
+  "planFails": 0,
+  "tracked": {
+   "rp1": {
+    "hits": 0.8575,
+    "dmg": 5.355,
+    "perHit": 6.244897959183674
+   },
+   "rp2": {
+    "hits": 0,
+    "dmg": 0,
+    "perHit": null
+   },
+   "ra1": {
+    "hits": 0,
+    "dmg": 0,
+    "perHit": null
+   }
+  },
+  "diedShare": {}
+ }
+]

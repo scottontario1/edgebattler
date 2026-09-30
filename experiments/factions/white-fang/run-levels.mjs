@@ -24,6 +24,8 @@ const mean = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0)
 const pct = (x) => `${Math.round(100 * x)}%`;
 const f1 = (x) => x.toFixed(1);
 const f2 = (x) => (x == null ? '-' : x.toFixed(2));
+// Short row name: the code before " skilled without" for ablations ("S-Blood Challenge"), otherwise the first word ("N", "H", "M-Pikeman").
+const short = (label) => (/^\S+ .*? skilled without /.test(label) || /^S-.* skilled without /.test(label) ? label.slice(0, label.indexOf(' skilled without ')) : label.split(' ')[0]);
 
 // Mean and 95% half-width of a sample.
 const ci = (xs) => { const m = mean(xs), sd = Math.sqrt(mean(xs.map((x) => (x - m) ** 2))); return { mean: m, half: 1.96 * sd / Math.sqrt(xs.length) }; };
@@ -98,21 +100,21 @@ for (const suite of chosen) {
     '| variant | Supply b / r | Blue win | Red win | mutual | none | rounds | survivors b / r | HP left b / r | change in Blue win |', '|---|---|---|---|---|---|---|---|---|---|'];
   for (const { variant, s, blueBudget: bb, redBudget: rb, delta: d } of rows) L.push(`| ${variant.label} | ${bb.supply} / ${rb.supply} | ${pct(s.blue)} (${pct(s.blueCI[0])}-${pct(s.blueCI[1])}) | ${pct(s.red)} | ${pct(s.mutual)} | ${pct(s.none)} | ${f1(s.rounds)} | ${f1(s.surv.blue)} / ${f1(s.surv.red)} | ${pct(s.hpLeft.blue)} / ${pct(s.hpLeft.red)} | ${d} |`);
   L.push('', '| variant | Blue strikes | landed hits | share of strikes made after moving | damage / landed hit (all / after moving / held) | damage dealt b / r | net damage b - r (95%) | contact round: mean round, damage b / r | ability uses | energy spent |', '|---|---|---|---|---|---|---|---|---|---|');
-  for (const { variant, s } of rows) L.push(`| ${variant.label.split(' ')[0]} | ${f1(s.strikes)} | ${f1(s.landed)} | ${pct(s.movedShare)} | ${f2(s.dmgPerHit)} / ${f2(s.dmgPerHitMoved)} / ${f2(s.dmgPerHitHeld)} | ${f1(s.dmgBlue)} / ${f1(s.dmgRed)} | ${pm(s.margin)} | r${f1(s.first.round)}: ${f1(s.first.blue)} / ${f1(s.first.red)} | ${f1(s.abilityUses)} | ${f1(s.energy)} |`);
+  for (const { variant, s } of rows) L.push(`| ${short(variant.label)} | ${f1(s.strikes)} | ${f1(s.landed)} | ${pct(s.movedShare)} | ${f2(s.dmgPerHit)} / ${f2(s.dmgPerHitMoved)} / ${f2(s.dmgPerHitHeld)} | ${f1(s.dmgBlue)} / ${f1(s.dmgRed)} | ${pm(s.margin)} | r${f1(s.first.round)}: ${f1(s.first.blue)} / ${f1(s.first.red)} | ${f1(s.abilityUses)} | ${f1(s.energy)} |`);
   if (trackId) {
     L.push('', `Landed hits by \`${trackId}\` per game (mean), by target, and damage per landed hit on that target:`, '', `| variant | ${enemyIds.map((id) => `${id} hits (dmg/hit)`).join(' | ')} | all (dmg/hit) |`, `|---|${enemyIds.map(() => '---').join('|')}|---|`);
     for (const { variant, s } of rows) {
       const all = s.tracked[enemyIds[0]] && enemyIds.reduce((a, id) => ({ hits: a.hits + s.tracked[id].hits, dmg: a.dmg + s.tracked[id].dmg }), { hits: 0, dmg: 0 });
-      L.push(`| ${variant.label.split(' ')[0]} | ${enemyIds.map((id) => `${f2(s.tracked[id].hits)} (${f1(s.tracked[id].perHit ?? 0)})`).join(' | ')} | ${f2(all.hits)} (${all.hits ? f1(all.dmg / all.hits) : '-'}) |`);
+      L.push(`| ${short(variant.label)} | ${enemyIds.map((id) => `${f2(s.tracked[id].hits)} (${f1(s.tracked[id].perHit ?? 0)})`).join(' | ')} | ${f2(all.hits)} (${all.hits ? f1(all.dmg / all.hits) : '-'}) |`);
     }
     const deaths = enemyIds.filter((id) => rows.some((r) => r.s.diedShare[id]));
     if (deaths.length) {
       L.push('', 'Share of games in which each enemy died, and the mean round it died in:', '', `| variant | ${deaths.join(' | ')} |`, `|---|${deaths.map(() => '---').join('|')}|`);
-      for (const { variant, s } of rows) L.push(`| ${variant.label.split(' ')[0]} | ${deaths.map((id) => (s.diedShare[id] ? `${pct(s.diedShare[id].share)} (r${f1(s.diedShare[id].round)})` : '0%')).join(' | ')} |`);
+      for (const { variant, s } of rows) L.push(`| ${short(variant.label)} | ${deaths.map((id) => (s.diedShare[id] ? `${pct(s.diedShare[id].share)} (r${f1(s.diedShare[id].round)})` : '0%')).join(' | ')} |`);
     }
   }
   L.push('', 'Ability uses per game (Blue):', '', '| variant | uses by ability |', '|---|---|');
-  for (const { variant, s } of rows) L.push(`| ${variant.label.split(' ')[0]} | ${Object.entries(s.abilityById).map(([k, v]) => `${k} ${f2(v)}`).join(', ') || 'none'} |`);
+  for (const { variant, s } of rows) L.push(`| ${short(variant.label)} | ${Object.entries(s.abilityById).map(([k, v]) => `${k} ${f2(v)}`).join(', ') || 'none'} |`);
   L.push('');
   report.push({ suite: suite.id, text: L.join('\n'), data: rows.map((r) => ({ label: r.variant.label, budget: { blue: r.blueBudget, red: r.redBudget }, ...r.s })) });
   console.log(L.join('\n'));
