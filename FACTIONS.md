@@ -42,7 +42,7 @@ These supersede the matching proposals and rejections below. Where a section sti
 | Marked target (`markTargetId`; no planning action yet) | White Fang | `src/match.js` |
 
 Recorded in the log header like `experimentRules`, so replays reconstruct them.
-### Additional hooks required by the 2026-09-30 decisions (not built yet)
+### Additional hooks required by the 2026-09-30 decisions (built and verified 2026-09-30, see docs/CULTURE_HOOKS.md)
 
 | hook | needed by | change |
 |---|---|---|

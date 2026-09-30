@@ -1,3 +1,4 @@
+import { SPRITE_FALLBACK } from './cultures.js';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 // Circular import (units.js imports buildModel); UNITS is only read inside buildModel, after
@@ -209,7 +210,7 @@ async function buildHero(spec, id, faction) {
 
 export async function buildModel(id, faction) {
   const unit = UNITS.find((u) => u.id === id);
-  const spec = MODEL_SPECS[unit.cls];
+  const spec = MODEL_SPECS[unit.cls] ?? MODEL_SPECS[SPRITE_FALLBACK[unit.cls]?.base];
   const hero = await buildHero(spec, id, faction);
   if (!spec.mount) return hero;
   // Cavalry: seat the rider on the horse (crotch on the saddle) and animate both.

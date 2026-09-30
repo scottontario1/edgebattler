@@ -7,6 +7,10 @@
 //
 // def = {
 //   id: 'crown',
+//   classes:   { key: { name, title?, stats: { hp, str, skl, spd, def, res, mov, lv? }, weapon: 'Coil Crossbow',
+//                       weaponDef?: { mt, hit, crit, rng: [1, 1], kind }, moveType?: 'foot'|'armor'|'mounted',
+//                       spriteBase: 'pikeman', tint: '#4E7C6A', label?, passives?, onDeath?, card: { rarity, cost, class, range, defaultStance } } },
+//   champions: { id: { name, title, cls, stats, weapon, look, tint?, spriteBase? } },        // a champion per culture; kits via ability `units: [id]`
 //   variants: { crownGuard: { base: 'pikeman', name, title?, delta: { hp, str, def, mov ... }, stats?, weapon?, passives: [...],
 //                             card: { rarity, cost? } } },
 //   abilities: [ { id, name, classes, cost, cooldown, phase, requires?, effect?, description } ],   // src/abilities.js shape
@@ -21,7 +25,13 @@
 // (`effect: { revenant: 1 }`, once per match). See docs/CULTURE_HOOKS.md.
 import { registerAbilities, unregisterAbilities, registerSpells, unregisterSpells } from './abilities.js';
 import { registerCandidateCards, unregisterCandidateCards, UNIT_CARDS } from './cards.js';
-import { registerVariants, resetVariants, VARIANTS } from './roster.js';
+import { registerVariants, resetVariants, VARIANTS, RECRUIT, registerChampions, CHAMPION_TEMPLATES } from './roster.js';
+import { MOVE_TYPE } from './rules.js';
+import { WEAPONS } from './combat.js';
+
+// Placeholder art until sprites exist: class or variant key -> { base: existing class whose sprite/model is borrowed, tint, label }.
+// Read by src/sprites.js and src/models.js; empty in the game.
+export const SPRITE_FALLBACK = {};
 
 export const CULTURES = {};
 export const ACTIVE_CULTURES = [];
@@ -29,19 +39,41 @@ export const ACTIVE_CULTURES = [];
 export function registerCulture(def) {
   if (!def?.id) throw new Error('culture needs an id');
   if (CULTURES[def.id]) unregisterCulture(def.id);
-  const record = { def, cards: [], abilities: [], spells: [], variants: [] };
+  const record = { def, cards: [], abilities: [], spells: [], variants: [], classes: [], weapons: [], moveTypes: [], champions: [] };
   const variants = {};
   const cards = {};
+  for (const [key, c] of Object.entries(def.classes || {})) {
+    if (RECRUIT[key] || UNIT_CARDS[key] || cards[key]) throw new Error(`class ${key} collides with an existing class or card`);
+    const wname = c.weapon || `${c.name} weapon`;
+    if (c.weaponDef) { WEAPONS[wname] = c.weaponDef; record.weapons.push(wname); }
+    RECRUIT[key] = { name: c.name, title: c.title || 'Recruit', lv: 2, mag: 0, res: 1, ...c.stats, weapon: wname, culture: def.id, ...(c.card?.defaultStance ? { stance: c.card.defaultStance } : {}),
+      ...(c.passives ? { passives: c.passives } : {}), ...(c.onDeath ? { onDeath: c.onDeath } : {}) };
+    if (c.moveType) { MOVE_TYPE[key] = c.moveType; record.moveTypes.push(key); }
+    SPRITE_FALLBACK[key] = { base: c.spriteBase, tint: c.tint, label: c.label || c.name };
+    cards[key] = { id: `unit-${key}`, type: 'unit', rarity: 'common', unitId: key, name: c.name, cost: 2, class: 'Foot', stars: 1, range: 1,
+      defaultStance: 'advance', ability: c.description || c.name, culture: def.id, ...(c.card || {}) };
+    record.classes.push(key);
+  }
   for (const [key, v] of Object.entries(def.variants || {})) {
-    if (!UNIT_CARDS[v.base]) throw new Error(`variant ${key}: unknown base class ${v.base}`);
+    if (!UNIT_CARDS[v.base] && !cards[v.base]) throw new Error(`variant ${key}: unknown base class ${v.base}`);
     if (UNIT_CARDS[key]) throw new Error(`variant ${key} collides with a shipped unit`);
     variants[key] = { ...v, culture: def.id };
-    const base = UNIT_CARDS[v.base];
+    const base = UNIT_CARDS[v.base] ?? cards[v.base];
     cards[key] = { id: `unit-${key}`, type: 'unit', rarity: 'common', unitId: key, base: v.base, name: v.name, cost: base.cost, class: base.class,
       typeLabel: base.typeLabel, stars: 1, range: base.range, defaultStance: base.defaultStance, ability: v.description || base.ability,
       culture: def.id, ...(v.card || {}) };
     record.variants.push(key);
   }
+  for (const [key, v] of Object.entries(def.variants || {})) if (v.tint) SPRITE_FALLBACK[key] = { base: v.base, tint: v.tint, label: v.name };
+  const champs = {};
+  for (const [id, ch] of Object.entries(def.champions || {})) {
+    const t = { ...RECRUIT[ch.cls], ...ch.stats };
+    champs[id] = { id, name: ch.name, title: ch.title || 'Champion', cls: ch.cls, lv: t.lv ?? 4, hp: t.hp, maxHp: t.hp, str: t.str, mag: t.mag ?? 0, skl: t.skl,
+      spd: t.spd, def: t.def, res: t.res ?? 1, mov: t.mov, weapon: ch.weapon || t.weapon, look: ch.look, culture: def.id, champion: true, faction: ch.faction };
+    if (ch.tint || ch.spriteBase) SPRITE_FALLBACK[id] = { base: ch.spriteBase || ch.cls, tint: ch.tint, label: ch.name };
+    record.champions.push(id);
+  }
+  registerChampions(champs);
   registerVariants(variants);
   registerAbilities(def.abilities || []);
   record.abilities = (def.abilities || []).map((a) => a.id);
@@ -67,7 +99,11 @@ export function unregisterCulture(id) {
   unregisterCandidateCards(rec.cards);
   unregisterAbilities(rec.abilities);
   unregisterSpells(rec.spells);
-  for (const key of rec.variants) delete VARIANTS[key];
+  for (const key of rec.variants) { delete VARIANTS[key]; delete SPRITE_FALLBACK[key]; }
+  for (const key of rec.classes) { delete RECRUIT[key]; delete SPRITE_FALLBACK[key]; }
+  for (const w of rec.weapons) delete WEAPONS[w];
+  for (const key of rec.moveTypes) delete MOVE_TYPE[key];
+  for (const id of rec.champions) { delete CHAMPION_TEMPLATES[id]; delete SPRITE_FALLBACK[id]; }
   delete CULTURES[id];
   ACTIVE_CULTURES.splice(ACTIVE_CULTURES.indexOf(id), 1);
 }

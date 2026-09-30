@@ -60,7 +60,7 @@ export function computeRange(unit, units, mov = unit.mov) {
   // For each enemy in reach, the stand tile with the best terrain defence (then closest).
   const targets = new Map();
   for (const o of units.list) {
-    if (o.data.faction === unit.faction || o.data.hp <= 0) continue;
+    if (o.data.faction === unit.faction || o.data.hp <= 0 || o.data.kind === 'object') continue;
     const pos = [o.data.c, o.data.r];
     const from = stand
       .filter((t) => { const d = dist(t, pos); return d >= minR && d <= maxR; })

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { isPortrait } from './camera.js';
 import { MASK_LAYER } from './painterly.js';
+import { SPRITE_FALLBACK } from './cultures.js';
 
 // Illustrated 2D sprites standing on the 3D map (docs/asset-pipeline-plan.md, milestone 1).
 // The runtime PNGs and their foot anchors come from tools/assets/prep_sprites.py; the supplied
@@ -77,13 +78,15 @@ function shadowTexture() {
   return shadowTex;
 }
 
-export const hasSprite = (cls) => cls in SPRITE_FOR;
+export const hasSprite = (cls) => Boolean(spriteName(cls));
 
 // Same interface as buildHero() in models.js: { root, setActive(bool), update(dt, t) }.
 // `flip` mirrors the drawing so it faces the other way (sprites face screen-right).
-export async function buildSprite(cls, faction, { flip = false } = {}) {
+// New culture classes borrow a base sprite (SPRITE_FALLBACK in src/cultures.js) until their own art exists; `tint` multiplies the colours.
+const spriteName = (cls) => SPRITE_FOR[cls] ?? SPRITE_FOR[SPRITE_FALLBACK[cls]?.base];
+export async function buildSprite(cls, faction, { flip = false, tint = null } = {}) {
   const manifest = await manifestP;
-  const info = manifest[SPRITE_FOR[cls]];
+  const info = manifest[spriteName(cls)];
   const tex = await texture(`${import.meta.env.BASE_URL}${info.files[faction] ?? info.files.blue}`);
 
   // World size of the whole image: visibleHeight pixels correspond to the drawing's world height.
@@ -101,6 +104,7 @@ export async function buildSprite(cls, faction, { flip = false } = {}) {
   const mat = new THREE.MeshBasicMaterial({
     map: tex, alphaTest: 0.5, side: THREE.DoubleSide, color: new THREE.Color(GAIN, GAIN, GAIN),
   });
+  if (tint) mat.color.multiply(new THREE.Color(tint));
   const mesh = new THREE.Mesh(geo, mat);
   // Picking follows the drawing, not its rectangle: a hit on a transparent pixel is ignored so
   // clicks fall through to the unit or tile behind the cape.

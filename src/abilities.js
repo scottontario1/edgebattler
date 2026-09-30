@@ -15,7 +15,9 @@ export const unregisterAbilities = ids => { for(const id of ids) delete ABILITY_
 export const resetAbilities = () => { for(const id of Object.keys(ABILITY_CATALOG)) if(!ABILITIES[id]) delete ABILITY_CATALOG[id]; };
 export const DEFAULT_ABILITY_STATE = Object.freeze({energy:0,maxEnergy:4,cooldowns:{},selectedAbilities:[],stance:'advance',objective:null,energyGainNextTurn:0,statuses:{}});
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,Number(v)||0));
-export const kitFor = unit => Object.values(ABILITY_CATALOG).filter(a=>a.classes.includes(unit.cls));
+// An ability applies to a class (`classes`) and/or to named units such as champions (`units`: ['dreg']).
+export const abilityApplies = (a,unit) => Boolean(a.classes?.includes(unit.cls)||a.units?.includes(unit.id));
+export const kitFor = unit => Object.values(ABILITY_CATALOG).filter(a=>abilityApplies(a,unit));
 export const selectedCost = unit => (unit.selectedAbilities||[]).reduce((n,id)=>n+(ABILITY_CATALOG[id]?.cost||0),0);
 export const battleMovement = unit => unit.stance==='hold'?0:unit.stance==='advance'?Math.max(1,Math.round(unit.mov*ABILITY_RULES.advanceFraction)):unit.mov;
 export const FACING = Object.freeze({north:[0,-1],east:[1,0],south:[0,1],west:[-1,0]});
@@ -50,7 +52,7 @@ export function advanceAbilityRound(unit,extra=0) {
 }
 // Validate the entire edit before mutating any group member. Cooldown does not prevent selecting.
 export function validateAbilitySelection(unit,ids) {
- if(!Array.isArray(ids)||ids.some(id=>!ABILITY_CATALOG[id]?.classes.includes(unit.cls))) return {ok:false,reason:'invalid-ability'};
+ if(!Array.isArray(ids)||ids.some(id=>!(ABILITY_CATALOG[id]&&abilityApplies(ABILITY_CATALOG[id],unit)))) return {ok:false,reason:'invalid-ability'};
  if(ids.includes('charge')&&unit.stance!=='advance') return {ok:false,reason:'charge-requires-advance'};
  const cost=selectedCost({selectedAbilities:[...new Set(ids)]});
  return cost>unit.energy?{ok:false,reason:'insufficient-energy',cost,shortfall:cost-unit.energy}:{ok:true,cost};
@@ -87,7 +89,7 @@ export function activatePhase(unit,phase,{paid=true,moved=false,hasTarget=false,
    for(const [k,v] of Object.entries(a.effect)) {const n=typeof v==='function'?v({movedTiles}):v;next.statuses[k]=(next.statuses[k]||0)+n;}
   }
   else {next.statuses.attackBonus=4;if(a.id==='focusedShot') next.statuses.hitBonus=20;}
-  events.push({unitId:next.id,abilityId:a.id,name:a.name,applied:true,cost:a.cost,energyCapped,effect,cooldown:a.cooldown});
+  events.push({unitId:next.id,abilityId:a.id,name:a.name,applied:true,cost:a.cost,energyCapped,effect,cooldown:a.cooldown,...(a.spawn?{spawn:a.spawn}:{}),...(a.mark?{mark:a.mark}:{})});
  }
  return {unit:next,events};
 }

@@ -55,6 +55,12 @@ export function seededRandom(seed = 1) {
 }
 
 const copy = (value) => structuredClone(value);
+// Rarity time gate (cultures): { uncommon: 3, rare: 6 } = the round from which cards of that rarity can be drawn. Empty in the
+// game (every card is drawable from round 1). The match passes the round in through `state.round`; the header records the gate.
+export const RARITY_GATE = {};
+export const setRarityGate = (gate = {}) => { for (const k of Object.keys(RARITY_GATE)) delete RARITY_GATE[k]; Object.assign(RARITY_GATE, gate); };
+export const rarityGateActive = () => Object.keys(RARITY_GATE).length > 0;
+const rarityOpen = (rarity, round) => !(RARITY_GATE[rarity ?? 'common'] > (round ?? 1));
 // Experiments (experiments/candidates) register extra cards and swap the draw pool; the game never does.
 const CANDIDATE_CARDS = {};
 let ACTIVE_POOL = RECRUITMENT_POOL;
@@ -68,9 +74,9 @@ export const unitCardFor = (key) => UNIT_CARDS[key] ?? (CANDIDATE_CARDS[key]?.ty
 export const skillCardFor = (skillId) => SKILL_CARDS[skillId] ?? Object.values(CANDIDATE_CARDS).find((c) => c.skillId === skillId) ?? null;
 
 /** Create a fresh match inventory. `cards` defaults to an empty hand. */
-export function createCardState({ cyclesRemaining = CARD_LIMITS.cyclesPerRound, supply = CARD_LIMITS.initialSupply, hand = [], reserves = [], population = 0, pool = null } = {}) {
+export function createCardState({ cyclesRemaining = CARD_LIMITS.cyclesPerRound, supply = CARD_LIMITS.initialSupply, hand = [], reserves = [], population = 0, pool = null, round } = {}) {
   // `pool`: optional per-side draw pool of card keys (cultures); absent = the shared pool.
-  return { ...(pool ? { pool: [...pool] } : {}), cyclesRemaining, supply: Math.max(0, Math.min(CARD_LIMITS.maxSupply, supply)), hand: copy(hand), reserves: copy(reserves), population, cardSequence: hand.length };
+  return { ...(pool ? { pool: [...pool] } : {}), ...(round !== undefined ? { round } : {}), cyclesRemaining, supply: Math.max(0, Math.min(CARD_LIMITS.maxSupply, supply)), hand: copy(hand), reserves: copy(reserves), population, cardSequence: hand.length };
 }
 
 /** Draw into free hand slots without removing retained cards; opening draw defaults to five. */
@@ -78,7 +84,11 @@ export function drawCards(state, rng = seededRandom(1), count = CARD_LIMITS.open
   const next = copy(state);
   const requested = Math.max(0, Math.floor(count));
   const slots = Math.max(0, CARD_LIMITS.hand - next.hand.length);
-  const POOL = next.pool ?? ACTIVE_POOL;
+  let POOL = next.pool ?? ACTIVE_POOL;
+  if (rarityGateActive()) {
+    const open = POOL.filter((key) => rarityOpen(cardFor(key)?.rarity, next.round));
+    if (open.length) POOL = open;
+  }
   const drawn = [];
   for (let i = 0; i < Math.min(requested, slots); i += 1) {
     const index = Math.min(POOL.length - 1, Math.floor(rng() * POOL.length));

@@ -17,7 +17,7 @@ const chrome = process.env.CHROME || 'C:/Program Files/Google/Chrome/Application
 const prof = mkdtempSync(join(tmpdir(), 'shot-'));
 const port = 9300 + Math.floor(Math.random() * 500);
 const proc = spawn(chrome, [
-  '--headless=new', ...(process.env.SWIFTSHADER ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist']), '--hide-scrollbars',
+  '--headless=new', ...(process.env.NOSANDBOX ? ['--no-sandbox'] : []), ...(process.env.SWIFTSHADER ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist']), '--hide-scrollbars',
   `--remote-debugging-port=${port}`, `--user-data-dir=${prof}`, '--window-size=1400,1000', 'about:blank',
 ], { stdio: 'ignore' });
 

@@ -41,7 +41,7 @@ function defaultForecast(a, d, from) {
 }
 
 function nearestOpponent(unit, snapshot) {
-  return snapshot.filter((u) => u.hp > 0 && u.faction !== unit.faction)
+  return snapshot.filter((u) => u.hp > 0 && u.faction !== unit.faction && u.kind !== 'object')
     .sort((a, b) => manhattan(unit, a) - manhattan(unit, b) || String(a.id).localeCompare(String(b.id)))[0];
 }
 
@@ -74,7 +74,8 @@ export function resolveBattleRound({
   const intentions = [];
 
   // Intents are computed exclusively from the starting snapshot.
-  for (const unit of start.filter((u) => u.hp > 0)) {
+  // Tile objects (kind 'object', src/match.js) only block movement and can be struck; they never act.
+  for (const unit of start.filter((u) => u.hp > 0 && u.kind !== 'object')) {
     const order = orders[unit.id] || {};
     const stance = order.stance || 'advance';
     const protect = stance === 'protect' ? protectSubject(unit, order, start) : null;
@@ -158,7 +159,7 @@ export function resolveBattleRound({
   // snapshot; hits and damage are computed before any HP is committed.
   const combatSnapshot = moved.map((u) => ({ ...u }));
   const strikes = [];
-  for (const attacker of combatSnapshot.filter((u) => u.hp > 0)) {
+  for (const attacker of combatSnapshot.filter((u) => u.hp > 0 && u.kind !== 'object')) {
     const order = orders[attacker.id] || {};
     const target = selectAttackTarget(attacker, combatSnapshot, forecastAttack, order.targetId);
     if (!target) continue;
@@ -216,7 +217,7 @@ export function resolveBattleRound({
   });
   const combatEvents = strikes.map((s) => ({ type: 'strike', ...s }));
   for (const u of result) {
-    if (u.hp <= 0 && (byId.get(u.id)?.hp ?? 0) > 0) combatEvents.push({ type: 'death', unitId: u.id });
+    if (u.hp <= 0 && (byId.get(u.id)?.hp ?? 0) > 0) combatEvents.push({ type: u.kind === 'object' ? 'objectDestroyed' : 'death', unitId: u.id });
   }
   return {
     units: result,
@@ -229,8 +230,11 @@ export function resolveBattleRound({
 
 /** Prefer a requested legal enemy, otherwise the nearest eligible enemy (stable ID tie-break). */
 export function selectAttackTarget(attacker, snapshot, forecastAttack = defaultForecast, targetId) {
-  const eligible = snapshot.filter((u) => u.hp > 0 && u.faction !== attacker.faction
+  const foes = snapshot.filter((u) => u.hp > 0 && u.faction !== attacker.faction
     && forecastAttack(attacker, u, { c: attacker.c, r: attacker.r })?.atk?.can);
+  // A blocking tile object is only struck when no real enemy is in reach.
+  const real = foes.filter((u) => u.kind !== 'object');
+  const eligible = real.length ? real : foes;
   return eligible.find((u) => u.id === targetId)
     || eligible.sort((a, b) => manhattan(attacker, a) - manhattan(attacker, b)
       || String(a.id).localeCompare(String(b.id)))[0];

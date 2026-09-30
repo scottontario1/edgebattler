@@ -21,14 +21,14 @@ export const variantOver = (key) => {
   const t = { ...RECRUIT[v.base], ...(v.stats || {}) };
   for (const [stat, d] of Object.entries(v.delta || {})) t[stat] = (t[stat] ?? 0) + d;
   return { ...t, ...(v.name ? { name: v.name } : {}), ...(v.title ? { title: v.title } : {}), ...(v.weapon ? { weapon: v.weapon } : {}),
-    variantId: key, ...(v.culture ? { culture: v.culture } : {}), ...(v.passives ? { passives: v.passives } : {}) };
+    variantId: key, ...(v.culture ? { culture: v.culture } : {}), ...(v.passives ? { passives: v.passives } : {}), ...(v.onDeath ? { onDeath: v.onDeath } : {}) };
 };
 const recruit = (cls, id, faction, c, r, look, over = {}) => {
   const t = { ...RECRUIT[cls], ...over };
   return { id, cls, classId: cls, variantId: t.variantId ?? cls, faction, c, r, name: t.name, title: t.title, lv: t.lv, hp: t.hp, maxHp: t.hp, str: t.str, mag: t.mag, skl: t.skl,
     spd: t.spd, def: t.def, res: t.res, mov: t.mov, weapon: t.weapon, look, stars: 1, population: 1, state: 'field', energy: 0, maxEnergy: 4,
     selectedAbilities: [], stance: t.stance ?? (cls === 'archer' ? 'hold' : 'advance'), cooldowns: {}, statuses: {},
-    ...(t.culture ? { culture: t.culture } : {}), ...(t.passives ? { passives: t.passives } : {}) }; // stance matches UNIT_CARDS defaultStance
+    ...(t.culture ? { culture: t.culture } : {}), ...(t.passives ? { passives: t.passives } : {}), ...(t.onDeath ? { onDeath: t.onDeath } : {}) }; // stance matches UNIT_CARDS defaultStance
 };
 
 export const UNITS = [
@@ -61,7 +61,19 @@ export function createRecruitUnit(key, id, faction, c, r, over = {}) {
 }
 
 /** Prototype champion respawn: rebuild the named hero at full HP and empty combat resources. */
+// Extra champions registered by cultures (src/cultures.js): id -> unit record template. Empty in the game.
+export const CHAMPION_TEMPLATES = {};
+export const registerChampions = (defs) => { for (const [id, d] of Object.entries(defs)) CHAMPION_TEMPLATES[id] = d; };
+export const resetChampions = () => { for (const k of Object.keys(CHAMPION_TEMPLATES)) delete CHAMPION_TEMPLATES[k]; };
+/** A champion unit record for a registered champion id, placed at c, r for `faction`. */
+export function createChampionUnit(id, faction, c, r) {
+  const t = CHAMPION_TEMPLATES[id];
+  if (!t) throw new Error(`Unknown champion: ${id}`);
+  return { ...structuredClone(t), id, faction, c, r, hp: t.maxHp, stars: 1, population: 1, state: 'field', energy: 0, maxEnergy: 4,
+    selectedAbilities: [], stance: 'advance', cooldowns: {}, statuses: {}, champion: true };
+}
 export function createHeroRespawnData(id, c, r) {
+  if (CHAMPION_TEMPLATES[id]) return { ...createChampionUnit(id, CHAMPION_TEMPLATES[id].faction ?? 'blue', c, r), planningMoved: false, done: false, moved: false };
   const hero = UNITS.find((unit) => unit.id === id && ['paladin', 'barbarian'].includes(unit.cls));
   if (!hero) throw new Error(`Unknown hero champion: ${id}`);
   return {

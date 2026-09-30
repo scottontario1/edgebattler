@@ -26,7 +26,7 @@ const identity = (unit) => [unit.classId ?? unit.unitId ?? unit.cls, unit.varian
   .map(String).join('\u0000');
 const isEligible = (unit) => unit && unit.type !== 'spell' && unit.type !== 'unit-card'
   && unit.state !== 'hand' && unit.state !== 'card'
-  && !unit.isHero && !unit.hero && !unit.commander
+  && !unit.isHero && !unit.hero && !unit.commander && !unit.champion
   && !['brenna', 'dreg', 'paladin', 'barbarian'].includes(String(unit.unitId ?? unit.cls ?? unit.classId).toLowerCase())
   && finite(unit.stars ?? 1) && (unit.stars ?? 1) >= 1 && (unit.stars ?? 1) < UPGRADE_MAX_STARS;
 

@@ -1,3 +1,4 @@
+import { createObjectLayer } from './objects.js';
 import {abilityEditorHTML} from './ui/abilities.js';
 import {selectedCost,FACING,flankSide} from './abilities.js';
 import './ui/abilities.css';
@@ -211,6 +212,7 @@ function reticles(scene) {
 }
 
 export function createUI({ renderer, camera, scene, units, view, match, policies = {} }) {
+  const objectLayer = createObjectLayer(scene);
   const card = document.getElementById('card');
   const terrainChip = document.getElementById('terrain');
   const roster = document.getElementById('roster');
@@ -502,6 +504,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
   }
 
   function refresh() {
+    objectLayer.sync(match.objects);
     renderOverlays();
     renderCard();
     renderSheet();
@@ -572,6 +575,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     for (const u of [...units.list]) if (match.byId(u.data.id) !== u.data) units.removeUnit(u.data.id);
     for (const rec of match.units) if (!units.byId.has(rec.id)) { units.addUnit(rec); portraits.set(rec.id, portraitSVG(rec)); }
     if (snap) for (const rec of match.units) if (rec.hp > 0) units.setPosition(rec.id, rec.c, rec.r);
+    objectLayer.sync(match.objects);
   }
 
   const reason = (r) => String(r || '').replaceAll('-', ' ');
