@@ -19,7 +19,8 @@ if (mapFile) setMap((await import(pathToFileURL(resolve(mapFile)).href)).default
 const isDir = statSync(target).isDirectory();
 const files = isDir ? readdirSync(target).filter((f) => f.endsWith('.jsonl')).map((f) => join(target, f)) : [target];
 
-const clsOf = (id) => (/pikeman|pike_/.test(id) ? 'pikeman' : /archer/.test(id) ? 'archer' : /cavalier|cav_/.test(id) ? 'cavalier' : id === 'brenna' ? 'paladin' : id === 'dreg' ? 'barbarian' : id.replace(/^\w+-u?r?\d+-/, ''));
+const KNOWN = new Map(); // id -> class, filled from a scenario log's header (scenario ids like bp1 carry no class name)
+const clsOf = (id) => KNOWN.get(id) || (/pikeman|pike_/.test(id) ? 'pikeman' : /archer/.test(id) ? 'archer' : /cavalier|cav_/.test(id) ? 'cavalier' : id === 'brenna' ? 'paladin' : id === 'dreg' ? 'barbarian' : id.replace(/^\w+-u?r?\d+-/, ''));
 const facOf = (id, summaryRow) => (summaryRow.blue.unitState.some((u) => u.id === id) ? 'blue' : summaryRow.red.unitState.some((u) => u.id === id) ? 'red' : null);
 const mean = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 const f1 = (x) => x.toFixed(1);
@@ -27,6 +28,7 @@ const f1 = (x) => x.toFixed(1);
 /** Facts about one game: per round strikes, deaths, holds, first contact and unit positions. */
 function analyse(entries) {
   const header = entries.find((e) => e.t === 'header');
+  for (const u of header?.scenario?.units || []) KNOWN.set(u.id, u.cls);
   const result = entries.find((e) => e.t === 'result');
   const rounds = entries.filter((e) => e.t === 'round');
   const summaries = new Map(entries.filter((e) => e.t === 'summary').map((s) => [s.round, s]));

@@ -1,0 +1,402 @@
+[
+ {
+  "label": "M0 flat open field",
+  "budget": {
+   "blue": {
+    "supply": 5,
+    "equipment": 0,
+    "total": 5,
+    "pop": 4
+   },
+   "red": {
+    "supply": 5,
+    "equipment": 0,
+    "total": 5,
+    "pop": 4
+   }
+  },
+  "n": 400,
+  "blue": 0.42,
+  "red": 0.24,
+  "mutual": 0.335,
+  "none": 0.005,
+  "blueCI": [
+   0.3726168694631035,
+   0.46890515303284536
+  ],
+  "rounds": 15.0625,
+  "surv": {
+   "blue": 0.565,
+   "red": 0.245
+  },
+  "hpLeft": {
+   "blue": 0.06341666666666673,
+   "red": 0.02899999999999996
+  },
+  "dealt": {
+   "blue": 107.1275,
+   "red": 98.82
+  },
+  "firstStrike": 2,
+  "flank": 0,
+  "strikes": 44.56,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 14.145,
+  "blocked": 15.48,
+  "contested": 1.025,
+  "abilityUses": 0,
+  "energy": 0,
+  "decidedRounds": 15.012562814070352
+ },
+ {
+  "label": "M1 river, three-tile crossing",
+  "budget": {
+   "blue": {
+    "supply": 5,
+    "equipment": 0,
+    "total": 5,
+    "pop": 4
+   },
+   "red": {
+    "supply": 5,
+    "equipment": 0,
+    "total": 5,
+    "pop": 4
+   }
+  },
+  "n": 400,
+  "blue": 0.31,
+  "red": 0.405,
+  "mutual": 0.2575,
+  "none": 0.0275,
+  "blueCI": [
+   0.26666296102378073,
+   0.35695184240409794
+  ],
+  "rounds": 15.795,
+  "surv": {
+   "blue": 0.3975,
+   "red": 0.635
+  },
+  "hpLeft": {
+   "blue": 0.044805555555555515,
+   "red": 0.09958333333333347
+  },
+  "dealt": {
+   "blue": 92.3625,
+   "red": 104.2625
+  },
+  "firstStrike": 2,
+  "flank": 0,
+  "strikes": 42.5775,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 11.79,
+  "blocked": 15.1625,
+  "contested": 3.4625,
+  "abilityUses": 0,
+  "energy": 0,
+  "decidedRounds": 15.534704370179949
+ },
+ {
+  "label": "M2 river, one-tile crossing",
+  "budget": {
+   "blue": {
+    "supply": 5,
+    "equipment": 0,
+    "total": 5,
+    "pop": 4
+   },
+   "red": {
+    "supply": 5,
+    "equipment": 0,
+    "total": 5,
+    "pop": 4
+   }
+  },
+  "n": 400,
+  "blue": 0.2975,
+  "red": 0.1175,
+  "mutual": 0.195,
+  "none": 0.39,
+  "blueCI": [
+   0.25479680042016234,
+   0.34405581902270826
+  ],
+  "rounds": 22.7625,
+  "surv": {
+   "blue": 0.805,
+   "red": 0.74
+  },
+  "hpLeft": {
+   "blue": 0.11447222222222261,
+   "red": 0.10341666666666685
+  },
+  "dealt": {
+   "blue": 88.29,
+   "red": 98.8025
+  },
+  "firstStrike": 3,
+  "flank": 0,
+  "strikes": 44.545,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 13.1075,
+  "blocked": 18.915,
+  "contested": 4.665,
+  "abilityUses": 0,
+  "energy": 0,
+  "decidedRounds": 21.331967213114755
+ },
+ {
+  "label": "M3 forest belt, defenders at its far edge (attackers fight from the forest)",
+  "budget": {
+   "blue": {
+    "supply": 5,
+    "equipment": 0,
+    "total": 5,
+    "pop": 4
+   },
+   "red": {
+    "supply": 5,
+    "equipment": 0,
+    "total": 5,
+    "pop": 4
+   }
+  },
+  "n": 400,
+  "blue": 0.8325,
+  "red": 0.025,
+  "mutual": 0.0525,
+  "none": 0.09,
+  "blueCI": [
+   0.7927791128508475,
+   0.8658949811503649
+  ],
+  "rounds": 16.9075,
+  "surv": {
+   "blue": 1.7725,
+   "red": 0.175
+  },
+  "hpLeft": {
+   "blue": 0.24855555555555636,
+   "red": 0.02619444444444443
+  },
+  "dealt": {
+   "blue": 101.245,
+   "red": 73.2225
+  },
+  "firstStrike": 3,
+  "flank": 0,
+  "strikes": 48.6,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 20.3575,
+  "blocked": 19.435,
+  "contested": 2.2575,
+  "abilityUses": 0,
+  "energy": 0,
+  "decidedRounds": 16.107142857142858
+ },
+ {
+  "label": "M3b forest belt, defenders inside its west edge (attackers fight from open ground)",
+  "budget": {
+   "blue": {
+    "supply": 5,
+    "equipment": 0,
+    "total": 5,
+    "pop": 4
+   },
+   "red": {
+    "supply": 5,
+    "equipment": 0,
+    "total": 5,
+    "pop": 4
+   }
+  },
+  "n": 400,
+  "blue": 0.395,
+  "red": 0.1525,
+  "mutual": 0.08,
+  "none": 0.3725,
+  "blueCI": [
+   0.3483094055511242,
+   0.44368824897480874
+  ],
+  "rounds": 19.5375,
+  "surv": {
+   "blue": 1.0775,
+   "red": 0.79
+  },
+  "hpLeft": {
+   "blue": 0.13733333333333386,
+   "red": 0.10477777777777789
+  },
+  "dealt": {
+   "blue": 89.555,
+   "red": 90.675
+  },
+  "firstStrike": 1,
+  "flank": 0,
+  "strikes": 55.2575,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 9.65,
+  "blocked": 26.7675,
+  "contested": 0.4025,
+  "abilityUses": 0,
+  "energy": 0,
+  "decidedRounds": 16.294820717131476
+ },
+ {
+  "label": "M4 shipped River Ford (bridge, roads, forests)",
+  "budget": {
+   "blue": {
+    "supply": 5,
+    "equipment": 0,
+    "total": 5,
+    "pop": 4
+   },
+   "red": {
+    "supply": 5,
+    "equipment": 0,
+    "total": 5,
+    "pop": 4
+   }
+  },
+  "n": 400,
+  "blue": 0.2425,
+  "red": 0.2,
+  "mutual": 0.2875,
+  "none": 0.27,
+  "blueCI": [
+   0.2030757339434459,
+   0.28682327596538965
+  ],
+  "rounds": 21.9125,
+  "surv": {
+   "blue": 0.52,
+   "red": 0.595
+  },
+  "hpLeft": {
+   "blue": 0.07419444444444452,
+   "red": 0.07950000000000014
+  },
+  "dealt": {
+   "blue": 90.37,
+   "red": 103.015
+  },
+  "firstStrike": 2.51,
+  "flank": 0,
+  "strikes": 46.0025,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 13.3,
+  "blocked": 18.885,
+  "contested": 4.34,
+  "abilityUses": 0,
+  "energy": 0,
+  "decidedRounds": 20.77054794520548
+ },
+ {
+  "label": "M5 one-tile crossing, attackers carry Whetstone (+2 Str)",
+  "budget": {
+   "blue": {
+    "supply": 5,
+    "equipment": 4,
+    "total": 9,
+    "pop": 4
+   },
+   "red": {
+    "supply": 5,
+    "equipment": 0,
+    "total": 5,
+    "pop": 4
+   }
+  },
+  "n": 400,
+  "blue": 0.5225,
+  "red": 0.1725,
+  "mutual": 0.2975,
+  "none": 0.0075,
+  "blueCI": [
+   0.4735685130017636,
+   0.5710034181712508
+  ],
+  "rounds": 16.285,
+  "surv": {
+   "blue": 0.7175,
+   "red": 0.1825
+  },
+  "hpLeft": {
+   "blue": 0.07938888888888905,
+   "red": 0.016999999999999987
+  },
+  "dealt": {
+   "blue": 105.995,
+   "red": 100.5675
+  },
+  "firstStrike": 3,
+  "flank": 0,
+  "strikes": 38.415,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 13.65,
+  "blocked": 12.36,
+  "contested": 4.52,
+  "abilityUses": 0,
+  "energy": 0,
+  "decidedRounds": 16.2191435768262
+ },
+ {
+  "label": "M6 one-tile crossing, defenders are a 2-star at 9,5 plus the Archer (Supply 5 v 5, pop 4 v 3)",
+  "budget": {
+   "blue": {
+    "supply": 5,
+    "equipment": 0,
+    "total": 5,
+    "pop": 4
+   },
+   "red": {
+    "supply": 5,
+    "equipment": 0,
+    "total": 5,
+    "pop": 3
+   }
+  },
+  "n": 400,
+  "blue": 0.8625,
+  "red": 0.0775,
+  "mutual": 0.0575,
+  "none": 0.0025,
+  "blueCI": [
+   0.825287326885749,
+   0.8928160086794825
+  ],
+  "rounds": 11.715,
+  "surv": {
+   "blue": 1.64,
+   "red": 0.0975
+  },
+  "hpLeft": {
+   "blue": 0.26158333333333306,
+   "red": 0.02289999999999999
+  },
+  "dealt": {
+   "blue": 58.0725,
+   "red": 74.6625
+  },
+  "firstStrike": 2,
+  "flank": 0,
+  "strikes": 23.925,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 10.9525,
+  "blocked": 9.0175,
+  "contested": 6.775,
+  "abilityUses": 0,
+  "energy": 0,
+  "decidedRounds": 11.68170426065163
+ }
+]

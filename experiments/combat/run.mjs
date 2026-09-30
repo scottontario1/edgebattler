@@ -39,6 +39,7 @@ function summarise(results) {
     firstStrike: mean(results.filter((r) => r.firstStrike).map((r) => r.firstStrike)),
     flank: mean(results.map((r) => r.flankStrikes)), strikes: mean(results.map((r) => r.strikes)),
     spear: mean(results.map((r) => r.spearBonus)), guarded: mean(results.map((r) => r.guarded)),
+    moves: mean(results.map((r) => r.moves)), blocked: mean(results.map((r) => r.blocked)), contested: mean(results.map((r) => r.contested)),
     abilityUses: mean(results.map((r) => r.abilityUses)), energy: mean(results.map((r) => r.energySpent)),
     decidedRounds: mean(decided.map((r) => r.rounds)),
   };
@@ -92,6 +93,8 @@ for (const suite of chosen) {
   }
   lines.push('', '| variant | first strike (round) | strikes / game | flank strikes | ability uses | energy spent | Set Spears bonus hits | bonuses ignored by Set Spears |', '|---|---|---|---|---|---|---|---|');
   for (const { variant, s } of rows) lines.push(`| ${variant.label.split(' ')[0]} | ${f1(s.firstStrike)} | ${f1(s.strikes)} | ${f1(s.flank)} | ${f1(s.abilityUses)} | ${f1(s.energy)} | ${f1(s.spear)} | ${f1(s.guarded)} |`);
+  lines.push('', '| variant | moves / game | blocked holds / game (no legal move) | contested destinations / game |', '|---|---|---|---|');
+  for (const { variant, s } of rows) lines.push(`| ${variant.label.split(' ')[0]} | ${f1(s.moves)} | ${f1(s.blocked)} | ${f1(s.contested)} |`);
   lines.push('');
   report.push({ suite: suite.id, text: lines.join('\n'), data: rows.map((r) => ({ label: r.variant.label, budget: { blue: r.blueBudget, red: r.redBudget }, ...r.s })) });
   console.log(lines.join('\n'));

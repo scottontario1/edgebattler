@@ -58,7 +58,7 @@ export const SUITE_PIKE_ARCHER_V_CAV = {
   variants: [
     { label: 'A0 baseline: pikes (6,5),(6,6), Archer sheltered at (5,5)', def: S2_BASE },
     { label: 'F1 gap in the line: second Pike at (6,7), Archer (5,5) reachable through (6,6)', def: movePike2(6, 7)(S2_BASE) },
-    { evidence: true, label: 'F2 Archer exposed at the end of the line (6,7)', def: moveArcher(6, 7)(S2_BASE) },
+    { evidence: true, label: 'F2 Archer stands in the front line at (6,6) between Pikemen at (6,5) and (6,7)', def: withUnits(S2_BASE, (x) => (x.id === 'ba1' ? { ...x, c: 6, r: 6 } : x.id === 'bp2' ? { ...x, c: 6, r: 7 } : x)) },
     { label: 'A1 side attack (all face north)', def: withUnits(S2_BASE, only('blue', 'pikeman', { facing: 'north' })) },
     { label: 'B1 Cavaliers wait, then Charge (arrive round 2)', def: { ...S2_BASE, script: cavCharge } },
     { label: 'B2 wait round: Cav Charge v Archer Focused Shot (round 2)', def: { ...S2_BASE, script: [...cavCharge, step(2, 'blue', 'archer', { abilities: ['focusedShot'] })] } },
@@ -111,7 +111,7 @@ const defenders = (champion = true) => [
   u('rp1', 'red', 'pikeman', 11, 1, { stance: 'hold', facing: 'west' }), u('rp2', 'red', 'pikeman', 12, 2, { stance: 'hold', facing: 'south' })];
 const attackers = (cls, n, rowStart = 5) => Array.from({ length: n }, (_, i) => u(`b${cls[0]}${i + 1}`, 'blue', cls, 7 + (i % 2), rowStart + Math.floor(i / 2), { stance: 'advance', objective: [12, 1], facing: 'north' }));
 const mixed = (list) => list.flatMap(([cls, n], k) => attackers(cls, n, 4 + k * 2).map((x, i) => ({ ...x, id: `b${cls[0]}${k}${i + 1}` })));
-const S4 = (atk, over = {}) => ({ id: 'keep-assault', map: 'flat_open', maxRounds: 15, units: [...atk, ...defenders()], ...over });
+const S4 = (atk, over = {}) => ({ id: 'keep-assault', map: 'flat_open', maxRounds: 25, units: [...atk, ...defenders()], ...over });
 const S4_BASE = S4(attackers('pikeman', 6));
 
 export const SUITE_KEEP_ASSAULT = {
@@ -137,4 +137,34 @@ export const SUITE_KEEP_ASSAULT = {
   ],
 };
 
-export const SUITES = [SUITE_PIKES_V_CAV, SUITE_PIKE_ARCHER_V_CAV, SUITE_THREE_V_2STAR, SUITE_KEEP_ASSAULT];
+// ---------- Suite 5: the same assault across map shapes ----------
+// Three Pikemen and an Archer (5 Supply, pop 4) advance on three Pikemen and an Archer (5 Supply, pop 4) holding
+// the east side of a north-south river. Only the map changes. Nothing else is scripted.
+const S5 = (map, over = {}) => ({ id: 'map-assault', map, maxRounds: 25, units: [
+  u('bp1', 'blue', 'pikeman', 4, 4, { stance: 'advance', facing: 'east' }), u('bp2', 'blue', 'pikeman', 4, 5, { stance: 'advance', facing: 'east' }),
+  u('bp3', 'blue', 'pikeman', 4, 6, { stance: 'advance', facing: 'east' }),
+  u('ba1', 'blue', 'archer', 3, 5, { stance: 'advance', facing: 'east' }),
+  u('rp1', 'red', 'pikeman', 9, 4, { stance: 'hold', facing: 'west' }), u('rp2', 'red', 'pikeman', 9, 6, { stance: 'hold', facing: 'west' }), u('rp3', 'red', 'pikeman', 10, 5, { stance: 'hold', facing: 'west' }),
+  u('ra1', 'red', 'archer', 11, 5, { stance: 'hold', facing: 'west' })], ...over });
+
+export const SUITE_MAP_ASSAULT = {
+  id: 'map-assault',
+  title: 'Three Pikemen and an Archer advance on three Pikemen and an Archer holding across a river, by map (equal Supply)',
+  question: 'Do chokepoints, forest and the shipped river map help the defender, make the attack stall, or just add congestion?',
+  variants: [
+    { label: 'M0 flat open field', def: S5('flat_open') },
+    { label: 'M1 river, three-tile crossing', def: S5('choke_gap3') },
+    { label: 'M2 river, one-tile crossing', def: S5('choke_gap1') },
+    { label: 'M3 forest belt, defenders at its far edge (attackers fight from the forest)', def: S5('forest_belt') },
+    { label: 'M3b forest belt, defenders inside its west edge (attackers fight from open ground)', def: S5('forest_belt', { units: [
+      u('bp1', 'blue', 'pikeman', 2, 4, { stance: 'advance', facing: 'east' }), u('bp2', 'blue', 'pikeman', 2, 5, { stance: 'advance', facing: 'east' }), u('bp3', 'blue', 'pikeman', 2, 6, { stance: 'advance', facing: 'east' }),
+      u('ba1', 'blue', 'archer', 1, 5, { stance: 'advance', facing: 'east' }),
+      u('rp1', 'red', 'pikeman', 6, 4, { stance: 'hold', facing: 'west' }), u('rp2', 'red', 'pikeman', 6, 6, { stance: 'hold', facing: 'west' }), u('rp3', 'red', 'pikeman', 7, 5, { stance: 'hold', facing: 'west' }),
+      u('ra1', 'red', 'archer', 8, 5, { stance: 'hold', facing: 'west' })] }) },
+    { label: 'M4 shipped River Ford (bridge, roads, forests)', def: S5('river_ford') },
+    { label: 'M5 one-tile crossing, attackers carry Whetstone (+2 Str)', def: { ...S5('choke_gap1'), candidates: ['whetstone'], loadouts: { blue: { pikeman: ['whetstone'], archer: ['whetstone'] } } } },
+    { label: 'M6 one-tile crossing, defenders are a 2-star at 9,5 plus the Archer (Supply 5 v 5, pop 4 v 3)', def: S5('choke_gap1', { units: S5('choke_gap1').units.filter((x) => !['rp2', 'rp3'].includes(x.id)).map((x) => (x.id === 'rp1' ? { ...x, stars: 2, r: 5 } : x)) }) },
+  ],
+};
+
+export const SUITES = [SUITE_PIKES_V_CAV, SUITE_PIKE_ARCHER_V_CAV, SUITE_THREE_V_2STAR, SUITE_KEEP_ASSAULT, SUITE_MAP_ASSAULT];

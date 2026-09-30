@@ -17,6 +17,7 @@ Acceptance: select among eligible enemy targets before ranking; cover adjacent b
 
 Status: reported core blocker; balance choices provisional.
 Historical baseline reported 96% draws; the final SYS-01 run draws 89/100 at 30 rounds despite 11 captures. Ordinary basic recruits still struggle with defensive keeps; enhancements/flanks now create some counterplay. Do not automatically adopt lower defense, siege bonuses or score victory.
+Experiment evidence (branch sim/combat-experiments, 2026-09-30; provisional, nothing adopted): docs/experiments/BASELINE.md and COMBAT_CASES.md. The 89% draw rate reproduces; the equal-player (mirror) stalemate is a replacement/capacity equilibrium that terrain, champion removal and extra cards do not fix; the keep is a stat cliff (recruit attack 16 v champion Def 13 + castle 3). Candidate cards (Whetstone, Bulwark, Set Spears, Momentum) are in docs/experiments/CANDIDATES.md and are not in the default pool. Next: rule-override sweep on population cap, Supply income and hand size.
 Acceptance: agree the attacking counterplay, run paired-seed/side-swapped experiments against passive, greedy and heuristic policies, report capture rate, draws, duration and tradeoffs, and let Scott select defaults.
 
 ## SYS-01: Energy and planning-selected abilities

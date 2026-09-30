@@ -123,6 +123,8 @@ export function playScenario(def, seed, { keepLog = false } = {}) {
   if (m.reason === 'army-destroyed' && !alive.blue.length && !alive.red.length) winner = 'mutual'; // the engine reports red first (CORE-03)
   const abilityEvents = rounds.flatMap((r) => r.batches.filter((b) => b.type === 'abilities').flatMap((b) => b.events));
   const used = abilityEvents.filter((e) => e.applied);
+  const moves = rounds.flatMap((r) => r.batches.filter((b) => b.type === 'movement').flatMap((b) => b.events));
+  const holdBecause = (re) => moves.filter((e) => e.type === 'hold' && re.test(e.reason)).length;
   const out = {
     seed, winner, reason: m.reason, rounds: rounds.length,
     survivors: { blue: alive.blue.length, red: alive.red.length },
@@ -130,6 +132,7 @@ export function playScenario(def, seed, { keepLog = false } = {}) {
     startHp, dealt, firstStrike: hits.length ? hits[0].round : null,
     strikes: hits.length, flankStrikes: hits.filter((s) => s.flank && s.flank !== 'front').length,
     spearBonus: hits.filter((s) => s.spearBonus).length, guarded: hits.filter((s) => s.mountedGuard).length,
+    moves: moves.filter((e) => e.type === 'move').length, blocked: holdBecause(/no legal|occupied/), contested: holdBecause(/contested/),
     abilityUses: used.length, energySpent: used.reduce((s, e) => s + e.cost, 0),
   };
   if (keepLog) out.log = log;

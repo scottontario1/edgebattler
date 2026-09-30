@@ -1,0 +1,602 @@
+[
+ {
+  "label": "A0 baseline: pikes (6,5),(6,6), Archer sheltered at (5,5)",
+  "budget": {
+   "blue": {
+    "supply": 4,
+    "equipment": 0,
+    "total": 4,
+    "pop": 3
+   },
+   "red": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 2
+   }
+  },
+  "n": 400,
+  "blue": 0.9125,
+  "red": 0.0825,
+  "mutual": 0.0025,
+  "none": 0.0025,
+  "blueCI": [
+   0.88073860783094,
+   0.9364134636743233
+  ],
+  "rounds": 4.3225,
+  "surv": {
+   "blue": 2.2375,
+   "red": 0.095
+  },
+  "hpLeft": {
+   "blue": 0.4510606060606057,
+   "red": 0.009739583333333334
+  },
+  "dealt": {
+   "blue": 57.7,
+   "red": 38.525
+  },
+  "firstStrike": 1,
+  "flank": 0.5475,
+  "strikes": 17.1225,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 2.3025,
+  "blocked": 4.8375,
+  "contested": 0.005,
+  "abilityUses": 0,
+  "energy": 0,
+  "decidedRounds": 4.30827067669173
+ },
+ {
+  "label": "F1 gap in the line: second Pike at (6,7), Archer (5,5) reachable through (6,6)",
+  "budget": {
+   "blue": {
+    "supply": 4,
+    "equipment": 0,
+    "total": 4,
+    "pop": 3
+   },
+   "red": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 2
+   }
+  },
+  "n": 400,
+  "blue": 0.325,
+  "red": 0.41,
+  "mutual": 0.1825,
+  "none": 0.0825,
+  "blueCI": [
+   0.28095249494205327,
+   0.372376929267835
+  ],
+  "rounds": 8.2075,
+  "surv": {
+   "blue": 0.5275,
+   "red": 0.54
+  },
+  "hpLeft": {
+   "blue": 0.10462121212121221,
+   "red": 0.11078125000000007
+  },
+  "dealt": {
+   "blue": 51.295,
+   "red": 86.145
+  },
+  "firstStrike": 1,
+  "flank": 7.485,
+  "strikes": 19.41,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 5.0725,
+  "blocked": 6.04,
+  "contested": 0.2975,
+  "abilityUses": 0,
+  "energy": 0,
+  "decidedRounds": 8.046321525885558
+ },
+ {
+  "label": "F2 Archer stands in the front line at (6,6) between Pikemen at (6,5) and (6,7)",
+  "budget": {
+   "blue": {
+    "supply": 4,
+    "equipment": 0,
+    "total": 4,
+    "pop": 3
+   },
+   "red": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 2
+   }
+  },
+  "n": 400,
+  "blue": 0.515,
+  "red": 0.3375,
+  "mutual": 0.135,
+  "none": 0.0125,
+  "blueCI": [
+   0.46611266795606887,
+   0.5636019528259407
+  ],
+  "rounds": 6.8625,
+  "surv": {
+   "blue": 0.555,
+   "red": 0.405
+  },
+  "hpLeft": {
+   "blue": 0.0946212121212123,
+   "red": 0.10072916666666668
+  },
+  "dealt": {
+   "blue": 51.0475,
+   "red": 75.63
+  },
+  "firstStrike": 1,
+  "flank": 4.465,
+  "strikes": 18.6475,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 4.085,
+  "blocked": 5.77,
+  "contested": 0.185,
+  "abilityUses": 0,
+  "energy": 0,
+  "decidedRounds": 6.822784810126582
+ },
+ {
+  "label": "A1 side attack (all face north)",
+  "budget": {
+   "blue": {
+    "supply": 4,
+    "equipment": 0,
+    "total": 4,
+    "pop": 3
+   },
+   "red": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 2
+   }
+  },
+  "n": 400,
+  "blue": 0.66,
+  "red": 0.325,
+  "mutual": 0.0125,
+  "none": 0.0025,
+  "blueCI": [
+   0.6122507874202215,
+   0.7047051675878807
+  ],
+  "rounds": 4.445,
+  "surv": {
+   "blue": 1.2775,
+   "red": 0.405
+  },
+  "hpLeft": {
+   "blue": 0.2481818181818174,
+   "red": 0.056145833333333346
+  },
+  "dealt": {
+   "blue": 54.14,
+   "red": 63.655
+  },
+  "firstStrike": 1,
+  "flank": 6.9025,
+  "strikes": 16.6475,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 2.7125,
+  "blocked": 4.5625,
+  "contested": 0.0575,
+  "abilityUses": 0,
+  "energy": 0,
+  "decidedRounds": 4.431077694235589
+ },
+ {
+  "label": "B1 Cavaliers wait, then Charge (arrive round 2)",
+  "budget": {
+   "blue": {
+    "supply": 4,
+    "equipment": 0,
+    "total": 4,
+    "pop": 3
+   },
+   "red": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 2
+   }
+  },
+  "n": 400,
+  "blue": 0.875,
+  "red": 0.1125,
+  "mutual": 0.005,
+  "none": 0.0075,
+  "blueCI": [
+   0.8389801748486139,
+   0.9038853447016257
+  ],
+  "rounds": 5.295,
+  "surv": {
+   "blue": 2.165,
+   "red": 0.1325
+  },
+  "hpLeft": {
+   "blue": 0.3793181818181816,
+   "red": 0.015624999999999993
+  },
+  "dealt": {
+   "blue": 57.0725,
+   "red": 45.82
+  },
+  "firstStrike": 2,
+  "flank": 0.5375,
+  "strikes": 16.9675,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 2.34,
+  "blocked": 4.765,
+  "contested": 0.005,
+  "abilityUses": 2.2475,
+  "energy": 4.495,
+  "decidedRounds": 5.259445843828716
+ },
+ {
+  "label": "B2 wait round: Cav Charge v Archer Focused Shot (round 2)",
+  "budget": {
+   "blue": {
+    "supply": 4,
+    "equipment": 0,
+    "total": 4,
+    "pop": 3
+   },
+   "red": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 2
+   }
+  },
+  "n": 400,
+  "blue": 0.95,
+  "red": 0.045,
+  "mutual": 0.0025,
+  "none": 0.0025,
+  "blueCI": [
+   0.9240357990869275,
+   0.9674028243733599
+  ],
+  "rounds": 5.0825,
+  "surv": {
+   "blue": 2.3125,
+   "red": 0.0475
+  },
+  "hpLeft": {
+   "blue": 0.41727272727272763,
+   "red": 0.008229166666666668
+  },
+  "dealt": {
+   "blue": 61.5825,
+   "red": 42.16
+  },
+  "firstStrike": 2,
+  "flank": 0.36,
+  "strikes": 15.7075,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 2.2675,
+  "blocked": 4.305,
+  "contested": 0.0025,
+  "abilityUses": 3.9175,
+  "energy": 7.835,
+  "decidedRounds": 5.0701754385964914
+ },
+ {
+  "label": "B3 wait round: Cav Charge v Focused Shot + Pike Brace",
+  "budget": {
+   "blue": {
+    "supply": 4,
+    "equipment": 0,
+    "total": 4,
+    "pop": 3
+   },
+   "red": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 2
+   }
+  },
+  "n": 400,
+  "blue": 0.9725,
+  "red": 0.0275,
+  "mutual": 0,
+  "none": 0,
+  "blueCI": [
+   0.951434030711826,
+   0.984576523921476
+  ],
+  "rounds": 5.165,
+  "surv": {
+   "blue": 2.7775,
+   "red": 0.0275
+  },
+  "hpLeft": {
+   "blue": 0.5776515151515131,
+   "red": 0.0055208333333333325
+  },
+  "dealt": {
+   "blue": 61.02,
+   "red": 28.775
+  },
+  "firstStrike": 2,
+  "flank": 0.155,
+  "strikes": 15.7875,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 2.11,
+  "blocked": 4.5475,
+  "contested": 0,
+  "abilityUses": 8.26,
+  "energy": 16.52,
+  "decidedRounds": 5.165
+ },
+ {
+  "label": "C1 candidate Set Spears on Pikemen (round 1)",
+  "budget": {
+   "blue": {
+    "supply": 4,
+    "equipment": 0,
+    "total": 4,
+    "pop": 3
+   },
+   "red": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 2
+   }
+  },
+  "n": 400,
+  "blue": 0.9475,
+  "red": 0.0525,
+  "mutual": 0,
+  "none": 0,
+  "blueCI": [
+   0.9210774516713285,
+   0.9654087349919573
+  ],
+  "rounds": 4.0325,
+  "surv": {
+   "blue": 2.42,
+   "red": 0.06
+  },
+  "hpLeft": {
+   "blue": 0.49469696969696936,
+   "red": 0.005312500000000001
+  },
+  "dealt": {
+   "blue": 63.765,
+   "red": 34.76
+  },
+  "firstStrike": 1,
+  "flank": 0.3875,
+  "strikes": 15.8025,
+  "spear": 3.7625,
+  "guarded": 3.77,
+  "moves": 2.25,
+  "blocked": 4.325,
+  "contested": 0.005,
+  "abilityUses": 4.3975,
+  "energy": 4.3975,
+  "decidedRounds": 4.0325
+ },
+ {
+  "label": "C2 candidate Momentum on Cavaliers (round 1)",
+  "budget": {
+   "blue": {
+    "supply": 4,
+    "equipment": 0,
+    "total": 4,
+    "pop": 3
+   },
+   "red": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 2
+   }
+  },
+  "n": 400,
+  "blue": 0.8725,
+  "red": 0.1175,
+  "mutual": 0.0075,
+  "none": 0.0025,
+  "blueCI": [
+   0.8362337983417458,
+   0.9016792844114923
+  ],
+  "rounds": 4.3,
+  "surv": {
+   "blue": 2.1625,
+   "red": 0.1325
+  },
+  "hpLeft": {
+   "blue": 0.3648863636363632,
+   "red": 0.01635416666666666
+  },
+  "dealt": {
+   "blue": 57.005,
+   "red": 47.36
+  },
+  "firstStrike": 1,
+  "flank": 0.545,
+  "strikes": 16.945,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 2.34,
+  "blocked": 4.76,
+  "contested": 0.0075,
+  "abilityUses": 2.265,
+  "energy": 2.265,
+  "decidedRounds": 4.285714285714286
+ },
+ {
+  "label": "D1 candidate Whetstone on the Archer",
+  "budget": {
+   "blue": {
+    "supply": 4,
+    "equipment": 2,
+    "total": 6,
+    "pop": 3
+   },
+   "red": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 2
+   }
+  },
+  "n": 400,
+  "blue": 0.9475,
+  "red": 0.0525,
+  "mutual": 0,
+  "none": 0,
+  "blueCI": [
+   0.9210774516713285,
+   0.9654087349919573
+  ],
+  "rounds": 4.18,
+  "surv": {
+   "blue": 2.325,
+   "red": 0.0575
+  },
+  "hpLeft": {
+   "blue": 0.47568181818181793,
+   "red": 0.007135416666666667
+  },
+  "dealt": {
+   "blue": 58.86,
+   "red": 36.005
+  },
+  "firstStrike": 1,
+  "flank": 0.39,
+  "strikes": 16.185,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 2.26,
+  "blocked": 4.4875,
+  "contested": 0.0025,
+  "abilityUses": 0,
+  "energy": 0,
+  "decidedRounds": 4.18
+ },
+ {
+  "label": "D2 candidate Bulwark on the Pikemen",
+  "budget": {
+   "blue": {
+    "supply": 4,
+    "equipment": 2,
+    "total": 6,
+    "pop": 3
+   },
+   "red": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 2
+   }
+  },
+  "n": 400,
+  "blue": 0.9975,
+  "red": 0.0025,
+  "mutual": 0,
+  "none": 0,
+  "blueCI": [
+   0.9859763590327523,
+   0.9995585635705656
+  ],
+  "rounds": 4.205,
+  "surv": {
+   "blue": 2.89,
+   "red": 0.0025
+  },
+  "hpLeft": {
+   "blue": 0.6426515151515113,
+   "red": 0.00005208333333333333
+  },
+  "dealt": {
+   "blue": 58.1725,
+   "red": 23.67
+  },
+  "firstStrike": 1,
+  "flank": 0.0675,
+  "strikes": 16.985,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 2.045,
+  "blocked": 4.955,
+  "contested": 0,
+  "abilityUses": 0,
+  "energy": 0,
+  "decidedRounds": 4.205
+ },
+ {
+  "label": "E1 Archer swapped for a third Pikeman (three Pikemen, the Suite 1 line)",
+  "budget": {
+   "blue": {
+    "supply": 3,
+    "equipment": 0,
+    "total": 3,
+    "pop": 3
+   },
+   "red": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 2
+   }
+  },
+  "n": 400,
+  "blue": 0.97,
+  "red": 0.0225,
+  "mutual": 0.0075,
+  "none": 0,
+  "blueCI": [
+   0.9483009668703324,
+   0.9827571509659678
+  ],
+  "rounds": 4.875,
+  "surv": {
+   "blue": 1.9425,
+   "red": 0.03
+  },
+  "hpLeft": {
+   "blue": 0.41513888888888933,
+   "red": 0.00609375
+  },
+  "dealt": {
+   "blue": 55.1925,
+   "red": 43.87
+  },
+  "firstStrike": 1,
+  "flank": 0.725,
+  "strikes": 16.57,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 2.5375,
+  "blocked": 5.7225,
+  "contested": 0.045,
+  "abilityUses": 0,
+  "energy": 0,
+  "decidedRounds": 4.875
+ }
+]
