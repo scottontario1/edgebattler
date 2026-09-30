@@ -79,7 +79,11 @@ test('levels: unique ids, every level has a title and a question, and the four f
   assert.deepEqual([...new Set(LEVELS.map((l) => l.group))], ['classic', 'crown', 'fang', 'league', 'court']);
   assert.ok(LEVELS.length >= 24);
   for (const l of LEVELS) { assert.ok(l.title && l.question && l.def.units.length, l.id); assert.equal(LEVEL_BY_ID[l.id], l); }
-  assert.match(describeStep({ round: 2, cls: 'pikeman', abilities: ['rally', 'brace'], tag: 'Brace' }), /Round 2: Pikeman picks Rally \+ Brace \(Brace\)/);
+  // Ability picks are gone (Shards replaced skills): a step that only picks abilities is not a hint, a stance step still is.
+  assert.equal(describeStep({ round: 2, cls: 'pikeman', abilities: ['rally', 'brace'], tag: 'Brace' }), null);
+  assert.match(describeStep({ round: 2, cls: 'pikeman', stance: 'hold', abilities: ['brace'] }), /Round 2: Pikeman hold/);
+  assert.match(describeStep({ round: 3, equip: 'barrier', unitType: 'pikeman' }), /Garnet \(Bulwark\) II shard to Pikeman/);
+  assert.ok(LEVELS.every((l) => l.hints.every((h) => typeof h === 'string' && !/picks/.test(h))));
 });
 
 test('every level builds, the scripted red plan is applied through match.apply, and it plays on with a human-style blue', () => {
@@ -91,7 +95,7 @@ test('every level builds, the scripted red plan is applied through match.apply, 
     const redSteps = (level.def.script || []).filter((s) => s.faction === 'red');
     for (let i = 0; i < 4 && !m.over; i += 1) { red(m); runCommander(m, 'blue', 'heuristic'); m.resolveRound(); }
     const scripted = log.entries.filter((e) => e.t === 'action' && e.actor?.startsWith('script:') && e.action.faction === 'red');
-    if (redSteps.some((s) => s.round <= 4)) assert.ok(scripted.length > 0, `${level.id}: red script applied`);
+    if (redSteps.some((s) => s.round <= 4 && (s.stance || s.facing || s.spell || s.deploy || s.equip || s.muster))) assert.ok(scripted.length > 0, `${level.id}: red script applied`);
     assert.equal(scripted.every((e) => e.ok), true, `${level.id}: every red step was legal: ${JSON.stringify(scripted.filter((e) => !e.ok).map((e) => e.reason))}`);
     // free initial picks and injected cards reach the human side
     for (const u of level.def.units.filter((x) => x.faction === 'blue' && x.abilities?.length)) assert.ok(m.byId(u.key ?? u.cls === 'dreg' ? (u.key ?? u.cls) : u.id) || true);

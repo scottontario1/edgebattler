@@ -161,3 +161,7 @@ test('the integrated match commits moved Charge and legal Focused Shot for both 
   assert.ok(events(result).find(e=>e.attackerId==='a').attackBonus===4);
  }
 });
+
+// Ability kits are off in the shipped game (Shards replaced them); this file exercises the kits, so it opts in.
+import { setAbilitiesEnabled } from '../src/abilities.js';
+setAbilitiesEnabled(true);

@@ -127,3 +127,7 @@ test('a skirmish with the new classes replays exactly', () => {
   assert.equal(check.ok, true, JSON.stringify(check.mismatches?.slice(0, 2)));
   reset();
 });
+
+// Kit tests: abilities are off in the shipped game, this file opts in.
+import { setAbilitiesEnabled } from '../src/abilities.js';
+setAbilitiesEnabled(true);

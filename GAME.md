@@ -2,7 +2,7 @@
 
 ## Pitch
 
-A fantasy tactics game combining Advance Wars-style territory, terrain, and army positioning with a random card recruitment system inspired by Teamfight Tactics. Players build an army by drawing unit cards, recruiting into a paid reserve bench, deploying near controlled locations, and optionally combining three matching units to upgrade them. Spell cards support the formation, and transferable skill cards can customize the shared loadout of a unit type. Units fight automatically according to their stances and abilities.
+A fantasy tactics game combining Advance Wars-style territory, terrain, and army positioning with a random card recruitment system inspired by Teamfight Tactics. Players build an army by drawing unit cards, recruiting into a paid reserve bench, deploying near controlled locations, and optionally combining three matching units to upgrade them. Spell cards support the formation, and Shards (docs/SHARDS.md) replace skills: shard cards go into a 10-slot dock, are applied to a unit class for a class-wide passive bonus (Might, Guard, Vigor, Swiftness, Focus, Bulwark, Renewal, Thorns) and three of a kind combine into the next tier. Units fight automatically according to their stances and abilities.
 
 The main decisions are what to deploy, where to deploy it, what to combine, how to arrange the army, and when to spend a spell. A player should be able to command an army of 10 or more units without individually selecting Move, Attack, and Wait for every unit. One **Resolve battle** action commits the plan and runs the combat phase for both armies.
 
@@ -299,3 +299,6 @@ Desktop actions follow the selected unit above its drawing. Friendly portraits a
 Selected units expose strike damage dealt/taken and successful active ability uses. Army Stats shows character totals and leaders for each team; fallen/combined-away characters retain their historical totals. Strike totals use logged post-mitigation damage, including overkill; spells belong to the army and passive evaluations are not active ability uses. A completed mission's report is saved locally for the Last completed mission button. Future missions overwrite that saved report; it is not a cross-mission save system. Existing development JSONL logs preserve older playtests.
 
 Rendering uses Three.js with Vite. Idle planning targets 30 fps; playback/dragging targets 60. The 3D backing buffer caps at 1.6M pixels, native HUD resolution is preserved, AO/denoise sample counts are 8, and disabled Painterly skips its pass. Larger canvas views can be slightly softer. Hardware GPU percentage remains a local playtest measurement; see docs/PERFORMANCE_PASS.md.
+
+## Shards (SHARD-01)
+Skills (planning-selected ability kits and the Barrier card) are removed from play. Shard cards (8 types, tiers I-III) are bought with Supply into a shard dock (10 slots), applied to a unit class (3 shards per class; every unit of the class, on the field, on the bench or recruited later, gets the bonus), removed back to the dock, or combined three-into-one. See docs/SHARDS.md for the rules and engine API.

@@ -198,8 +198,18 @@ export function resolveBattleRound({
       s.barrierReduction=Math.min(s.damage,barrierLeft);barrierLeft-=s.barrierReduction;s.damage-=s.barrierReduction;
     }
   }
+  // Thorns (Onyx shards): a unit that took damage from an adjacent attacker hurts it back for the thorns amount, simultaneously.
+  const thornEvents = [];
+  const snapById = new Map(combatSnapshot.map((u) => [u.id, u]));
+  for (const s of strikes) {
+    if (!s.hit || s.damage <= 0) continue;
+    const target = snapById.get(s.targetId), attacker = snapById.get(s.attackerId);
+    const thorns = target?.statuses?.thorns || 0;
+    if (thorns > 0 && attacker && manhattan(attacker, target) === 1) { s.thorns = thorns; thornEvents.push({ type: 'thorns', unitId: target.id, targetId: attacker.id, amount: thorns }); }
+  }
   const damageById = new Map();
   for (const strike of strikes) damageById.set(strike.targetId, (damageById.get(strike.targetId) || 0) + strike.damage);
+  for (const e of thornEvents) damageById.set(e.targetId, (damageById.get(e.targetId) || 0) + e.amount);
   const result = combatSnapshot.map((u) => {
     const next = { ...u, hp: Math.max(0, u.hp - (damageById.get(u.id) || 0)) };
     if (next.statuses?.ward === 'upcoming-battle') {
@@ -212,10 +222,10 @@ export function resolveBattleRound({
       delete next.statuses.barrier;
     }
     next.statuses={...(next.statuses||{})};
-    for(const key of ['brace','attackBonus','hitBonus','setSpears','equipStr','equipDef','damageTaken','damageDealt','ignoreDefense','offTargetPenalty','energyWhenStruck']) delete next.statuses[key];
+    for(const key of ['brace','attackBonus','hitBonus','setSpears','equipStr','equipDef','thorns','damageTaken','damageDealt','ignoreDefense','offTargetPenalty','energyWhenStruck']) delete next.statuses[key];
     return next;
   });
-  const combatEvents = strikes.map((s) => ({ type: 'strike', ...s }));
+  const combatEvents = [...strikes.map((s) => ({ type: 'strike', ...s })), ...thornEvents];
   for (const u of result) {
     if (u.hp <= 0 && (byId.get(u.id)?.hp ?? 0) > 0) combatEvents.push({ type: u.kind === 'object' ? 'objectDestroyed' : 'death', unitId: u.id });
   }

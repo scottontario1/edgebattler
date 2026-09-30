@@ -4,6 +4,7 @@ import { CARD_LIMITS, setCardLimits } from './cards.js';
 //
 // Entry kinds (field `t`):
 //   header   schema, seed, maxRounds, map, rules, cardLimits, + meta (source, policies, commit, ...)
+//   (schema 4: shard actions buyShard/applyShard/removeShard/combineShards/grantShard; header.abilitiesEnabled)
 //   action   round, actor ('human' | 'ai:<policy>'), action {type, faction, ...}, ok, reason?, result?
 //   round    round, batches [{ type: spells | abilities | movement | combat | results, events }]
 //   summary  round, blue {...}, red {...}   state after that round (round 0 = start)
@@ -68,7 +69,7 @@ export function replay(entries, { create } = {}) {
   try {
     const out = memoryLog();
     // Custom scenarios (other map, roster, candidate rules) pass create(header, log) to rebuild the same match.
-    const m = create ? create(header, out.push) : createMatch({ seed: header.seed, maxRounds: header.maxRounds, log: out.push, pools: header.pools ?? null });
+    const m = create ? create(header, out.push) : createMatch({ seed: header.seed, maxRounds: header.maxRounds, log: out.push, pools: header.pools ?? null, abilities: header.abilitiesEnabled === true });
     for (const e of entries) {
       if (e.t === 'action') m.apply(e.action, e.actor);
       else if (e.t === 'round') m.resolveRound();

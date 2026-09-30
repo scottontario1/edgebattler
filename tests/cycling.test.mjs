@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {CARD_LIMITS,UNIT_CARDS,SPELL_CARDS,SKILL_CARDS,createCardState,cycleCard,previewCycle,recruitUnit,refreshRound,seededRandom} from '../src/cards.js';
+import {CARD_LIMITS,UNIT_CARDS,SPELL_CARDS,SKILL_CARDS,SHARD_CARDS,createCardState,cycleCard,previewCycle,recruitUnit,refreshRound,seededRandom} from '../src/cards.js';
 import {createMatch} from '../src/match.js';
 import {createRecruitUnit,createGradedRecruitUnit} from '../src/roster.js';
 import {combineUnits} from '../src/upgrades.js';
@@ -18,7 +18,7 @@ test('full-hand cycling replaces one card in place at no cost and shares the ben
  assert.deepEqual(state.hand,hand);assert.equal(state.cyclesRemaining,1);
 });
 test('each card type remains in its own rarity pool; a singleton pool can return the same identity',()=>{
- for(const def of [UNIT_CARDS.archer,SPELL_CARDS.mend,SKILL_CARDS.barrier]) {
+ for(const def of [UNIT_CARDS.archer,SPELL_CARDS.mend,SHARD_CARDS.ruby]) {
   const state=createCardState({hand:[card(def)]}),r=cycleCard(state,{source:'hand',id:'test'},()=>0.99);
   assert.ok(r.ok);assert.equal(r.replacement.type,def.type);assert.equal(r.replacement.rarity,def.rarity);
   if(def.type==='skill')assert.equal(r.replacement.id,def.id);
@@ -90,5 +90,5 @@ test('seeded cycling and refreshed allowances replay exactly through AI games',(
  const log=memoryLog(),m=createMatch({seed:7,maxRounds:6,log:log.push});
  const first=m.sides.blue.cards.hand[0];assert.ok(m.apply({type:'cycle',faction:'blue',source:'hand',id:first.instanceId}).ok);
  while(!m.over){runCommander(m,'blue','heuristic');runCommander(m,'red','heuristic');m.resolveRound();}
- assert.ok(replay(log.entries).ok);assert.ok(m.stats().blue.cycles.hand>0);assert.equal(log.entries[0].schema,3);
+ assert.ok(replay(log.entries).ok);assert.ok(m.stats().blue.cycles.hand>0);assert.equal(log.entries[0].schema,4);
 });

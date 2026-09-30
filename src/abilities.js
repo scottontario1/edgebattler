@@ -1,5 +1,9 @@
 // Pure planning selections and fixed-phase combat abilities shared by browser and simulator.
 export const ABILITY_RULES = Object.freeze({maxEnergy:4, fieldGain:1, reserveExtra:1, advanceFraction:2/3, flankDamage:4});
+// Ability kits (energy, planning picks) are OFF in the game: Shards (src/shards.js) replaced them. Experiments and tests that
+// exercise kits opt in with setAbilitiesEnabled(true) or createMatch({ abilities: true }); the match header records it.
+export const ABILITY_SWITCH = { enabled: false };
+export const setAbilitiesEnabled = (on = true) => { ABILITY_SWITCH.enabled = Boolean(on); };
 export const ABILITIES = Object.freeze({
  rally:{id:'rally',name:'Rally',classes:['pikeman'],cost:0,cooldown:2,phase:'recovery',description:'Heal 10 HP; gain 1 energy now and next round, when useful.'},
  brace:{id:'brace',name:'Brace',classes:['pikeman'],cost:2,cooldown:2,phase:'defense',description:'Hold this battle. Absorb 4 total damage; paid even without incoming attacks.'},
