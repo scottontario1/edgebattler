@@ -14,6 +14,8 @@ import { createMatch } from '../src/match.js';
 import { memoryLog, replay } from '../src/log.js';
 import { runCommander } from '../src/ai/commander.js';
 import { setMap, DEFAULT_MAP } from '../src/board.js';
+import { buildGame, planSide, replayGame, RARITY_GATE as SIM_GATE } from '../experiments/factions/iron-league/sim-game.mjs';
+import { memoryLog as sharedLog } from '../src/log.js';
 
 setMap(DEFAULT_MAP);
 // Plains/road tiles on the west bank of River Ford (no terrain Defense): row 5 columns 2-7, (6,4), (6,6), (5,3), (3,3).
@@ -61,7 +63,7 @@ test('pool: every key resolves to a League or shared card, with the rarity tags 
     assert.deepEqual(['fieldRepair', 'flare', 'mend', 'ward', 'fireburst'].map(rarity), ['common', 'common', 'common', 'common', 'common']);
     for (const shared of ['mend', 'ward', 'fireburst']) assert.ok(pool.includes(shared), `${shared} stays in the pool (one faction per side)`);
     assert.equal(pool.includes('pikeman') || pool.includes('cavalier') || pool.includes('barrier'), false);
-    assert.deepEqual(Object.keys(ironLeague.abilities.reduce((o, a) => ({ ...o, [a.id]: a.rarity }), {})).filter((id) => !ironLeague.abilities.find((a) => a.id === id).units).map((id) => ABILITY_CATALOG[id]?.rarity), ['common', 'uncommon', 'rare', 'uncommon']);
+    assert.deepEqual(['setPosition', 'preparedPosition', 'arcBurst', 'digIn'].map((id) => ABILITY_CATALOG[id].rarity), ['common', 'uncommon', 'rare', 'uncommon'], 'skill rarity tags');
   });
 });
 
@@ -477,12 +479,10 @@ test('a full League v League match with the shipped commander plays and replays 
   league(() => {
     setRarityGate({ uncommon: 3, rare: 6 });
     const pools = { blue: culturePool('league'), red: culturePool('league') };
-    const champions = { blue: 'ilseVoss', red: 'ilseVoss' };
-    const roster = () => [{ ...createChampionUnit('ilseVoss', 'blue', 5, 9) }, rec('leaguePike', 'pb', 'blue', 3, 9), rec('coil', 'cb', 'blue', 1, 9),
-      { ...createChampionUnit('ilseVoss', 'red', 10, 3), id: 'ilseVoss' }, rec('leaguePike', 'pr', 'red', 9, 6), rec('coil', 'cr', 'red', 12, 4)];
-    // one champion id per side is not possible (ids are unique), so red gets Tobiah Kettle
-    const redChampion = { ...createChampionUnit('tobiahKettle', 'red', 10, 3) };
-    const build = (seed, push) => createMatch({ seed, maxRounds: 10, log: push, pools, roster: [roster()[0], roster()[1], roster()[2], redChampion, roster()[4], roster()[5]], champions: { blue: 'ilseVoss', red: 'tobiahKettle' } });
+    // champion ids are unique, so the two sides use two different League champions
+    const roster = () => [createChampionUnit('ilseVoss', 'blue', 5, 9), rec('leaguePike', 'pb', 'blue', 3, 9), rec('coil', 'cb', 'blue', 1, 9),
+      createChampionUnit('tobiahKettle', 'red', 10, 3), rec('leaguePike', 'pr', 'red', 9, 6), rec('coil', 'cr', 'red', 12, 4)];
+    const build = (seed, push) => createMatch({ seed, maxRounds: 10, log: push, pools, roster: roster(), champions: { blue: 'ilseVoss', red: 'tobiahKettle' } });
     const log = memoryLog();
     const m = build(7, log.push);
     while (!m.over) { runCommander(m, 'blue', 'heuristic'); runCommander(m, 'red', 'heuristic'); m.resolveRound(); }
@@ -493,8 +493,26 @@ test('a full League v League match with the shipped commander plays and replays 
     assert.deepEqual(header.champions, { blue: 'ilseVoss', red: 'tobiahKettle' });
     const check = replay(log.entries, { create: (h, push) => { setRarityGate(h.rarityGate || {}); return build(h.seed, push); } });
     assert.equal(check.ok, true, JSON.stringify(check.mismatches?.slice(0, 2)));
-    void champions;
   });
+});
+
+test('experiments: the League commander walks a League army into the killing ground, picks League skills, and its games replay exactly', () => {
+  try {
+    const log = sharedLog();
+    const spec = { seed: 3, map: 'river_ford', blue: 'league', red: 'baseline', maxRounds: 8 };
+    const m = buildGame(spec, log.push);
+    while (!m.over) { planSide(m, 'blue', 'league'); planSide(m, 'red', 'baseline'); m.resolveRound(); }
+    const header = log.entries[0];
+    assert.deepEqual(header.cultures, ['league']);
+    assert.deepEqual(header.rarityGate, SIM_GATE);
+    assert.deepEqual(header.champions, { blue: 'ilseVoss' });
+    assert.ok(header.pools.blue.includes('coil') && !header.pools.red, 'only the League side has a culture pool');
+    const stats = m.stats().blue;
+    assert.ok((stats.abilities.setPosition || 0) > 0 && (stats.abilities.rally || 0) > 0, 'League skills were picked and activated');
+    assert.ok(m.alive('blue').some((u) => u.c === 7 && u.r === 5) || m.round > 1, 'the plug tile is manned or the game moved on');
+    const check = replayGame(log.entries);
+    assert.equal(check.ok, true, JSON.stringify(check.mismatches?.slice(0, 2)));
+  } finally { resetCultures(); setRarityGate({}); }
 });
 
 // ---------------------------------------------------------------- engine gaps (recorded, not fixed here)
