@@ -5,6 +5,7 @@ import {FACING} from '../abilities.js';
 import * as THREE from 'three';
 import { toWorld, tileTop, terrainAt } from '../map.js';
 import { stanceIcon, starPips, energyPips, statusIcon } from './icons.js';
+import { uiFlags } from './util.js';
 import './plates.css';
 
 const HEAD = { paladin: 1.6, barbarian: 1.6 };   // world units above the feet to just over the head
@@ -36,7 +37,7 @@ export function createPlates({ camera, units, territory, container }) {
     const parts = [`<span class="pl-facing" title="Facing ${d.facing}"><span class="pl-arrow">↑</span></span>`];
     if ((d.stars || 1) >= 2) parts.push(`<span class="pl-stars">${starPips(d.stars, d.stars, 10)}</span>`);
     if (d.faction === 'blue' || ui.selectedId === d.id || ui.hoverId === d.id) parts.push(`<span class="pl-stance" title="${d.stance || 'advance'}">${stanceIcon(d.stance || 'advance', 11)}</span>`);
-    if (d.faction === 'blue' && d.maxEnergy > 0) parts.push(`<span class="pl-energy">${energyPips(d.energy || 0, Math.min(4, d.maxEnergy), 11)}</span>`);
+    if (uiFlags.abilities && d.faction === 'blue' && d.maxEnergy > 0) parts.push(`<span class="pl-energy">${energyPips(d.energy || 0, Math.min(4, d.maxEnergy), 11)}</span>`);
     for (const [name, value] of Object.entries(d.statuses || {})) if (value) parts.push(`<span class="pl-status ${name}" title="${name}">${statusIcon(name, 11)}</span>`);
     return parts.join('');
   }

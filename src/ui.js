@@ -19,6 +19,10 @@ import { createRecruitUnit } from './units.js';
 import { esc } from './ui/util.js';
 import { handHTML, reservesHTML, detailHTML, loadoutsHTML } from './ui/hand.js';
 import { trayHTML, applyTrayState } from './ui/tray.js';
+import { shardDockHTML, shardApplyHTML, appliedShardsHTML } from './ui/shards.js';
+import { SHARDS, SHARD_RULES, findShardCombos, shardLabel } from './shards.js';
+import { uiFlags } from './ui/util.js';
+import './ui/shards.css';
 import { queuedHTML, upgradePromptsHTML, upgradeChoiceHTML } from './ui/upgrade.js';
 import { unitCardHTML, forecastHTML, targetPromptHTML, sheetHTML, terrainChipHTML, rosterMiniHTML, decorateRoster } from './ui/unitpanels.js';
 import { createFeed } from './ui/feed.js';
@@ -259,6 +263,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
   const selMark = brackets(scene, 0xf2cf6b, 0.04, 0.26);
   const marks = reticles(scene);
 
+  uiFlags.abilities = !!match.abilitiesEnabled;
   const state = {
     hoverId: null,
     // Brenna in the shipped game; the side's champion (or its first unit) when a faction or level has none of that name.
@@ -275,6 +280,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     busy: false, // an animation or the enemy phase is running: input is ignored
     over: false, // victory or defeat reached
     selectedCardId: null,
+    selectedShardId: null,
     selectedSkillType: 'pikeman',
     skillTransferTargets: {},
     selectedReserveId: null,
@@ -305,6 +311,15 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
   }
 
   const armyRecords = () => match.armyRecords('blue');
+
+  const titleCase = (t) => String(t).replace(/[_-]+/g, ' ').replace(/\b\w/g, (ch) => ch.toUpperCase());
+  /** Unit classes a shard can be applied to: the recruit classes plus any class on the field or bench. */
+  function shardClasses() {
+    const ids = ['pikeman', 'archer', 'cavalier'];
+    for (const r of [...match.units.filter((u) => u.faction === 'blue'), ...blue().cards.reserves]) { const c = match.classOf(r); if (c && !ids.includes(c)) ids.push(c); }
+    for (const c of Object.keys(match.sides.blue.shards)) if (!ids.includes(c)) ids.push(c);
+    return ids.map((id) => ({ id, label: titleCase(id), shards: match.sides.blue.shards[id] ?? [] }));
+  }
 
   function renderPlanning() {
     const selectedReserve=blue().cards.reserves.find(u=>u.id===state.selectedReserveId);
@@ -338,10 +353,17 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
         summary: upgradePreview.ok ? `${upgradePreview.stars.to}★ · HP ${upgradePreview.unit.hp}/${upgradePreview.unit.maxHp} · STR ${upgradePreview.unit.str} · Population ${upgradePreview.population.before} → ${upgradePreview.population.after}` : upgradePreview.reason,
       };
     }
+    const side = match.sides?.blue ?? {};
+    const dock = side.shardDock ?? [];
+    if (state.selectedShardId && !dock.some((x) => x.id === state.selectedShardId)) state.selectedShardId = null;
+    const selectedShard = dock.find((x) => x.id === state.selectedShardId);
+    const classList = shardClasses();
     const controlledCount = [...territory.values()].filter((owner) => owner === 'blue').length;
     const prompt = state.notice || (state.selectedReserveId ? 'Choose an open tile by your keep or a captured village.'
+      : selectedShard ? `Apply ${shardLabel(selectedShard.shardId, selectedShard.tier)} to a unit class, or keep it in the dock.`
+      : selectedCard?.type === 'shard' ? 'Buy this shard into the dock, then apply it to a unit class.'
       : selectedCard?.type === 'spell' ? 'Select this spell, then choose a legal battlefield target.'
-        : selectedCard?.type === 'skill' ? 'Choose a unit type to equip this transferable skill for all its units.'
+        : uiFlags.abilities && selectedCard?.type === 'skill' ? 'Choose a unit type to equip this transferable skill for all its units.'
         : state.upgradeChoice ? 'Choose the surviving copy and destination, then confirm.'
           : 'Select a card to recruit or prepare a spell.');
     const m = {
@@ -353,11 +375,12 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
         portraitFor: (item) => portraitSVG(units.list.find((entry) => entry.data.faction === 'blue' && (entry.data.variantId ?? entry.data.cls) === item.unitId)?.data || createRecruitUnit(item.unitId, `preview-${item.unitId}`, 'blue', 0, 0)),
       }),
       reserves: reservesHTML({ reserves: blue().cards.reserves, selectedReserveId: state.selectedReserveId, definitions: UNIT_CARDS, definitionFor: unitCardFor, portraitFor: (reserve) => portraitSVG({ ...createRecruitUnit(reserve.unitId,reserve.id,'blue',0,0), ...reserve, faction: 'blue' }) }),
-      detail: detailHTML({ selectedCard, selectedReserve, cyclePreview: (selectedReserve||selectedCard)?previewCycle(blue().cards,{source:selectedReserve?'bench':'hand',id:selectedReserve?.id??selectedCard?.instanceId}):null, selectedSkillType: state.selectedSkillType, skillLoadouts: blue().loadouts, canAfford: affordable }),
+      shardDock: shardDockHTML({ dock, selectedShardId: state.selectedShardId, combos: findShardCombos(dock) }),
+      detail: (selectedShard && !selectedCard && !selectedReserve ? shardApplyHTML({ shard: selectedShard, classes: classList.map((c) => ({ id: c.id, label: c.label, count: c.shards.length, max: SHARD_RULES.classSlots })) }) : '') || detailHTML({ dockFree: SHARD_RULES.dockSlots - dock.length, selectedCard, selectedReserve, cyclePreview: (selectedReserve||selectedCard)?previewCycle(blue().cards,{source:selectedReserve?'bench':'hand',id:selectedReserve?.id??selectedCard?.instanceId}):null, selectedSkillType: state.selectedSkillType, skillLoadouts: blue().loadouts, canAfford: affordable }),
       queued: queuedHTML({ queued }),
       upgrades: upgradePromptsHTML({ groups }),
       choice: upgradeChoiceHTML({ choice }),
-      loadouts: loadoutsHTML({ skillLoadouts: blue().loadouts, skillTransferTargets: state.skillTransferTargets }),
+      loadouts: appliedShardsHTML({ classes: classList }) + (uiFlags.abilities ? loadoutsHTML({ skillLoadouts: blue().loadouts, skillTransferTargets: state.skillTransferTargets }) : ''),
     };
     planning.innerHTML = trayHTML(m);
     applyTrayState(planning, m);
@@ -401,7 +424,11 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
       stats: match.unitStats(u.id),
       moveType: { armor: 'Armored', mounted: 'Mounted', foot: 'Foot' }[MOVE_TYPE[u.cls] || 'foot'],
     });
-    if(u.faction==='blue'&&!state.busy&&!state.over) {
+    if(!uiFlags.abilities&&u.faction==='blue'&&!state.busy&&!state.over) {
+      const fl={north:'↑ North',east:'→ East',south:'↓ South',west:'← West'};
+      sheet.insertAdjacentHTML('beforeend',`<div class="sheet-facing"><span>Facing</span>${Object.keys(FACING).map(k=>`<button type="button" data-facing="${k}" aria-pressed="${u.facing===k}">${fl[k]}</button>`).join('')}</div>`);
+    }
+    if(uiFlags.abilities&&u.faction==='blue'&&!state.busy&&!state.over) {
       if(state.abilityDraft?.unitId!==u.id) {
         state.abilityDraft={unitId:u.id,ids:[...(u.selectedAbilities||[])]};state.abilityTargets=[u.id];state.abilityNotice='';state.abilityGroupOpen=false;
       }
@@ -431,12 +458,13 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     } else if (state.selectedCardId) {
       const card = blue().cards.hand.find((item) => item.instanceId === state.selectedCardId);
       if (card?.type === 'unit') html += btn('recruit', `Recruit · ${card.cost}`, '✚', '↵', 'primary', !canAfford(blue().cards, card.cost));
+      if (card?.type === 'shard') html += btn('buyShard', `Buy · ${card.cost}S`, '◆', '↵', 'primary', !canAfford(blue().cards, card.cost) || blue().shardDock?.length >= SHARD_RULES.dockSlots);
       if (card?.type === 'spell') html += btn('targetSpell', 'Choose target', '✧', '↵', 'primary');
       const cycle=previewCycle(blue().cards,{source:'hand',id:state.selectedCardId});
       html+=btn('cycle','Cycle card','↻','', '',!cycle.ok);
       html += btn('cancelCard', 'Clear card', '‹', 'Esc');
     } else {
-      if (u) html += btn('inspect', u.faction==='blue'?'Plan abilities':'Inspect', 'ⓘ', 'I');
+      if (u) html += btn('inspect', u.faction==='blue'&&uiFlags.abilities?'Plan abilities':'Inspect', 'ⓘ', 'I');
       if (canWithdraw(u)) html += btn('withdraw', 'Withdraw to reserve', '⇲', 'W');
       if (u?.faction === 'blue') {
         const st = u.stance || 'advance';
@@ -769,6 +797,29 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     refresh();
   }
 
+  function buySelectedShard() {
+    const card = blue().cards.hand.find((item) => item.instanceId === state.selectedCardId);
+    if (!card || card.type !== 'shard') return;
+    const res = act({ type: 'buyShard', cardId: card.instanceId });
+    if (res.ok) {
+      state.selectedCardId = null;
+      state.selectedShardId = res.shardInstanceId;
+      state.notice = `${shardLabel(res.shardId, res.tier)} stored in the shard dock. Pick a class to apply it to.`;
+    }
+    refresh();
+  }
+
+  function applySelectedShard(unitType) {
+    const shard = blue().shardDock.find((x) => x.id === state.selectedShardId);
+    if (!shard) return;
+    const res = act({ type: 'applyShard', shardInstanceId: shard.id, unitType });
+    if (res.ok) {
+      state.selectedShardId = null;
+      state.notice = `${shardLabel(res.shardId, res.tier)} applied: every ${titleCase(unitType)} gains it.`;
+    }
+    refresh();
+  }
+
   function equipSelectedSkill() {
     const card = blue().cards.hand.find((item) => item.instanceId === state.selectedCardId);
     if (!card || card.type !== 'skill') return false;
@@ -802,6 +853,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     state.phase = 'battle';
     state.mode = 'idle';
     state.selectedCardId = null;
+    state.selectedShardId = null;
     state.selectedReserveId = null;
     state.selectedId = null;
     state.notice = '';
@@ -831,6 +883,10 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
           for (const hit of e.events || []) { if (hit.amount > 0) { pop(`${hit.amount}`, hit.targetId); show(hit.targetId, -hit.amount); } await dying(hit.targetId); }
           await wait(120);
         }
+      } else if (batch.type === 'shards') {
+        for (const e of batch.events) {
+          if (e.type === 'regen' && e.amount > 0) { pop(`+${e.amount}`, e.unitId, 'heal'); show(e.unitId, e.amount); await wait(90); }
+        }
       } else if (batch.type === 'abilities') {
         for (const e of batch.events) {
           if(!e.applied) continue;
@@ -856,6 +912,8 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
               else if (e.barrierReduction||e.braceReduction) pop('Blocked', e.targetId, 'barrier');
             } else pop('MISS', e.targetId, 'miss');
             await wait(110);
+          } else if (e.type === 'thorns') {
+            if (e.amount > 0 && units.byId.has(e.targetId)) { pop(`${e.amount} Thorns`, e.targetId, 'thorns'); show(e.targetId, -e.amount); await dying(e.targetId); await wait(60); }
           } else if (e.type === 'death') await units.die(e.unitId);
         }
       }
@@ -912,6 +970,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
       refresh();
     },
     equipSkill() { equipSelectedSkill(); },
+    buyShard() { buySelectedShard(); },
     // Advance -> Hold -> Protect (Brenna) -> Advance. Brenna herself has no one to protect.
     stance() {
       const u = selected();
@@ -962,6 +1021,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     const cardButton = e.target.closest('[data-card-id]');
     if (cardButton) {
       state.selectedCardId = cardButton.dataset.cardId;
+      state.selectedShardId = null;
       state.selectedReserveId = null;
       state.mode = 'idle';
       state.notice = '';
@@ -970,10 +1030,36 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     }
     const reserveButton = e.target.closest('[data-reserve-id]');
     if (reserveButton) {
+      state.selectedShardId = null;
       state.selectedReserveId = reserveButton.dataset.reserveId;
       state.selectedCardId = null;
       state.mode = 'deploy';
       state.notice = '';
+      refresh();
+      return;
+    }
+    const shardSlot = e.target.closest('[data-shard-id]');
+    if (shardSlot) {
+      state.selectedShardId = state.selectedShardId === shardSlot.dataset.shardId ? null : shardSlot.dataset.shardId;
+      state.selectedCardId = null; state.selectedReserveId = null; state.mode = 'idle'; state.notice = '';
+      refresh();
+      return;
+    }
+    const applyBtn = e.target.closest('[data-apply-shard-class]');
+    if (applyBtn) { if (!applyBtn.disabled) applySelectedShard(applyBtn.dataset.applyShardClass); return; }
+    const removeBtn = e.target.closest('[data-remove-shard]');
+    if (removeBtn) {
+      const [unitType, index] = removeBtn.dataset.removeShard.split(':');
+      const res = act({ type: 'removeShard', unitType, index: Number(index) });
+      if (res.ok) state.notice = `${shardLabel(res.shardId, res.tier)} returned to the dock.`;
+      refresh();
+      return;
+    }
+    const combineBtn = e.target.closest('[data-combine-shard]');
+    if (combineBtn) {
+      const [shardId, tier] = combineBtn.dataset.combineShard.split(':');
+      const res = act({ type: 'combineShards', shardId, tier: Number(tier) });
+      if (res.ok) { state.selectedShardId = res.shardInstanceId; state.notice = `Combined three into ${shardLabel(res.shardId, res.tier)}.`; }
       refresh();
       return;
     }
@@ -1061,7 +1147,8 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
         const card = blue().cards.hand.find((item) => item.instanceId === state.selectedCardId);
         if (card?.type === 'unit') commands.recruit();
         else if (card?.type === 'spell') commands.targetSpell();
-        else if (card?.type === 'skill') commands.equipSkill();
+        else if (card?.type === 'skill' && uiFlags.abilities) commands.equipSkill();
+        else if (card?.type === 'shard') commands.buyShard();
       } else resolveBattle();
     }
     else if (k === 'escape') commands.back();
@@ -1169,6 +1256,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
       state, feed, plates, commands, refresh, syncView, territory, units,
       match,
       get cardState() { return blue().cards; }, set cardState(v) { blue().cards = v; },
+      get shardDock() { return blue().shardDock; }, get shards() { return blue().shards; },
       get skillLoadouts() { return blue().loadouts; }, set skillLoadouts(v) { blue().loadouts = v; },
     };
   }
