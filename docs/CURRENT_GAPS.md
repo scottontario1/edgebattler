@@ -18,11 +18,11 @@ Status: reported core blocker; balance choices provisional.
 The implementing agent reported 96% draws in 100 games at a 30-round cap, including defensive keep immunity to ordinary recruits. Do not automatically adopt lower defense, siege bonuses or score victory.
 Acceptance: agree the attacking counterplay, run paired-seed/side-swapped experiments against passive, greedy and heuristic policies, report capture rate, draws, duration and tradeoffs, and let Scott select defaults.
 
-## SYS-01: Energy, abilities and priorities
+## SYS-01: Energy and planning-selected abilities
 
 Status: partially implemented; agreed player experience incomplete.
-No baseline energy accrues to field units; Rally costs zero and generates energy, while Barrier is an automatic passive reduction. No human ability-priority editor or energy-consuming active kit. Confirmed direction requires charging over turns and sustained engagement with cooldown/energy decisions.
-Acceptance: document gain/spend/timing and active/passive semantics, implement the chosen system, expose priority and cooldown state, demonstrate charge -> spend -> recover across rounds, and verify AI uses the same rules. Shared type-wide priorities, enable/disable controls without a reserve threshold, usefulness-based Rally and coverage of all three recruits are confirmed. Concrete kits require Scott's approval; ABILITY_PROPOSAL.md records the pending proposal. Do not silently turn Barrier into an active ability.
+No baseline energy accrues to field units; Rally costs zero and generates energy, while Barrier is an automatic passive reduction. No planning-selected energy-consuming active kit. Automatic priority editing is now deferred for the MVP. Confirmed direction requires charging over turns and sustained engagement with cooldown/energy decisions.
+Acceptance: implement agreed planning selection and gain/spend timing, expose energy/cooldowns, enforce Brace defense and Charge Advance, define/test side/back facing and reduced advancing battle movement, demonstrate charge -> spend -> recover, and verify AI uses the same rules. Selection scope/count/persistence and kit numbers await agreement; ABILITY_PROPOSAL.md is the pending revised proposal. Type-wide equipment remains distinct from per-round picks. Do not implement the superseded priority editor.
 
 ## SYS-02: Capacity, reserves and card circulation
 
@@ -56,4 +56,4 @@ Acceptance: GAME.md consistently distinguishes current behavior, intended rules 
 
 ## Recommended next task
 
-Fix CORE-01 as a contained correctness prerequisite using the acceptance criteria above. The confirmed active system is then SYS-01 energy/abilities/priorities, followed by SYS-02 card circulation/capacity. Complete necessary dependencies in the same system pass; elicit unresolved strategic choices before implementing them. Every task names this roadmap position and its acceptance criteria. See DEVELOPMENT.md for the current roadmap; do not start unrelated expansion while core match blockers persist.
+Fix CORE-01 as a contained correctness prerequisite using the acceptance criteria above. The confirmed active system is then SYS-01 energy/planning-selected abilities, followed by SYS-02 card circulation/capacity. Complete necessary dependencies in the same system pass; elicit unresolved strategic choices before implementing them. Every task names this roadmap position and its acceptance criteria. See DEVELOPMENT.md for the current roadmap; do not start unrelated expansion while core match blockers persist.

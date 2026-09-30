@@ -1,44 +1,40 @@
 # SYS-01 prototype ability proposal
 
-Status: proposed for Scott's approval on 2026-09-29; not approved for implementation or default balance changes. This proposal implements the confirmed energy/abilities-first roadmap. Confirmed choices: priority is shared by unit type and inherited by future recruits; players can enable/disable abilities without a minimum-energy reserve control; Rally fires when healing or energy gain is useful; the prototype covers Pikeman, Archer and Cavalier; Scott approves concrete kits before implementation.
+Revised on 2026-09-29. Confirmed MVP direction supersedes the earlier automatic-priority proposal. Ability numbers below remain proposals, not approved default balance. Do not implement the superseded shared priority editor as MVP work.
 
-## Proposed shared rules
+## Confirmed changes and open contracts
 
-- Start at 0 energy, maximum 4 for all three recruit classes. Gain 1 at the start of each planning round, including round 1. Clamp overflow; do not add attack/damage energy bonuses in this initial kit.
-- Reserves receive the same baseline plus the current extra 1 energy per round. Preserve HP, energy and cooldowns on deployment/withdrawal. This proposes baseline energy in addition to existing reserve recovery, not a reset on deployment.
-- Shared class loadout panel: drag/reorder abilities left to right and enable/disable each. Proposed toggles are shared by class as well. HP, energy, cooldowns and status effects remain per unit. No energy reserve threshold or per-round manual casting is required.
-- Abilities run after simultaneous movement. In each synchronized ability wave, each living unit selects its next eligible enabled ability from its shared priority row. Apply each wave as a simultaneous batch, then evaluate the next wave. At most one use per ability and three active uses per unit per round. After abilities, resolve simultaneous basic attacks, including strikes declared by units lethally hit in that attack wave.
-- Cooldown 2 used in round 5 is unavailable in 6 and ready in 7. Skip disabled, cooling-down, unaffordable and invalid-trigger skills. Skip without paying or starting cooldown. Basic attacks/movement stay free.
-- Existing equipped Barrier remains the current passive 2 damage reduction per unit per battle. Do not silently convert that purchased skill to an energy-spending active. A disabled passive supplies no effect; enabled passives do not occupy active cast limits. Offensive enhancements expire after that round's basic-attack batch and never persist accidentally.
+- Players pick active abilities during planning; player-managed automatic priority is shelved for the MVP and may return later. Movement, targeting and combat resolution remain automatic after one Resolve battle command.
+- Type-wide equipped skills remain shared. Whether active picks apply per unit or class, number of picks, persistence and optional automatic Rally remain to be confirmed. Shared equipment/old shared priority does not settle these new questions.
+- Brace forces defensive/Hold stance. That stance must be applied before automatic movement. Whether it persists afterward remains open.
+- Cavalier Charge requires Advance. Decide whether picking Charge sets Advance or requires the player to set it separately.
+- Flanking means striking the enemy's side or back, replacing the opposite-ally geometry proposal. Units need explicit facing; facing control and lock timing are open. Preview flank eligibility from the same authoritative state used by combat; incidental sprite direction must not decide the result.
+- Advancing battle movement is approximately two-thirds of planning movement, as a separate allowance. Prototype fraction is confirmed as a tuning direction; rounding and terrain-cost treatment remain open. Existing full/full movement is superseded.
 
-## Pikeman: sustain and frontline protection
+## Proposed shared values
 
-Default priority: Rally, Brace. Both enabled.
+Start at 0 energy, max 4, +1 at each planning refresh including round 1; clamp overflow. Reserves receive the baseline plus their existing extra +1. Costs and cooldowns are checked before committing an ability. Reservation, cancellation/refunds, invalidation and selection persistence still need agreement. Basic attacks/movement remain free. Cooldown 2 used in round 5 is ready in round 7.
 
-**Rally:** cost 0, cooldown 2. Restore 10 HP; gain 1 energy immediately and 1 at the next planning refresh. Trigger when HP is below maximum or immediate/next-round bonus energy can be useful. Consider the scheduled next-round baseline when testing usefulness; full HP and energy with no usable bonus must not trigger. Never require a nearby enemy.
+Selected recovery/support effects and attack enhancements need explicit phases; no user priority editor or repeated-cast chain. Suggested prototype phases: apply stance constraints, resolve simultaneous movement, apply selected recovery/protection, then simultaneous enhanced/basic attacks. This is proposed timing, not an approved lethal-action or cross-faction spell contract.
 
-**Brace:** cost 2, cooldown 2. Absorb up to 4 total incoming basic-attack damage this combat round. Trigger if a living enemy can attack the Pike from the post-movement snapshot. Consume a battle-wide absorption budget rather than reducing every hit by 4. Proposed stacking: Brace's remaining absorption and equipped Barrier's 2 reduction can both apply, after Ward's existing damage reduction. Unused Brace expires after combat.
+Existing purchased Barrier remains the current passive 2 damage reduction per battle unless Scott explicitly changes it. It is separate from active Brace.
 
-## Archer: deliberate burst damage
+## Proposed kits for approval
 
-Default priority: Focused Shot. Enabled.
+**Pikeman Rally:** restore 10 HP, +1 energy now and next round, cooldown 2 (user-specified). Proposed cost 0. Only useful when healing or a bonus energy gain can be used. Planning selection versus automatic recovery remains open.
 
-**Focused Shot:** cost 2, cooldown 2. Enhance this round's basic attack with +4 damage and +20 percentage points to hit chance, capped at 100%; no additional attack and no change to critical chance. Trigger only when an enemy is at legal weapon range. First fix eligible target selection so an adjacent enemy cannot prevent firing at a legal range-2 target.
+**Pikeman Brace:** proposed cost 2, cooldown 2, absorb up to 4 total incoming basic-attack damage this round; forces defensive/Hold stance before movement. Proposed stacking with equipped Barrier after Ward reduction; unused absorption expires after combat. Decide stance duration and payment if no attack arrives.
 
-One active skill is deliberate for the first ranged kit; it tests charging and burst without inventing a recovery skill for every class. Additional Archer skills are expansion backlog items.
+**Archer Focused Shot:** proposed cost 2, cooldown 2, +4 basic-attack damage and +20 percentage points hit chance capped at 100%; no additional attack. Requires an eligible ranged target; CORE-01 targeting correction is prerequisite.
 
-## Cavalier: flank pressure and recovery
+**Cavalier Charge:** requires Advance. Proposed cost 2, cooldown 2, +4 damage on this round's basic attack if the Cavalier actually moves at least one tile during battle and reaches a legal melee target. Uses the ordinary reduced battle movement budget, not extra movement. User confirmed Advance requirement; effect/cost/movement trigger remain proposals.
 
-Default priority: Flanking Strike, Second Wind. Both enabled.
+**Cavalier flanking:** side/back geometry confirmed; proposed +4 damage on a qualifying melee strike. Open: passive bonus versus selected active skill, stacking with Charge, and facing semantics. The old opposite-ally trigger is withdrawn.
 
-**Flanking Strike:** cost 2, cooldown 2. Enhance the basic attack by +4 damage when a living friendly unit stands on the exact opposite adjacent tile from the Cavalier across that target after movement. Example: target (6,5), Cavalier (5,5), friendly unit (7,5). Do not require facing or past-round history; no extra attack or movement allowance. Choose a legal qualifying target and retain it for the enhanced attack.
-
-**Second Wind:** cost 1, cooldown 3. Restore 6 HP when current HP is at or below half maximum. Available outside combat as well. Flanking Strike first means offense can take priority over recovery; reversing the shared row changes that tradeoff.
+**Cavalier Second Wind:** proposed cost 1, cooldown 3, restore 6 HP at or below half maximum, usable outside combat. Remains proposed; not required by the user's latest correction.
 
 ## Verification and completion
 
-- Verify baseline/overflow, cooldown timing, disabled skills, skipped payments, class-wide priority inheritance, independent unit resource state, reserve preservation and bounded ability waves.
-- Demonstrate a charged Archer's enhanced hit, Pike recovery/protection and Cavalier flank/recovery over multiple browser rounds, including opposite priority orders.
-- Verify simultaneous strikes, eligible ranged targets, protection stacking and faction symmetry; confirm AI uses the same actions/rules and deterministic logs replay.
-- Compare seeded runs against existing policies, reporting outcome/duration, abilities used/skipped, energy spent/capped, class survival and strategic differences. These proposed values require Scott's approval before they become defaults; simulation results may recommend later adjustments.
-- This system does not require new character art, new classes or a full campaign. Add genuine dependencies within the pass and record them in DEVELOPMENT.md/CURRENT_GAPS.md.
+Verify selection/cancellation/invalidation, affordability, cooldown timing, independent unit state, reserve preservation, optional selection/no compulsory per-unit click-through, Brace stance enforcement, Charge eligibility, reduced movement budgets and front/side/back facing. Demonstrate the three recruit kits over multiple browser rounds. Verify both factions and deterministic AI/log replay. Report ability use, energy spent/capped, match outcomes/duration and strategic differences before recommending balance changes.
+
+Priority controls are deferred; selected abilities, stance constraints and facing are the active system scope. No new character art or campaign is required. Record genuine dependencies within this pass.

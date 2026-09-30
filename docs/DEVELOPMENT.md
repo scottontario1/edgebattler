@@ -34,17 +34,21 @@ Each implementation task names the active roadmap system and its acceptance crit
 Confirmed order from elicitation answers 11A then B, 12A, 13A, 14B and 15C:
 
 1. **Correctness prerequisite:** fix CORE-01 eligible ranged targeting. Scope is the targeting failure, deterministic behavior and integrated verification.
-2. **Active system: SYS-01 energy, abilities, cooldowns and priority controls.** Complete the agreed prototype, including needed dependencies, before advancing to the next system. Acceptance: define gain/spend/activation timing and chosen active/passive behavior; implement persistent energy and cooldowns; let the player order eligible abilities; demonstrate charge -> spend -> recover over multiple rounds in the browser; verify both factions use the same rules through meaningful rule checks and seeded AI/replay runs. Strategic ability-kit choices remain open and must be elicited. Existing persistent tile orders are dependencies only where this scope requires them.
+2. **Active system: SYS-01 energy, planning-selected abilities, cooldowns, stance constraints and facing.** Complete the agreed prototype, including needed dependencies, before advancing to the next system. Acceptance: define gain/spend/activation timing and chosen active/passive behavior; implement persistent energy and cooldowns; let the player select active abilities during planning without compulsory per-unit click-through; enforce Brace/Charge stances, side/back facing and approximately two-thirds advancing battle movement; demonstrate charge -> spend -> recover over multiple rounds in the browser; verify both factions use the same rules through meaningful rule checks and seeded AI/replay runs. Strategic ability-kit choices remain open and must be elicited. Existing persistent tile orders are dependencies only where this scope requires them.
 3. **Next system: SYS-02 card circulation, capacity, reserves and recycling.** Acceptance: confirm return/repayment/state rules; implement useful choices at population and hand limits; preserve optional combinations and weighted population; verify the browser flow and report blocked draws, resource use and strategic alternatives in seeded simulations.
 4. **Core match pacing:** CORE-02 and CORE-03 remain blockers to unrelated expansion. Investigate and resolve them within the relevant system where necessary; experiments can proceed throughout. Scott selects changes to default balance.
-5. **Deferred:** remaining persistent-order UI, art/readability polish, new classes, campaign and multiplayer expansion. Move a deferred item into the active system when it is a necessary dependency and record why.
+5. **Deferred:** automatic ability prioritization, remaining persistent-order UI, art/readability polish, new classes, campaign and multiplayer expansion. Move a deferred item into the active system when it is a necessary dependency and record why.
 
 Evaluate balance experiments on match completion, duration, faction viability, success of different strategies and meaningful decisions at capacity. A lower draw rate alone is not enough. Numerical targets and test coverage thresholds remain to be defined; do not fabricate them as confirmed requirements.
 
 ## Questions still requiring direction
 
-- SYS-01 confirmed: shared type-wide priority inherited by future recruits; ability enable/disable controls without an energy reserve threshold; Rally fires when healing or energy gain is useful; kits cover Pikeman, Archer and Cavalier. Scott approves a concrete kit before implementation. See ABILITY_PROPOSAL.md for the pending proposal; its numbers and timing are not approved defaults.
+- SYS-01 revised by Scott: planning-selected active abilities replace automatic prioritization for the MVP; Brace forces defense, Charge requires Advance, flanking uses side/back facing, and advancing battle movement is approximately two-thirds planning movement. Selection scope/count/persistence, facing, resource commitment and concrete kit values remain open. See ABILITY_PROPOSAL.md. Earlier shared-priority decisions are deferred, not current MVP requirements.
 - What observable outcomes define an acceptable match: expected duration, tolerable draw rate and meaningful choices at capacity?
 - Which selling/recycling and card repayment/state rules should SYS-02 implement?
 
 These are open decisions, not permission to invent new gameplay direction.
+
+## Decision change: 2026-09-29
+
+Scott explicitly replaced automatic ability prioritization with planning-selected abilities for the MVP, replaced opposite-ally flanking with side/back attacks, added Brace/Charge stance constraints, and reduced advancing battle movement from a separate full allowance to approximately two-thirds of planning movement. Update implementation and verification around these rules; do not reintroduce the previous design through a later task prompt.
