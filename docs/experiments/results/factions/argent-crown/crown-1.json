@@ -1,0 +1,292 @@
+[
+ {
+  "label": "N naive: scattered as deployed, default stances, no picks, no spells",
+  "vs": null,
+  "n": 400,
+  "blue": 0,
+  "red": 1,
+  "mutual": 0,
+  "none": 0,
+  "blueCI": [
+   0,
+   0.009512640599680667
+  ],
+  "rounds": 7.225,
+  "surv": {
+   "blue": 0,
+   "red": 9.1825
+  },
+  "hpLeft": {
+   "blue": 0,
+   "red": 0.7345436507936506
+  },
+  "dealt": {
+   "blue": 100.4475,
+   "red": 222.2075
+  },
+  "lost": 6,
+  "abilityUses": 16.5175,
+  "planFails": 0
+ },
+ {
+  "label": "S skilled: formation, Hold, the level's picks",
+  "vs": "N",
+  "n": 400,
+  "blue": 0.7175,
+  "red": 0.0025,
+  "mutual": 0,
+  "none": 0.28,
+  "blueCI": [
+   0.6714715471495262,
+   0.7593904541896127
+  ],
+  "rounds": 16.235,
+  "surv": {
+   "blue": 5.3275,
+   "red": 0.56
+  },
+  "hpLeft": {
+   "blue": 0.8096557971014492,
+   "red": 0.02714285714285715
+  },
+  "dealt": {
+   "blue": 434.33,
+   "red": 112.7975
+  },
+  "lost": 0.6725,
+  "abilityUses": 97.365,
+  "planFails": 0
+ },
+ {
+  "label": "S-Scattered skilled plan but the units scattered (no formation)",
+  "vs": "S",
+  "n": 400,
+  "blue": 0,
+  "red": 0.9875,
+  "mutual": 0,
+  "none": 0.0125,
+  "blueCI": [
+   0,
+   0.009512640599680667
+  ],
+  "rounds": 9.91,
+  "surv": {
+   "blue": 0.03,
+   "red": 8.0925
+  },
+  "hpLeft": {
+   "blue": 0.0023007246376811597,
+   "red": 0.6256845238095238
+  },
+  "dealt": {
+   "blue": 160.8875,
+   "red": 249.715
+  },
+  "lost": 5.97,
+  "abilityUses": 46.31,
+  "planFails": 0
+ },
+ {
+  "label": "S-Doctrine skilled without Line Doctrine (passive stripped, same places)",
+  "vs": "S",
+  "n": 400,
+  "blue": 0.4025,
+  "red": 0.24,
+  "mutual": 0,
+  "none": 0.3575,
+  "blueCI": [
+   0.3555882638828042,
+   0.4512667010341336
+  ],
+  "rounds": 16.1625,
+  "surv": {
+   "blue": 3.22,
+   "red": 2.345
+  },
+  "hpLeft": {
+   "blue": 0.449021739130435,
+   "red": 0.16168650793650802
+  },
+  "dealt": {
+   "blue": 385.17,
+   "red": 232.0675
+  },
+  "lost": 2.78,
+  "abilityUses": 88.8575,
+  "planFails": 0
+ },
+ {
+  "label": "S-Unit passives skilled without shieldwall",
+  "vs": "S",
+  "n": 400,
+  "blue": 0.4125,
+  "red": 0.275,
+  "mutual": 0,
+  "none": 0.3125,
+  "blueCI": [
+   0.36531130012981505,
+   0.461353411975129
+  ],
+  "rounds": 15.98,
+  "surv": {
+   "blue": 3.15,
+   "red": 2.3225
+  },
+  "hpLeft": {
+   "blue": 0.44248188405797106,
+   "red": 0.1643154761904762
+  },
+  "dealt": {
+   "blue": 382.46,
+   "red": 229.915
+  },
+  "lost": 2.85,
+  "abilityUses": 88.0575,
+  "planFails": 0
+ },
+ {
+  "label": "S-AllPassives skilled with every Crown passive stripped (skills and spells kept)",
+  "vs": "S",
+  "n": 400,
+  "blue": 0.0125,
+  "red": 0.97,
+  "mutual": 0,
+  "none": 0.0175,
+  "blueCI": [
+   0.005350671853550634,
+   0.02892415273113802
+  ],
+  "rounds": 10.9725,
+  "surv": {
+   "blue": 0.0825,
+   "red": 6.8175
+  },
+  "hpLeft": {
+   "blue": 0.010869565217391304,
+   "red": 0.5384325396825396
+  },
+  "dealt": {
+   "blue": 214.83,
+   "red": 262.9325
+  },
+  "lost": 5.9175,
+  "abilityUses": 55.415,
+  "planFails": 0
+ },
+ {
+  "label": "S-Rally skilled without Rally",
+  "vs": "S",
+  "n": 400,
+  "blue": 0.26,
+  "red": 0.535,
+  "mutual": 0,
+  "none": 0.205,
+  "blueCI": [
+   0.2194409481918117,
+   0.30512511929603503
+  ],
+  "rounds": 15.6325,
+  "surv": {
+   "blue": 1.6325,
+   "red": 2.915
+  },
+  "hpLeft": {
+   "blue": 0.13489130434782606,
+   "red": 0.2078472222222222
+  },
+  "dealt": {
+   "blue": 366.4275,
+   "red": 147.525
+  },
+  "lost": 4.3675,
+  "abilityUses": 63.1325,
+  "planFails": 0
+ },
+ {
+  "label": "S-Close Ranks skilled without Close Ranks",
+  "vs": "S",
+  "n": 400,
+  "blue": 0.6575,
+  "red": 0.035,
+  "mutual": 0,
+  "none": 0.3075,
+  "blueCI": [
+   0.6096937475435954,
+   0.7023097706675051
+  ],
+  "rounds": 16.3475,
+  "surv": {
+   "blue": 4.9725,
+   "red": 0.8375
+  },
+  "hpLeft": {
+   "blue": 0.7356884057971026,
+   "red": 0.04605158730158733
+  },
+  "dealt": {
+   "blue": 428.385,
+   "red": 166.025
+  },
+  "lost": 1.0275,
+  "abilityUses": 69.6475,
+  "planFails": 0
+ },
+ {
+  "label": "S-Focused Shot skilled without Focused Shot",
+  "vs": "S",
+  "n": 400,
+  "blue": 0.145,
+  "red": 0.0025,
+  "mutual": 0,
+  "none": 0.8525,
+  "blueCI": [
+   0.1138699785258184,
+   0.18288399629995486
+  ],
+  "rounds": 17.845,
+  "surv": {
+   "blue": 5.4,
+   "red": 2.89
+  },
+  "hpLeft": {
+   "blue": 0.8109057971014504,
+   "red": 0.15822420634920636
+  },
+  "dealt": {
+   "blue": 413.455,
+   "red": 124.2825
+  },
+  "lost": 0.6,
+  "abilityUses": 93.11,
+  "planFails": 0
+ },
+ {
+  "label": "S-Mop-up skilled without Mop-up",
+  "vs": "S",
+  "n": 400,
+  "blue": 0.005,
+  "red": 0,
+  "mutual": 0,
+  "none": 0.995,
+  "blueCI": [
+   0.0013722242215711469,
+   0.018045289972112716
+  ],
+  "rounds": 18,
+  "surv": {
+   "blue": 5.8425,
+   "red": 3.03
+  },
+  "hpLeft": {
+   "blue": 0.9428442028985509,
+   "red": 0.20034722222222207
+  },
+  "dealt": {
+   "blue": 376.5375,
+   "red": 79.53
+  },
+  "lost": 0.1575,
+  "abilityUses": 103.695,
+  "planFails": 0
+ }
+]
