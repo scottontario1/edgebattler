@@ -1,0 +1,206 @@
+[
+ {
+  "label": "N naive: default stances, no picks, no spells",
+  "budget": {
+   "blue": {
+    "supply": 3,
+    "equipment": 0,
+    "total": 3,
+    "pop": 3
+   },
+   "red": {
+    "supply": 5,
+    "equipment": 0,
+    "total": 5,
+    "pop": 5
+   }
+  },
+  "n": 400,
+  "blue": 0,
+  "red": 0.965,
+  "mutual": 0,
+  "none": 0.035,
+  "blueCI": [
+   0,
+   0.009512640599680667
+  ],
+  "rounds": 10.8775,
+  "surv": {
+   "blue": 1.1775,
+   "red": 3.785
+  },
+  "hpLeft": {
+   "blue": 0.25194444444444414,
+   "red": 0.4773125000000002
+  },
+  "dealt": {
+   "blue": 68.3275,
+   "red": 162.725
+  },
+  "firstStrike": 1.1125,
+  "flank": 0,
+  "strikes": 39.805,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 28.83,
+  "blocked": 21.3725,
+  "contested": 9.47,
+  "planFails": 0,
+  "abilityUses": 0,
+  "energy": 0,
+  "decidedRounds": 10.764248704663212
+ },
+ {
+  "label": "S skilled: holding the line and mustering three bench Archers behind it in round 2",
+  "budget": {
+   "blue": {
+    "supply": 3,
+    "equipment": 0,
+    "total": 3,
+    "pop": 3
+   },
+   "red": {
+    "supply": 5,
+    "equipment": 0,
+    "total": 5,
+    "pop": 5
+   }
+  },
+  "n": 400,
+  "blue": 0.6675,
+  "red": 0.2,
+  "mutual": 0.0025,
+  "none": 0.13,
+  "blueCI": [
+   0.6199304437921472,
+   0.7118828216069598
+  ],
+  "rounds": 11.57,
+  "surv": {
+   "blue": 1.9925,
+   "red": 0.5125
+  },
+  "hpLeft": {
+   "blue": 0.48145833333333393,
+   "red": 0.03254166666666666
+  },
+  "dealt": {
+   "blue": 135.5275,
+   "red": 183.5
+  },
+  "firstStrike": 2,
+  "flank": 0,
+  "strikes": 62.4425,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 15.2075,
+  "blocked": 19.2875,
+  "contested": 1.7975,
+  "planFails": 0,
+  "abilityUses": 11.08,
+  "energy": 0,
+  "decidedRounds": 11.206896551724139
+ },
+ {
+  "label": "S-Rally skilled without Rally",
+  "budget": {
+   "blue": {
+    "supply": 3,
+    "equipment": 0,
+    "total": 3,
+    "pop": 3
+   },
+   "red": {
+    "supply": 5,
+    "equipment": 0,
+    "total": 5,
+    "pop": 5
+   }
+  },
+  "n": 400,
+  "blue": 0.0575,
+  "red": 0.8925,
+  "mutual": 0.0375,
+  "none": 0.0125,
+  "blueCI": [
+   0.038617261729224514,
+   0.08480142520149289
+  ],
+  "rounds": 9.39,
+  "surv": {
+   "blue": 0.125,
+   "red": 2.1625
+  },
+  "hpLeft": {
+   "blue": 0.015347222222222224,
+   "red": 0.1904999999999999
+  },
+  "dealt": {
+   "blue": 107.6625,
+   "red": 178.31
+  },
+  "firstStrike": 2,
+  "flank": 0,
+  "strikes": 53.1525,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 16.96,
+  "blocked": 14.75,
+  "contested": 2.965,
+  "planFails": 0,
+  "abilityUses": 0,
+  "energy": 0,
+  "decidedRounds": 9.331645569620253
+ },
+ {
+  "label": "S-Muster skilled without Muster",
+  "budget": {
+   "blue": {
+    "supply": 3,
+    "equipment": 0,
+    "total": 3,
+    "pop": 3
+   },
+   "red": {
+    "supply": 5,
+    "equipment": 0,
+    "total": 5,
+    "pop": 5
+   }
+  },
+  "n": 400,
+  "blue": 0.075,
+  "red": 0.805,
+  "mutual": 0,
+  "none": 0.12,
+  "blueCI": [
+   0.053037406335715714,
+   0.10504833817401285
+  ],
+  "rounds": 11.67,
+  "surv": {
+   "blue": 1.55,
+   "red": 2.7
+  },
+  "hpLeft": {
+   "blue": 0.34048611111111093,
+   "red": 0.27095833333333313
+  },
+  "dealt": {
+   "blue": 96.115,
+   "red": 193.835
+  },
+  "firstStrike": 2,
+  "flank": 0,
+  "strikes": 51.015,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 22.3375,
+  "blocked": 20.3425,
+  "contested": 4.84,
+  "planFails": 0,
+  "abilityUses": 9.31,
+  "energy": 0,
+  "decidedRounds": 11.352272727272727
+ }
+]

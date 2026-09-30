@@ -1,0 +1,257 @@
+[
+ {
+  "label": "N naive: default stances, no picks, no spells",
+  "budget": {
+   "blue": {
+    "supply": 3,
+    "equipment": 0,
+    "total": 3,
+    "pop": 3
+   },
+   "red": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 6
+   }
+  },
+  "n": 400,
+  "blue": 0.0825,
+  "red": 0.8625,
+  "mutual": 0.0075,
+  "none": 0.0475,
+  "blueCI": [
+   0.059345516507342,
+   0.11359753839339136
+  ],
+  "rounds": 10.63,
+  "surv": {
+   "blue": 0.21,
+   "red": 2.6725
+  },
+  "hpLeft": {
+   "blue": 0.02666666666666668,
+   "red": 0.26017361111111137
+  },
+  "dealt": {
+   "blue": 123.875,
+   "red": 189.95
+  },
+  "firstStrike": 1,
+  "flank": 0,
+  "strikes": 58.38,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 32.7325,
+  "blocked": 36.6575,
+  "contested": 13.2725,
+  "planFails": 0,
+  "abilityUses": 0,
+  "energy": 0,
+  "decidedRounds": 10.461942257217848
+ },
+ {
+  "label": "S skilled: claiming the village at 10,9 in round 1 and deploying the reserves beside it in round 2",
+  "budget": {
+   "blue": {
+    "supply": 3,
+    "equipment": 0,
+    "total": 3,
+    "pop": 3
+   },
+   "red": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 6
+   }
+  },
+  "n": 400,
+  "blue": 0.3325,
+  "red": 0.105,
+  "mutual": 0.005,
+  "none": 0.5575,
+  "blueCI": [
+   0.28811717839304024,
+   0.3800695562078528
+  ],
+  "rounds": 12.82,
+  "surv": {
+   "blue": 0.9525,
+   "red": 2.5575
+  },
+  "hpLeft": {
+   "blue": 0.20937500000000003,
+   "red": 0.28965277777777754
+  },
+  "dealt": {
+   "blue": 120.3125,
+   "red": 158.27
+  },
+  "firstStrike": 1,
+  "flank": 0,
+  "strikes": 51.6225,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 17.0175,
+  "blocked": 36.295,
+  "contested": 5.035,
+  "planFails": 1.42,
+  "abilityUses": 7.3,
+  "energy": 0,
+  "decidedRounds": 11.333333333333334
+ },
+ {
+  "label": "S-Rally skilled without Rally",
+  "budget": {
+   "blue": {
+    "supply": 3,
+    "equipment": 0,
+    "total": 3,
+    "pop": 3
+   },
+   "red": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 6
+   }
+  },
+  "n": 400,
+  "blue": 0.115,
+  "red": 0.3875,
+  "mutual": 0.02,
+  "none": 0.4775,
+  "blueCI": [
+   0.08733247792422089,
+   0.14999225533753324
+  ],
+  "rounds": 12.2825,
+  "surv": {
+   "blue": 0.1725,
+   "red": 3.44
+  },
+  "hpLeft": {
+   "blue": 0.02711805555555556,
+   "red": 0.3669097222222223
+  },
+  "dealt": {
+   "blue": 104.5025,
+   "red": 144.2
+  },
+  "firstStrike": 1,
+  "flank": 0,
+  "strikes": 45.9025,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 17.8925,
+  "blocked": 37.335,
+  "contested": 5.27,
+  "planFails": 1.42,
+  "abilityUses": 0,
+  "energy": 0,
+  "decidedRounds": 10.712918660287082
+ },
+ {
+  "label": "S-claim skilled without claim",
+  "budget": {
+   "blue": {
+    "supply": 3,
+    "equipment": 0,
+    "total": 3,
+    "pop": 3
+   },
+   "red": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 6
+   }
+  },
+  "n": 400,
+  "blue": 0,
+  "red": 0,
+  "mutual": 0,
+  "none": 1,
+  "blueCI": [
+   0,
+   0.009512640599680667
+  ],
+  "rounds": 14,
+  "surv": {
+   "blue": 0,
+   "red": 4.7875
+  },
+  "hpLeft": {
+   "blue": 0,
+   "red": 0.5881597222222222
+  },
+  "dealt": {
+   "blue": 64.47,
+   "red": 124.74
+  },
+  "firstStrike": 1,
+  "flank": 0,
+  "strikes": 34.7125,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 17.6725,
+  "blocked": 49.6675,
+  "contested": 6.88,
+  "planFails": 6,
+  "abilityUses": 6.36,
+  "energy": 0,
+  "decidedRounds": 0
+ },
+ {
+  "label": "S-forward skilled without forward",
+  "budget": {
+   "blue": {
+    "supply": 3,
+    "equipment": 0,
+    "total": 3,
+    "pop": 3
+   },
+   "red": {
+    "supply": 6,
+    "equipment": 0,
+    "total": 6,
+    "pop": 6
+   }
+  },
+  "n": 400,
+  "blue": 0.01,
+  "red": 0.5875,
+  "mutual": 0,
+  "none": 0.4025,
+  "blueCI": [
+   0.0038954207932788126,
+   0.02542696699440824
+  ],
+  "rounds": 13.155,
+  "surv": {
+   "blue": 0.7825,
+   "red": 2.995
+  },
+  "hpLeft": {
+   "blue": 0.15465277777777764,
+   "red": 0.26418402777777783
+  },
+  "dealt": {
+   "blue": 119.6125,
+   "red": 202.72
+  },
+  "firstStrike": 1,
+  "flank": 0,
+  "strikes": 59.9425,
+  "spear": 0,
+  "guarded": 0,
+  "moves": 32.3225,
+  "blocked": 22.235,
+  "contested": 10.545,
+  "planFails": 0.0025,
+  "abilityUses": 6.315,
+  "energy": 0,
+  "decidedRounds": 12.585774058577407
+ }
+]

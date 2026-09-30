@@ -133,24 +133,27 @@ const L5 = level({
 });
 
 // ---------- Level 6: Claim the Hamlet (villages extend the deployment area) ----------
-// On the Hamlets map each side has villages near its keep. Blue sends one Pikeman to claim the village at 7,10 in round 1;
-// from round 2 the reinforcements deploy up to four tiles out from it (village deployment range 4, keep range 1) instead
-// of at the keep, seven tiles behind, and meet six Pikemen already in contact. The village range itself is swept separately (docs/experiments/DEPLOY_AND_MUSTER.md).
+// On the Hamlets map three Pikemen hold the east flank, nine tiles from Blue's keep, against six Pikemen arriving from the
+// north-east. Blue claims the contested village at 10,9 in round 1 and, with village deployment range 4 (keep range 1), the
+// three reserve Pikemen deploy beside it in round 2 and join the first clash. Deployed at the keep instead they need two more
+// rounds to walk up while the line is ground down. The range itself is swept separately (docs/experiments/DEPLOY_AND_MUSTER.md).
 const L6_KEEP = [[3, 10], [2, 9], [1, 10]];
 const deployAt = (tag, round, ids, tiles) => ids.map((card, i) => step(tag, round, 'blue', { card, deploy: tiles[i] }));
 const L6_CARDS = [{ faction: 'blue', cls: 'pikeman', id: 'rein1' }, { faction: 'blue', cls: 'pikeman', id: 'rein2' }, { faction: 'blue', cls: 'pikeman', id: 'rein3' }];
-const L6_RED = [[11, 8], [11, 9], [11, 10], [12, 8], [12, 9], [12, 10]].map(([c, r], i) => u('rp' + (i + 1), 'red', 'pikeman', c, r, { stance: 'advance', facing: 'west' }));
+const L6_RED = [[13, 8], [13, 9], [13, 10], [14, 8], [14, 9], [14, 10]].map(([c, r], i) => u('rp' + (i + 1), 'red', 'pikeman', c, r, { stance: 'advance', facing: 'west' }));
 const L6 = level({
   id: 'level-6', title: 'Level 6: Claim the Hamlet (village deployment range)', map: 'hamlets', maxRounds: 14,
-  teaches: 'claiming the village at 7,10 in round 1 and deploying the reserves four tiles out from it',
+  teaches: 'claiming the village at 10,9 in round 1 and deploying the reserves beside it in round 2',
   rules: { deployRangeKeep: 1, deployRangeVillage: 4 },
   reinforce: L6_CARDS,
-  blue: [u('bp1', 'blue', 'pikeman', 5, 10, { stance: 'hold', facing: 'east' }), u('bp2', 'blue', 'pikeman', 6, 9, { stance: 'advance', facing: 'east' }), u('bp3', 'blue', 'pikeman', 6, 11, { stance: 'advance', facing: 'east' })],
+  blue: [u('bp1', 'blue', 'pikeman', 9, 9, { stance: 'hold', facing: 'east' }), u('bp2', 'blue', 'pikeman', 9, 8, { stance: 'hold', facing: 'east' }), u('bp3', 'blue', 'pikeman', 9, 11, { stance: 'hold', facing: 'east' })],
   red: L6_RED,
   naivePlan: deployAt(null, 2, ['rein1', 'rein2', 'rein3'], L6_KEEP),
   plan: [
-    step('claim', 1, 'blue', { unit: 'bp1', stance: 'advance', tile: [7, 10] }),
-    ...deployAt('forward', 2, ['rein1', 'rein2', 'rein3'], [[8, 10], [8, 9], [8, 11]]),
+    step('claim', 1, 'blue', { unit: 'bp1', stance: 'advance', tile: [10, 9] }),
+    step('claim', 2, 'blue', { unit: 'bp1', stance: 'hold' }),
+    ...deployAt('forward', 2, ['rein1', 'rein2', 'rein3'], [[9, 9], [9, 10], [10, 10]]),
+    all(null, 3, 'blue', 'pikeman', { stance: 'hold' }),
     all('Rally', 1, 'blue', 'pikeman', { abilities: ['rally'] }),
   ],
   fallback: { claim: [step(null, 1, 'blue', { unit: 'bp1', stance: 'advance' }), ...deployAt(null, 2, ['rein1', 'rein2', 'rein3'], L6_KEEP)], forward: deployAt(null, 2, ['rein1', 'rein2', 'rein3'], L6_KEEP) },
