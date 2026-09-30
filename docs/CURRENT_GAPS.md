@@ -2,7 +2,7 @@
 
 Baseline reviewed: codex/gamegaps, d39fab9, 2026-09-29. This register replaces historical task tables as the current backlog. Review evidence is source inspection and saved screenshots; two targeted Node checks verified the archer targeting failure and lack of field baseline energy. No fresh browser or broad simulation run was performed in that review.
 
-Current implementation update: CORE-01 and SYS-01 are now verified with fresh browser, rule and simulation evidence. See SYS01_VERIFICATION.md.
+Current implementation update: CORE-01, SYS-01 and the approved SYS-02 cycling scope are verified with fresh browser, rule and simulation evidence. See SYS01_VERIFICATION.md and SYS02_VERIFICATION.md.
 
 ## Implemented foundation
 
@@ -28,9 +28,9 @@ Limits: Cavalier movement does not optimize flank opportunities; that remains fu
 
 ## SYS-02: Capacity, reserves and card circulation
 
-Status: partially implemented; reported core blocker at capacity.
-Reserves use population; withdrawal does not free capacity. Recycling/selling and disposal/exchange of unusable cards are absent. Hands and Supply reportedly remain capped for much of a match.
-Acceptance: decide retained state, card/currency return and repayment rules, implement the selected options, preserve optional triples and weighted population, and demonstrate meaningful choices at cap with simulation evidence.
+Status: approved cycling scope implemented and verified, 2026-09-29; capacity pressure remains.
+One shared free cycle per planning turn exchanges hand cards or refunds paid bench units into unpaid same-type/rarity/grade cards. Refund investment survives combinations/deployment/withdrawal; repurchase starts fresh. Optional triples, weighted population and bench recovery remain. Bench cycling requires a free hand slot; hand cycling works at full hand but does not create a slot. See GAME.md for the approved contract and SYS02_VERIFICATION.md for evidence.
+Evidence: 28 rule checks, production build, desktop/portrait/short browser flows, normal browser replay and 200 paired side-swapped simulation replays pass. Heuristic blocked draws average 64.78 with cycling vs 65.82 without; both draw 89%. AI used hand cycles but no bench cycles in these runs, so strategic bench value is not established by those simulations. Hand+population cap pressure remains; future population progression is deferred.
 
 ## SYS-03: Persistent orders and combat intent
 
@@ -53,9 +53,9 @@ Acceptance: distinct intent overlays, readable portrait planning flow, matched c
 ## DOC-01: Documentation reconciliation
 
 Status: substantially reconciled, 2026-09-29.
-GAME.md now reflects automatic rounds, recruitment, champion respawn, reserve gains, approved ability contracts and current milestones. Deferred UI/recycling/timing rules remain explicitly intended or open. Historical task logs remain unchanged intentionally.
+GAME.md now reflects automatic rounds, recruitment, champion respawn, reserve gains, approved ability contracts and current milestones. Approved cycling/refund/repayment rules are implemented; remaining UI and cross-faction timing rules remain explicitly intended or open. Historical task logs remain unchanged intentionally.
 Acceptance: GAME.md consistently distinguishes current behavior, intended rules and provisional defaults; every current gap has evidence/status and a next action.
 
 ## Recommended next task
 
-Proceed to SYS-02 card circulation/capacity. Confirm strategic recycle/return/repayment/state rules before implementing them; preserve optional triples and weighted population, demonstrate choices at capacity and report blocked draws/resource use through seeded replay runs. CORE-02 and CORE-03 still block unrelated expansion. CORE-01 and SYS-01 are verified prerequisites; do not reopen them without new evidence or explicit redirection.
+Proceed to CORE-02 keep pressure and CORE-03 victory semantics. Agree counterplay and acceptable completion/duration outcomes, compare paired seeds with side swaps against passive/greedy/heuristic policies, and present evidence before changing defaults. Capacity pressure remains a limitation of the approved SYS-02 rules. CORE-01, SYS-01 and SYS-02 are verified prerequisites; do not reopen them without new evidence or explicit redirection.

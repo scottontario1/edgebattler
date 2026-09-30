@@ -25,7 +25,7 @@ The primary loop is planning followed by one Resolve battle action. The shared m
 - Paid reserve units and deployed units can participate in combinations. Combining is optional: three ordinary Pikemen may be preferable to one upgraded Pikeman.
 - Units may have active abilities and passives; players pick active abilities in planning instead of arranging automatic priorities for the MVP. Type-wide skill equipment remains shared. For now, picks are per unit with group/apply-to-class controls; multiple picks resolve in fixed effect phases. Picks persist when unaffordable but suspend execution until energy recovers. New planning selections must fit their total cost into available energy. Brace temporarily forces defensive/Hold for that battle; Cavalier Charge requires Advance already selected. Cavalier flanking is passive on side/back attacks, including Charge. Automatic movement updates facing to its final step; stationary units retain planning facing. Facing locks before attacks; the final-step interpretation and prototype package were approved on 2026-09-29.
 - HP, energy, cooldowns, and statuses persist across rounds. Recovery abilities run during normal activations, even without a nearby enemy. A two-turn cooldown used in round 5 is ready again in round 7.
-- Units may withdraw through controlled reinforcement locations into recovering/charging reserves and may be sold or recycled into a card of the same grade. Refunds, card repayment, and preserved state remain open.
+- Units may withdraw through controlled reinforcement locations into recovering/charging paid reserves. One shared free cycle per planning turn exchanges a hand card or refunds a bench unit into an unpaid random card of the same type, rarity and star grade.
 - Spell cards are queued during planning and resolve when battle starts. Skill cards are transferable equipment; their type-wide scope is distinct from one-shot spells.
 - Enemy information and potential fog of war will be tested; full visibility is not a settled rule.
 
@@ -62,13 +62,13 @@ The first version is single-player against an enemy commander using the same mat
 
 Cards must identify their name, type, cost, and effect. Unit cards also show class, star level, attack range, default stance, and a short ability description. Spell cards show target restrictions and duration. The card art should match the battlefield sprite and portrait. Skill cards equip transferable abilities, currently shared by instances of a unit type. Enchantment cards could apply persistent modifications. Storage, costs, compatibility, slot limits, and exact ownership/grade scope still need definition.
 
-Draws come from a defined recruitment pool for the match. Start with a small, weighted pool of the existing recruit classes and a few spells. Randomness should offer useful choices without requiring a matching triple to survive the first rounds. There is no paid shop, reroll system, or deck-building screen required for the first prototype.
+Draws come from a defined recruitment pool for the match. Start with a small, weighted pool of the existing recruit classes and a few spells. Randomness should offer useful choices without requiring a matching triple to survive the first rounds. There is no paid shop or paid reroll system required for the first prototype. Instead, the approved MVP offers one shared free card cycle per planning turn.
 
 **Prototype defaults:**
 
 - Start with a five-card hand; draw three cards at the start of each later round.
 - Keep unplayed cards between rounds. Cap the hand at eight cards; draw only into free slots and show when the hand prevented further draws. Do not silently discard existing cards.
-- Use one resource, **Supply**, for units and spells. Gain three Supply per round, with a bank cap of six. Initial Supply is three.
+- Use one resource, **Supply**, for units and spells. Gain three Supply per round, with a normal bank cap of six. Initial Supply is three. Full bench refunds may exceed six; normal income pauses above the cap and never removes stored Supply.
 - Give initial unit cards costs in the 1–3 range and spells costs in the 1–2 range. Actual class costs, pool weights, and rewards require balance testing.
 - Start without additional draw or income from captured villages. Add territory income only after the base draw and deployment loop is understandable.
 
@@ -80,9 +80,21 @@ Playing a unit card pays its recruitment cost and creates a unit on the reserve 
 
 Deployed units may withdraw through a controlled base or reinforcement point into reserves. Reserves can recover and accumulate energy. Eligible units can also be sold or recycled into a card of the same grade, preserving the existence of upgraded cards rather than breaking every unit back into 1-star copies.
 
-**Implemented (prototype defaults):** a deployed recruit standing on a controlled keep or village tile can Withdraw (W) to the bench with its HP, energy, cooldowns and statuses intact; it keeps its population slot. Benched units recover 4 HP and 2 energy per planning refresh (baseline 1 plus reserve bonus 1 in src/match.js), plus a pending Rally bonus, and tick cooldowns; redeploying restores picks, facing and that carried state. Champions cannot be benched. Selling/recycling is not implemented.
+**Implemented (prototype defaults):** a deployed recruit standing on a controlled keep or village tile can Withdraw (W) to the bench with its HP, energy, cooldowns and statuses intact; it keeps its population slot. Benched units recover 4 HP and 2 energy per planning refresh (baseline 1 plus reserve bonus 1 in src/match.js), plus a pending Rally bonus, and tick cooldowns; redeploying restores picks, facing and that carried state. Champions cannot be benched. Bench cycling is implemented under the approved contract below.
 
-Current prototype bench cap is 8, reserves retain their population cost, withdrawal occurs during planning, and deployment has no additional Supply cost. These values can be tuned. Selling/recycling must define whether resources are refunded, whether the resulting card must be paid for again, and what happens to HP, energy, cooldowns, and statuses. Keep these rules explicit so the system does not accidentally grant an instant full heal or unlimited refunds. Spells, enchantments, and equipment need an explicit inventory model rather than silently being treated as reserve units.
+Current prototype bench cap is 8, reserves retain their population cost, withdrawal occurs during planning, and deployment has no additional Supply cost. Paid bench units persist between turns, enabling optional matching triples; unpaid hand cards are not combination ingredients.
+
+### Approved cycling contract (implemented SYS-02)
+
+- Each side receives one free cycle per planning turn, shared between hand and bench. It refreshes next turn without accumulating. Cycling is optional and never automatically combines a triple.
+- A hand cycle replaces one unpaid card in place, including at the eight-card hand limit. A bench cycle requires a free hand slot; if blocked, nothing is lost and neither allowance nor random sequence advances. Deployed units must first legally withdraw to cycle.
+- The random replacement preserves card type (unit/spell/skill), rarity and unit star grade, using the existing weighted pool filtered by type and rarity. It may be the same identity again. Rarity is independent of stars; all current prototype definitions are common. Spells and skills do not gain stars.
+- Cycling a paid bench unit removes that instance, frees its weighted population and bench slot, and refunds its actual invested Supply. Combination investments sum across the three inputs. Free starting units refund zero; deployment and withdrawal preserve investment.
+- The replacement enters the hand unpaid. Its unit price is the replacement class's normal cost times the recipe: 1★ ×1, 2★ ×3, 3★ ×9. Refund and replacement price can differ. Recruit it again before deploying; ordinary population and bench limits still apply.
+- Repurchasing creates a fresh unit at its retained grade with full grade-adjusted HP, zero energy, empty cooldowns, selections and statuses, and fresh instance identity/default orders. It does not carry the recycled unit's combat state. Normal withdrawal/redeployment continues to preserve state instead.
+- Full refunds may temporarily exceed the six-Supply bank cap. Income pauses until the bank falls below six; it never clips the refund. A replacement costing more than six can remain unaffordable without refund overflow; no extra income rule is implied.
+
+At simultaneous hand/population capacity, hand cycling changes options but does not create a hand slot, and bench cycling is blocked until one is available. This constraint is approved; it is not a claim that circulation solves all capacity or pacing problems. Future player levels that unlock more population are deferred pending design and balancing. Spells, enchantments and equipment remain distinct from reserve units.
 
 Prototype deployment rules:
 
@@ -234,7 +246,7 @@ Upgraded units need an obvious star badge and a restrained visual accent. The fi
 
 Implemented: seeded hand/Supply, paid reserves and deployment; optional combinations; queued spells and type-wide skills; persistent stances; shared automatic rounds; champion respawn; planning-selected kits, energy, cooldowns, facing and passive flanking. src/match.js owns rules for browser and simulator. src/ui.js only presents planning and plays event batches. Legacy manual exchange helpers are not the normal round flow.
 
-SYS-01 is implemented and verified; see docs/SYS01_VERIFICATION.md for rule, browser and replay evidence. The next active system is SYS-02 circulation/capacity. CORE-02 stalemates and CORE-03 cross-faction timing/mutual capture remain unresolved. Persistent arbitrary orders, playback controls and art/mobile polish follow the durable roadmap in docs/DEVELOPMENT.md. Historical overhaul task lists are not current completion status.
+SYS-01 is implemented and verified; see docs/SYS01_VERIFICATION.md for rule, browser and replay evidence. SYS-02 cycling is also implemented and verified; see docs/SYS02_VERIFICATION.md. Core match pacing and victory semantics are the next work. CORE-02 stalemates and CORE-03 cross-faction timing/mutual capture remain unresolved. Persistent arbitrary orders, playback controls and art/mobile polish follow the durable roadmap in docs/DEVELOPMENT.md. Historical overhaul task lists are not current completion status.
 
 ## Decisions to tune through the prototype
 
@@ -245,7 +257,7 @@ The intended direction is fixed: random shared-pool cards, paid reserves, contro
 - Energy gain timing, ability trigger complexity by unit type, action/repeat-cast limits, passive/toggle rules, and reserve recovery rates.
 - Additional skill compatibility, slots/costs, transfer/cooldown semantics for future active equipment, and enchantment rules. MVP pick affordability and bundle suspension are approved above.
 - Exact star stat gains and per-instance HP/energy/status/cooldown inheritance during combinations.
-- Reserve withdrawal, selling/recycling refunds, same-grade card repayment and retained state, and inventory-capacity handling.
+- Cycle allowance and capacity values, replacement pool diversity, and future population progression. Refund, repayment and fresh-state semantics are approved above; do not silently change them.
 - Simultaneous spell/ability/attack timing, reactions, follow-ups, lethal-action rules, target tracking, and mutual-victory outcomes.
 - Whether territory later produces resources, additional draws, or only deployment access.
 - Champion count, respawn delay/cost/reset state, and base-defeat rules.

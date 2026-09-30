@@ -1,3 +1,4 @@
+import {STAR_STAT_GROWTH,UPGRADE_POPULATION_BY_STARS} from './upgrades.js';
 // Unit data: class templates, the starting roster and record constructors. Plain data only (no
 // Three.js), shared by the 3D view (src/units.js), the match controller and the Node simulator.
 
@@ -52,4 +53,16 @@ export function createHeroRespawnData(id, c, r) {
     cooldowns: {}, statuses: {}, selectedAbilities: [], stance: 'advance', state: 'field', population: 1,
     planningMoved: false, done: false, moved: false,
   };
+}
+
+/** Fresh same-grade recruitment, including stat growth. No recycled instance state is copied. */
+export function createGradedRecruitUnit(cls,id,faction,stars=1) {
+  const unit=createRecruitUnit(cls,id,faction,0,0);
+  for(let tier=1;tier<stars;tier+=1) {
+    for(const [stat,growth] of Object.entries(STAR_STAT_GROWTH)) {
+      if(stat!=='hp'&&Number.isFinite(unit[stat])) unit[stat]+=growth;
+    }
+  }
+  unit.hp=unit.maxHp;unit.stars=stars;unit.population=UPGRADE_POPULATION_BY_STARS[stars];
+  return unit;
 }

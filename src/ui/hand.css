@@ -178,3 +178,6 @@
   .plan-face.glyph svg { width: 26px; height: 26px; }
   .plan-detail-text .hint { display: none; }
 }
+
+.cycle-control {flex:none;min-height:32px;padding:6px 10px;border:1px solid #c9a24a;border-radius:4px;background:#292638;color:var(--ivory);font:600 12px var(--font-ui);cursor:pointer}.cycle-control:disabled {opacity:.5;cursor:default}.plan-kind {text-transform:capitalize}
+@media(pointer:coarse) {.cycle-control {min-height:44px}}

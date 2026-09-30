@@ -35,8 +35,8 @@ Confirmed order from elicitation answers 11A then B, 12A, 13A, 14B and 15C:
 
 1. **Verified prerequisite:** CORE-01 eligible ranged targeting. Scope is the targeting failure, deterministic behavior and integrated verification.
 2. **Completed system: SYS-01 energy, planning-selected abilities, cooldowns, stance constraints and facing.** Complete the agreed prototype, including needed dependencies, before advancing to the next system. Acceptance: define gain/spend/activation timing and chosen active/passive behavior; implement persistent energy and cooldowns; let the player select active abilities during planning without compulsory per-unit click-through; enforce Brace/Charge stances, side/back facing and approximately two-thirds advancing battle movement; demonstrate charge -> spend -> recover over multiple rounds in the browser; verify both factions use the same rules through meaningful rule checks and seeded AI/replay runs. The full MVP package was approved on 2026-09-29 and implemented; see ABILITY_PROPOSAL.md and SYS01_VERIFICATION.md. Existing persistent tile orders are dependencies only where this scope requires them.
-3. **Active next system: SYS-02 card circulation, capacity, reserves and recycling.** Acceptance: confirm return/repayment/state rules; implement useful choices at population and hand limits; preserve optional combinations and weighted population; verify the browser flow and report blocked draws, resource use and strategic alternatives in seeded simulations.
-4. **Core match pacing:** CORE-02 and CORE-03 remain blockers to unrelated expansion. Investigate and resolve them within the relevant system where necessary; experiments can proceed throughout. Scott selects changes to default balance.
+3. **Completed system: SYS-02 card circulation, capacity, reserves and recycling.** Approved shared one-cycle allowance, same-type/rarity/grade replacement, full invested refund, unpaid recipe pricing, fresh repurchase, hand-slot requirement and overflow banking are implemented and verified. Optional triples and weighted population remain. See SYS02_VERIFICATION.md for tests, browser flow and paired simulations. Capacity pressure remains a measured limitation.
+4. **Active next: core match pacing:** CORE-02 and CORE-03 remain blockers to unrelated expansion. Investigate and resolve them within the relevant system where necessary; experiments can proceed throughout. Scott selects changes to default balance.
 5. **Deferred:** automatic ability prioritization, remaining persistent-order UI, art/readability polish, new classes, campaign and multiplayer expansion. Move a deferred item into the active system when it is a necessary dependency and record why.
 
 Evaluate balance experiments on match completion, duration, faction viability, success of different strategies and meaningful decisions at capacity. A lower draw rate alone is not enough. Numerical targets and test coverage thresholds remain to be defined; do not fabricate them as confirmed requirements.
@@ -45,7 +45,7 @@ Evaluate balance experiments on match completion, duration, faction viability, s
 
 - SYS-01 package is approved and implemented. Automatic priority editing and future Cavalier flank-seeking movement remain deferred.
 - What observable outcomes define an acceptable match: expected duration, tolerable draw rate and meaningful choices at capacity?
-- Which selling/recycling and card repayment/state rules should SYS-02 implement?
+- What attacking counterplay and simultaneous/mutual-victory semantics should CORE-02/CORE-03 adopt? Population progression and paid rerolls remain deferred.
 
 These are open decisions, not permission to invent new gameplay direction.
 
@@ -55,4 +55,6 @@ Scott explicitly replaced automatic ability prioritization with planning-selecte
 
 Follow-up answers 22A, 23B, 24A with energy exception, 25A with movement rotation, 26B and 27A confirm the selection/facing/stance rules above. Future Cavalier auto-battle AI should prefer flanks; do not treat that future preference as a reason to reopen automatic ability prioritization.
 
-SYS-01 completed on 2026-09-29 with rule checks, browser evidence and seeded replay verification. Continue with SYS-02 after confirming its strategic return/repayment/state rules; core pacing and simultaneous victory remain open.
+SYS-01 completed on 2026-09-29 with rule checks, browser evidence and seeded replay verification. SYS-02 is now also implemented and verified. Next, investigate keep pressure with paired, side-swapped experiments; report completion, duration, captures and capacity decisions for Scott to choose defaults. Core pacing and simultaneous victory remain open.
+
+SYS-02 decision clarification (2026-09-29): bench units are already paid; cycling refunds actual investment and returns an unpaid random replacement of equal type, rarity and stars. One shared free cycle per turn; bench cycling requires a free hand slot. Replacement prices follow the three-copy recipe; repurchase resets combat state. Full refunds may exceed the bank cap. All current rarities are common; future population-level progression is deferred. These approvals replace the earlier open recycling questions.

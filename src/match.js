@@ -19,13 +19,13 @@
 import { W, H, LAYOUT, inBounds, terrainAt } from './board.js';
 import { MOVE_COST, MOVE_TYPE, computeRange } from './rules.js';
 import { forecast, weaponOf } from './combat.js';
-import { CARD_LIMITS, UNIT_CARDS, SKILL_CARDS, createCardState, drawOpeningHand, refreshRound, recruitUnit, canDeployReserve, seededRandom } from './cards.js';
+import { CARD_LIMITS, UNIT_CARDS, SKILL_CARDS, createCardState, drawOpeningHand, refreshRound, recruitUnit, canDeployReserve, seededRandom, cycleCard } from './cards.js';
 import { advanceAbilityRound, initializeAbilityState, queueSpell, cancelSpell, activatePhase, paidBundleReady, validateAbilitySelection, facingFromPath, FACING, battleMovement, ABILITY_RULES, ABILITIES, resolveQueuedSpells, equipTypeSkill, transferTypeSkill, skillsForUnitType } from './abilities.js';
 import { previewUpgrade, combineUnits } from './upgrades.js';
 import { resolveBattleRound, selectAttackTarget } from './battle.js';
-import { UNITS, createRecruitUnit, createHeroRespawnData } from './roster.js';
+import { UNITS, createRecruitUnit, createHeroRespawnData, createGradedRecruitUnit } from './roster.js';
 
-export const SCHEMA = 2;
+export const SCHEMA = 3;
 // Prototype pacing values (GAME.md "Decisions to tune"). Logged in every header.
 export const RULES = Object.freeze({
   heroRespawnDelay: 2, // rounds after the champion's death before it can return
@@ -62,7 +62,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
     const rng = seededRandom(f === 'blue' ? seed : (seed ^ 0x5a5a5a5a) + 0x1057b11);
     const cards = drawOpeningHand(createCardState({ population: 0 }), rng).state;
     sides[f] = { cards, rng, loadouts: {}, queuedSpellCards: {}, heroRespawnAt: null,
-      stats: { recruited: {}, spells: {}, skills: 0, deployed: 0, withdrawn: 0, combined: 0, lost: {}, killed: {}, supplySpent: 0, captures: 0, respawns: 0, blockedDraws: 0, abilities: {}, abilitySkips: {}, energySpent: 0, energyCapped: 0 } };
+      stats: { recruited: {}, spells: {}, skills: 0, deployed: 0, withdrawn: 0, combined: 0, lost: {}, killed: {}, supplySpent: 0, captures: 0, respawns: 0, blockedDraws: 0, abilities: {}, abilitySkips: {}, energySpent: 0, energyCapped: 0, cycles: {hand:0,bench:0}, supplyRefunded: 0 } };
   }
   const m = { seed, maxRounds, round: 1, phase: 'planning', over: false, winner: null, reason: null, units, territory, sides, seq: 0 };
 
@@ -71,6 +71,8 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       stance: u.stance || UNIT_CARDS[u.cls]?.defaultStance || (u.cls === 'archer' ? 'hold' : 'advance'),
       selectedAbilities: u.selectedAbilities || [],
     }));
+    u.costPaid=u.costPaid??0;
+    u.rarity=u.rarity??UNIT_CARDS[u.cls]?.rarity??'common';
     u.state = 'field';
     u.population = u.population ?? 1;
     u.planningMoved = false;
@@ -137,11 +139,22 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       side.cards.population = population(f);
       const res = recruitUnit(side.cards, cardId);
       if (!res.ok) return fail(res.reason);
-      const reserve = { ...res.reserve, faction: f, id: `${f}-r${++m.seq}-${res.reserve.unitId}` };
+      const id=`${f}-r${++m.seq}-${res.reserve.unitId}`;
+      const graded=createGradedRecruitUnit(res.reserve.unitId,id,f,res.reserve.stars);
+      const reserve={...graded,...res.reserve,id,faction:f,state:'reserve',hp:graded.maxHp,maxHp:graded.maxHp};delete reserve.c;delete reserve.r;
       side.cards = { ...res.state, reserves: [...res.state.reserves.slice(0, -1), reserve] };
       side.stats.recruited[reserve.unitId] = (side.stats.recruited[reserve.unitId] || 0) + 1;
       side.stats.supplySpent += res.supplySpent;
       return { ok: true, reserveId: reserve.id, unitId: reserve.unitId };
+    },
+    cycle({faction:f,source,id}) {
+      const side=sides[f];
+      side.cards.population=population(f);
+      const result=cycleCard(side.cards,{source,id},side.rng);
+      if(!result.ok) return fail(result.reason);
+      side.cards=result.state;
+      side.stats.cycles[source]+=1;side.stats.supplyRefunded+=result.refund;
+      return {ok:true,replacement:result.replacement,refund:result.refund,populationFreed:result.populationFreed};
     },
     deploy({ faction: f, reserveId, c, r }) {
       const side = sides[f];
@@ -152,7 +165,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       const id = reserve.fieldId && !byId(reserve.fieldId) ? reserve.fieldId : `${f}-u${++m.seq}-${reserve.unitId}`;
       const unit = createRecruitUnit(reserve.unitId, id, f, c, r, { stance: UNIT_CARDS[reserve.unitId]?.defaultStance });
       // A reserve may carry more than the class template: combined stars and stats, hurt HP, stored energy.
-      const carried = Object.fromEntries(Object.entries(reserve).filter(([k, v]) => v != null && !['id', 'fieldId', 'state', 'faction', 'c', 'r', 'costPaid', 'unitId'].includes(k)));
+      const carried = Object.fromEntries(Object.entries(reserve).filter(([k, v]) => v != null && !['id', 'fieldId', 'state', 'faction', 'c', 'r', 'unitId'].includes(k)));
       Object.assign(unit, carried);
       Object.assign(unit, initializeAbilityState(unit));
       unit.id = id; unit.faction = f; unit.c = c; unit.r = r; unit.state = 'field'; unit.planningMoved = false;
@@ -524,7 +537,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
     const byClass = {};
     for (const u of field) byClass[`${u.cls}${(u.stars || 1) > 1 ? `*${u.stars}` : ''}`] = (byClass[`${u.cls}${(u.stars || 1) > 1 ? `*${u.stars}` : ''}`] || 0) + 1;
     return {
-      supply: side.cards.supply, population: population(f), hand: side.cards.hand.map((c) => c.id),
+      cyclesRemaining:side.cards.cyclesRemaining, handState:clone(side.cards.hand), supply: side.cards.supply, population: population(f), hand: side.cards.hand.map((c) => c.id),
       reserves: side.cards.reserves.map((u) => u.unitId), field: byClass, units: field.length,
       hp: field.reduce((s, u) => s + u.hp, 0), maxHp: field.reduce((s, u) => s + u.maxHp, 0),
       energy: field.reduce((s, u) => s + (u.energy || 0), 0),

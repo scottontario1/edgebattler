@@ -6,7 +6,7 @@ import { W, H, TERRAIN, inBounds, terrainAt, toWorld, tileTop } from './map.js';
 import { portraitSVG } from './portraits.js';
 import { forecast, weaponOf } from './combat.js';
 import { MOVE_COST, MOVE_TYPE, key, unkey, computeRange } from './rules.js';
-import { CARD_LIMITS, UNIT_CARDS, SPELL_CARDS, SKILL_CARDS, canAfford } from './cards.js';
+import { CARD_LIMITS, UNIT_CARDS, SPELL_CARDS, SKILL_CARDS, canAfford, previewCycle } from './cards.js';
 import { findUpgradeMatches, previewUpgrade } from './upgrades.js';
 import { RULES } from './match.js';
 import { stanceIcon, STANCE_LABEL, STANCE_HINT } from './ui/icons.js';
@@ -289,6 +289,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
   const armyRecords = () => match.armyRecords('blue');
 
   function renderPlanning() {
+    const selectedReserve=blue().cards.reserves.find(u=>u.id===state.selectedReserveId);
     const selectedCard = blue().cards.hand.find((item) => item.instanceId === state.selectedCardId);
     const affordable = (cost) => canAfford(blue().cards, cost);
     const queued = (blue().cards.queuedSpells || []).map((cast) => {
@@ -328,13 +329,13 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     const m = {
       supply: blue().cards.supply, population: blue().cards.population, populationCap: CARD_LIMITS.populationCap,
       reserveCount: blue().cards.reserves.length, reserveCapacity: CARD_LIMITS.reserveCapacity,
-      locations: controlledCount, prompt, phase: state.phase, collapsed: state.trayCollapsed,
+      cyclesRemaining:blue().cards.cyclesRemaining, locations: controlledCount, prompt, phase: state.phase, collapsed: state.trayCollapsed,
       hand: handHTML({
         hand: blue().cards.hand, selectedCardId: state.selectedCardId, canAfford: affordable,
         portraitFor: (item) => portraitSVG(units.list.find((entry) => entry.data.cls === item.unitId)?.data || createRecruitUnit(item.unitId, `preview-${item.unitId}`, 'blue', 0, 0)),
       }),
       reserves: reservesHTML({ reserves: blue().cards.reserves, selectedReserveId: state.selectedReserveId, definitions: UNIT_CARDS }),
-      detail: detailHTML({ selectedCard, selectedSkillType: state.selectedSkillType, skillLoadouts: blue().loadouts, canAfford: affordable }),
+      detail: detailHTML({ selectedCard, selectedReserve, cyclePreview: (selectedReserve||selectedCard)?previewCycle(blue().cards,{source:selectedReserve?'bench':'hand',id:selectedReserve?.id??selectedCard?.instanceId}):null, selectedSkillType: state.selectedSkillType, skillLoadouts: blue().loadouts, canAfford: affordable }),
       queued: queuedHTML({ queued }),
       upgrades: upgradePromptsHTML({ groups }),
       choice: upgradeChoiceHTML({ choice }),
@@ -403,13 +404,17 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
       html = btn('cancel', 'Cancel', '‹', 'Esc');
       if (state.targetId) html += btn('confirm', 'Attack', '⚔', '↵', 'primary attack');
     } else if (state.selectedReserveId) {
-      html = btn('cancelDeploy', 'Cancel deploy', '‹', 'Esc');
+      const preview=previewCycle(blue().cards,{source:'bench',id:state.selectedReserveId});
+      html=btn('cycle',`Cycle bench · +${preview.refund??0} Supply`,'↻','', '',!preview.ok);
+      html+=btn('cancelDeploy', 'Cancel deploy', '‹', 'Esc');
     } else if (state.mode === 'spellTarget') {
       html = btn('cancelCard', 'Cancel card', '‹', 'Esc');
     } else if (state.selectedCardId) {
       const card = blue().cards.hand.find((item) => item.instanceId === state.selectedCardId);
       if (card?.type === 'unit') html += btn('recruit', `Recruit · ${card.cost}`, '✚', '↵', 'primary', !canAfford(blue().cards, card.cost));
       if (card?.type === 'spell') html += btn('targetSpell', 'Choose target', '✧', '↵', 'primary');
+      const cycle=previewCycle(blue().cards,{source:'hand',id:state.selectedCardId});
+      html+=btn('cycle','Cycle card','↻','', '',!cycle.ok);
       html += btn('cancelCard', 'Clear card', '‹', 'Esc');
     } else {
       if (u) html += btn('inspect', u.faction==='blue'?'Plan abilities':'Inspect', 'ⓘ', 'I');
@@ -789,6 +794,17 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
   const commands = {
     resolve() { resolveBattle(); },
     recruit() { recruitSelectedCard(); },
+    cycle() {
+      if(state.busy||state.over||state.phase!=='player') return;
+      const source=state.selectedReserveId?'bench':'hand';
+      const id=state.selectedReserveId||state.selectedCardId;
+      const result=act({type:'cycle',source,id});
+      if(result.ok) {
+        state.selectedReserveId=null;state.selectedCardId=result.replacement.instanceId;state.mode='idle';
+        state.notice=`Drew ${result.replacement.name} (${result.replacement.rarity}${result.replacement.type==='unit'?', '+result.replacement.stars+'★':''}).${source==='bench'?' Refunded '+result.refund+' Supply and freed '+result.populationFreed+' population. Replacement must be purchased.':''} Cycle used this turn.`;
+      } else state.notice=`Cannot cycle: ${result.reason.replaceAll('-',' ')}. Nothing changed.`;
+      refresh();
+    },
     equipSkill() { equipSelectedSkill(); },
     // Advance -> Hold -> Protect (Brenna) -> Advance. Brenna herself has no one to protect.
     stance() {

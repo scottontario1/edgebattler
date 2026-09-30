@@ -8,10 +8,11 @@
 // deployed nearest the front), heuristic (all card types, stances, withdraw, combine; tunable).
 import { LAYOUT } from '../board.js';
 import { computeRange, MOVE_COST, MOVE_TYPE } from '../rules.js';
-import { UNIT_CARDS, CARD_LIMITS } from '../cards.js';
+import { UNIT_CARDS, CARD_LIMITS, previewCycle } from '../cards.js';
 import { findUpgradeMatches } from '../upgrades.js';
 
 export const DEFAULT_PARAMS = Object.freeze({
+  cycling: true,       // set false for matched-seed circulation comparisons
   mix: { pikeman: 0.5, archer: 0.3, cavalier: 0.2 }, // target share of the recruit army
   mendBelow: 0.6,       // Mend a unit under this HP ratio (and missing at least 6 HP)
   retreatBelow: 0.3,    // withdraw / fall back under this HP ratio
@@ -126,6 +127,24 @@ export function heuristic(m, f, { act, params = {} }) {
     const equipped = (t) => (side().loadouts[t] || []).some((x) => x.id === skill.skillId);
     const type = Object.entries(counts).filter(([t]) => !equipped(t)).sort((a, b) => b[1] - a[1])[0]?.[0];
     if (type) act({ type: 'equip', faction: f, cardId: skill.instanceId, unitType: type });
+  }
+
+  // Use the same one-per-round cycling action as the player, preserving duplicates.
+  if(P.cycling && side().cards.cyclesRemaining>0) {
+    const hurt=side().cards.reserves.find(u=>u.hp!=null&&u.hp/u.maxHp<P.retreatBelow
+      && previewCycle(side().cards,{source:'bench',id:u.id}).ok);
+    if(hurt) act({type:'cycle',faction:f,source:'bench',id:hurt.id});
+    else {
+      const unwanted=hand().find(c=> {
+        if(!previewCycle(side().cards,{source:'hand',id:c.instanceId}).ok) return false;
+        if(c.type==='skill') return ['pikeman','archer','cavalier'].every(cls=>(side().loadouts[cls]||[]).some(s=>s.id===c.skillId));
+        if(c.type==='spell') return c.id==='spell-mend'&&mine().every(u=>u.hp===u.maxHp);
+        const owned=m.armyRecords(f).filter(u=>u.cls===c.unitId&&(u.stars||1)===(c.stars||1)).length;
+        const duplicates=hand().filter(o=>o.unitId===c.unitId&&o.stars===c.stars).length;
+        return owned+duplicates<3 && (c.cost>supply()||owned/Math.max(1,m.armyRecords(f).length)>(P.mix[c.unitId]||0));
+      });
+      if(unwanted) act({type:'cycle',faction:f,source:'hand',id:unwanted.instanceId});
+    }
   }
 
   // 5. Redeploy rested reserves, then recruit toward the target mix.

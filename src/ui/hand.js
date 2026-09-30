@@ -6,6 +6,7 @@
 // Card family: a 3px top edge in the card-type colour (unit blue, spell violet, skill gold),
 // a portrait/glyph block on the left, a cost gem top-right, the name and a two-line effect.
 import { esc, uniqueIds } from './util.js';
+import { UNIT_CARDS } from '../cards.js';
 import { skillsForUnitType } from '../abilities.js';
 
 export const SKILL_TYPES = [['pikeman', 'Pikeman'], ['archer', 'Archer'], ['cavalier', 'Cavalier']];
@@ -54,7 +55,7 @@ export function handHTML(m) {
     const full = unit ? `${item.class} · ${item.stars} star · Range ${item.range}` : item.effect;
     return `<button class="plan-card ${esc(item.type)}-card${selected ? ' selected' : ''}${affordable ? '' : ' unaffordable-card'}" data-card-id="${esc(item.instanceId)}" aria-pressed="${selected}">
         <span class="plan-face ${unit ? 'portrait' : 'glyph'}">${face}${affordable ? '' : '<span class="unaffordable">Short</span>'}</span>
-        <span class="plan-card-copy"><span class="plan-kind">${KIND_LABEL[kind]}</span><b title="${esc(item.name)}">${esc(item.name)}</b><small title="${esc(full)}">${detail}</small></span>
+        <span class="plan-card-copy"><span class="plan-kind" title="${esc(item.rarity||'common')} rarity">${KIND_LABEL[kind]}</span><b title="${esc(item.name)}">${esc(item.name)}</b><small title="${esc(full)}">${detail}</small></span>
         ${costBadge(item.cost, affordable)}
       </button>`;
   }).join('');
@@ -85,7 +86,14 @@ export function reservesHTML(m) {
  */
 export function detailHTML(m) {
   const c = m.selectedCard;
-  if (!c) return '';
+  const p=m.cyclePreview;
+  const reason={'cycle-used':'Cycle used this turn','hand-full':'Free a hand slot to cycle a bench unit','no-matching-pool':'No matching rarity/type in the pool'}[p?.reason]||p?.reason?.replaceAll('-',' ');
+  const cycleControl=p?`<button class="cycle-control" data-act="cycle" ${p.ok?'':'disabled'} title="${esc(reason||'One random replacement; the same identity may return')}">↻ Cycle${m.selectedReserve?' · +'+(p.refund||0)+' Supply':''}</button>`:'';
+  if(m.selectedReserve) {
+    const u=m.selectedReserve,name=UNIT_CARDS[u.unitId]?.name||u.unitId;
+    return `<div class="plan-detail unit-detail"><div class="plan-detail-text"><b>${esc(name)} · ${u.stars||1}★ · ${esc(u.rarity||'common')}</b><span class="effect"> Paid bench unit. Deploy without paying again, or cycle for full refund. Replacement is unpaid and starts fresh.</span><small class="hint">${p?.ok?'Refund '+p.refund+' Supply; free '+p.populationFreed+' population. Same rarity and stars.':esc(reason||'')}</small></div>${cycleControl}</div>`;
+  }
+  if(!c) return '';
   const unit = c.type === 'unit';
   const skill = c.type === 'skill';
   const effect = unit ? `${c.class} · ${c.stars} star · ${c.range} range · default ${c.defaultStance}` : c.effect;
@@ -98,9 +106,9 @@ export function detailHTML(m) {
     const why = short ? `Not enough Supply: ${c.name} costs ${c.cost}` : alreadyEquipped ? `${c.name} is already equipped for ${typeLabel(m.selectedSkillType)}` : `Equip ${c.name} for every ${typeLabel(m.selectedSkillType)} (${c.cost} Supply)`;
     controls = `<label class="skill-equip-label"><span>Equip for</span><select data-skill-unit-type aria-label="Unit type to equip ${esc(c.name)} for">${skillSelect}</select></label><button class="skill-equip" data-act="equipSkill" title="${esc(why)}"${short || alreadyEquipped ? ' disabled' : ''}>Equip <span class="equip-cost">· ${c.cost}<span class="wide"> Supply</span></span></button>`;
   }
-  const hint = unit ? '<small class="hint">Recruit to the reserve bench; deploy from a controlled keep or village.</small>'
+  const hint = unit ? '<small class="hint">Recruit to the paid bench; deploy near controlled locations. Cycling keeps rarity and stars.</small>'
     : skill ? '' : `<small class="hint">Target: ${esc(c.target)} · ${esc(c.duration)}</small>`;
-  return `<div class="plan-detail ${esc(c.type)}-detail"><div class="plan-detail-text" title="${esc(`${c.name}: ${effect}`)}"><b>${esc(c.name)}</b> <span class="effect">${esc(effect)}</span>${hint}</div>${controls}</div>`;
+  return `<div class="plan-detail ${esc(c.type)}-detail"><div class="plan-detail-text" title="${esc(`${c.name}: ${effect}`)}"><b>${esc(c.name)}</b> <span class="effect">${esc(effect)}</span>${hint}<small class="hint">${esc(c.rarity||'common')} rarity${reason?' · '+esc(reason):' · Random replacement of the same type'}</small></div>${controls}${cycleControl}</div>`;
 }
 
 /**

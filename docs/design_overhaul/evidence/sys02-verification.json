@@ -1,0 +1,88 @@
+{
+  "date": "2026-09-29",
+  "baseline": "df216a6",
+  "schema": 3,
+  "seeds": "1–50, both policy side assignments",
+  "maxRounds": 30,
+  "policies": "heuristic vs greedy; heuristic cycling enabled vs disabled",
+  "simulation": {
+    "on": {
+      "games": 100,
+      "winners": {
+        "blue": 2,
+        "red": 9,
+        "draw": 89
+      },
+      "meanRounds": 29.19,
+      "replayFailures": 0,
+      "means": {
+        "blocked_draws": {
+          "heuristic": 64.78,
+          "greedy": 73.56
+        },
+        "supply_spent": {
+          "heuristic": 27.73,
+          "greedy": 17.8
+        },
+        "hand_cycles": {
+          "heuristic": 9.84,
+          "greedy": 0
+        },
+        "bench_cycles": {
+          "heuristic": 0,
+          "greedy": 0
+        },
+        "supply_refunded": {
+          "heuristic": 0,
+          "greedy": 0
+        },
+        "final_supply": {
+          "heuristic": 5.94,
+          "greedy": 5.96
+        }
+      }
+    },
+    "off": {
+      "games": 100,
+      "winners": {
+        "blue": 6,
+        "red": 5,
+        "draw": 89
+      },
+      "meanRounds": 29.37,
+      "replayFailures": 0,
+      "means": {
+        "blocked_draws": {
+          "heuristic": 65.82,
+          "greedy": 74.05
+        },
+        "supply_spent": {
+          "heuristic": 27.01,
+          "greedy": 17.77
+        },
+        "hand_cycles": {
+          "heuristic": 0,
+          "greedy": 0
+        },
+        "bench_cycles": {
+          "heuristic": 0,
+          "greedy": 0
+        },
+        "supply_refunded": {
+          "heuristic": 0,
+          "greedy": 0
+        },
+        "final_supply": {
+          "heuristic": 5.95,
+          "greedy": 5.87
+        }
+      }
+    }
+  },
+  "browser": {
+    "file": "2026-09-30T03-03-41-235Z-seed4281160.jsonl",
+    "replay": true,
+    "rounds": 1,
+    "cycleActions": 1
+  }
+}

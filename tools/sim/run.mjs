@@ -54,6 +54,7 @@ export function playGame(seed, sides) {
         [`${f}_combined`, s[f].combined], [`${f}_withdrawn`, s[f].withdrawn], [`${f}_lost`, sum(s[f].lost)], [`${f}_killed`, sum(s[f].killed)],
         [`${f}_captures`, s[f].captures], [`${f}_respawns`, s[f].respawns], [`${f}_supply_spent`, s[f].supplySpent],
         [`${f}_ability_uses`, sum(s[f].abilities)], [`${f}_ability_skips`, sum(s[f].abilitySkips)], [`${f}_energy_spent`, s[f].energySpent], [`${f}_energy_capped`, s[f].energyCapped],
+        [`${f}_hand_cycles`, s[f].cycles.hand], [`${f}_bench_cycles`, s[f].cycles.bench], [`${f}_supply_refunded`, s[f].supplyRefunded],
         [`${f}_blocked_draws`, s[f].blockedDraws], [`${f}_final_units`, fin[f].units], [`${f}_final_hp`, fin[f].hp],
         [`${f}_final_territory`, fin[f].territory], [`${f}_final_supply`, fin[f].supply],
       ])),

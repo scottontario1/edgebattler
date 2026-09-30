@@ -26,7 +26,7 @@ export function trayHTML(m) {
       <div class="ledger-cell supply-readout"><span class="ledger-label">Supply</span><span class="ledger-value">${gem}<b>${m.supply}</b></span></div>
       <div class="ledger-cell population-readout${popState}"><span class="ledger-label">Population</span><span class="ledger-value"><b>${m.population}/${m.populationCap}</b><span class="pop-meter" role="meter" aria-label="Population" aria-valuemin="0" aria-valuemax="${cap}" aria-valuenow="${m.population}"><i style="width:${(ratio * 100).toFixed(1)}%"></i></span></span></div>
       <div class="ledger-cell reserve-readout${reserveFull}"><span class="ledger-label">Reserve</span><span class="ledger-value"><b>${m.reserveCount}/${m.reserveCapacity}</b></span></div>
-      <div class="ledger-cell locations-readout"><span class="ledger-label">Locations</span><span class="ledger-value"><b>${m.locations}</b></span></div>
+      <div class="ledger-cell locations-readout"><span class="ledger-label">Cycle</span><span class="ledger-value"><b>${m.cyclesRemaining}/1</b></span></div>
       <div class="plan-prompt${battle ? ' battle' : ''}" title="${esc(promptText)}">${esc(promptText)}</div>
       <button type="button" class="tray-toggle" data-act="toggleTray" aria-expanded="${!collapsed}" aria-controls="planning-body" aria-label="${collapsed ? 'Expand' : 'Collapse'} planning tray" title="${collapsed ? 'Expand' : 'Collapse'} planning tray"${battle ? ' disabled' : ''}>${chevron}</button>
     </div>

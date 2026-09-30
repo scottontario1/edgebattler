@@ -1,7 +1,9 @@
+import {UPGRADE_MAX_STARS,UPGRADE_POPULATION_BY_STARS} from './upgrades.js';
 /** Prototype card economy rules. Pure data helpers; rendering and board occupancy stay in callers. */
 
 export const CARD_LIMITS = Object.freeze({
   hand: 8,
+  cyclesPerRound: 1,
   openingHand: 5,
   laterDraw: 3,
   initialSupply: 3,
@@ -13,20 +15,20 @@ export const CARD_LIMITS = Object.freeze({
 
 /** Stable recruitment identities correspond to RECRUIT in src/units.js. */
 export const UNIT_CARDS = Object.freeze({
-  pikeman: Object.freeze({ id: 'unit-pikeman', type: 'unit', unitId: 'pikeman', name: 'Pikeman', cost: 1, class: 'Foot', stars: 1, range: 1, defaultStance: 'advance', ability: 'Advances into melee to hold the frontline; proposed anti-cavalry specialist.', population: 1 }),
-  archer: Object.freeze({ id: 'unit-archer', type: 'unit', unitId: 'archer', name: 'Archer', cost: 2, class: 'Foot', stars: 1, range: 2, defaultStance: 'hold', ability: 'Ranged support; cannot counter adjacent attackers.', population: 1 }),
-  cavalier: Object.freeze({ id: 'unit-cavalier', type: 'unit', unitId: 'cavalier', name: 'Cavalier', cost: 3, typeLabel: 'Mounted', class: 'Mounted', stars: 1, range: 1, defaultStance: 'advance', ability: 'Mobile mounted unit; presses reinforcement points.', population: 1 }),
+  pikeman: Object.freeze({ id: 'unit-pikeman', type: 'unit', rarity: 'common', unitId: 'pikeman', name: 'Pikeman', cost: 1, class: 'Foot', stars: 1, range: 1, defaultStance: 'advance', ability: 'Advances into melee to hold the frontline; proposed anti-cavalry specialist.', population: 1 }),
+  archer: Object.freeze({ id: 'unit-archer', type: 'unit', rarity: 'common', unitId: 'archer', name: 'Archer', cost: 2, class: 'Foot', stars: 1, range: 2, defaultStance: 'hold', ability: 'Ranged support; cannot counter adjacent attackers.', population: 1 }),
+  cavalier: Object.freeze({ id: 'unit-cavalier', type: 'unit', rarity: 'common', unitId: 'cavalier', name: 'Cavalier', cost: 3, typeLabel: 'Mounted', class: 'Mounted', stars: 1, range: 1, defaultStance: 'advance', ability: 'Mobile mounted unit; presses reinforcement points.', population: 1 }),
 });
 
 export const SPELL_CARDS = Object.freeze({
-  mend: Object.freeze({ id: 'spell-mend', type: 'spell', name: 'Mend', cost: 1, target: 'friendly-unit', duration: 'instant', effect: 'Restore 8 HP, up to maximum HP.' }),
-  ward: Object.freeze({ id: 'spell-ward', type: 'spell', name: 'Ward', cost: 1, target: 'friendly-unit', duration: 'upcoming-battle', effect: 'Protect one friendly unit during the upcoming battle.' }),
-  fireburst: Object.freeze({ id: 'spell-fireburst', type: 'spell', name: 'Fireburst', cost: 2, target: 'enemy-area', duration: 'instant', effect: 'Deal 6 damage to enemies in the selected area.' }),
+  mend: Object.freeze({ id: 'spell-mend', type: 'spell', rarity: 'common', name: 'Mend', cost: 1, target: 'friendly-unit', duration: 'instant', effect: 'Restore 8 HP, up to maximum HP.' }),
+  ward: Object.freeze({ id: 'spell-ward', type: 'spell', rarity: 'common', name: 'Ward', cost: 1, target: 'friendly-unit', duration: 'upcoming-battle', effect: 'Protect one friendly unit during the upcoming battle.' }),
+  fireburst: Object.freeze({ id: 'spell-fireburst', type: 'spell', rarity: 'common', name: 'Fireburst', cost: 2, target: 'enemy-area', duration: 'instant', effect: 'Deal 6 damage to enemies in the selected area.' }),
 });
 
 // First transferable type-wide skill prototype. Its timing/value are explicit and tunable.
 export const SKILL_CARDS = Object.freeze({
-  barrier: Object.freeze({ id: 'skill-barrier', type: 'skill', skillId: 'barrier', name: 'Barrier', cost: 2, target: 'unit-type', duration: 'persistent', blockDamage: 2, effect: 'All friendly units of this type reduce incoming damage by 2 per battle.' }),
+  barrier: Object.freeze({ id: 'skill-barrier', type: 'skill', rarity: 'common', skillId: 'barrier', name: 'Barrier', cost: 2, target: 'unit-type', duration: 'persistent', blockDamage: 2, effect: 'All friendly units of this type reduce incoming damage by 2 per battle.' }),
 });
 
 // Repeated entries represent relative weights in the shared pool.
@@ -48,11 +50,11 @@ export function seededRandom(seed = 1) {
 }
 
 const copy = (value) => structuredClone(value);
-const cardFor = (key) => UNIT_CARDS[key] ?? SPELL_CARDS[key] ?? SKILL_CARDS[key] ?? null;
+export const cardFor = (key) => UNIT_CARDS[key] ?? SPELL_CARDS[key] ?? SKILL_CARDS[key] ?? null;
 
 /** Create a fresh match inventory. `cards` defaults to an empty hand. */
-export function createCardState({ supply = CARD_LIMITS.initialSupply, hand = [], reserves = [], population = 0 } = {}) {
-  return { supply: Math.max(0, Math.min(CARD_LIMITS.maxSupply, supply)), hand: copy(hand), reserves: copy(reserves), population, cardSequence: hand.length };
+export function createCardState({ cyclesRemaining = CARD_LIMITS.cyclesPerRound, supply = CARD_LIMITS.initialSupply, hand = [], reserves = [], population = 0 } = {}) {
+  return { cyclesRemaining, supply: Math.max(0, Math.min(CARD_LIMITS.maxSupply, supply)), hand: copy(hand), reserves: copy(reserves), population, cardSequence: hand.length };
 }
 
 /** Draw into free hand slots without removing retained cards; opening draw defaults to five. */
@@ -76,7 +78,7 @@ export function drawCards(state, rng = seededRandom(1), count = CARD_LIMITS.open
 /** Opening draw helper (five); later round helper grants Supply and requests three draws. */
 export function drawOpeningHand(state, rng = seededRandom(1)) { return drawCards(state, rng, CARD_LIMITS.openingHand); }
 export function refreshRound(state, rng = seededRandom(1)) {
-  const refreshed = { ...copy(state), supply: Math.min(CARD_LIMITS.maxSupply, state.supply + CARD_LIMITS.supplyPerRound) };
+  const refreshed = { ...copy(state), cyclesRemaining: CARD_LIMITS.cyclesPerRound, supply: state.supply + Math.max(0,Math.min(CARD_LIMITS.supplyPerRound,CARD_LIMITS.maxSupply-state.supply)) };
   return { ...drawCards(refreshed, rng, CARD_LIMITS.laterDraw), supplyGranted: refreshed.supply - state.supply };
 }
 
@@ -92,16 +94,19 @@ export function recruitUnit(state, cardInstanceId, { populationCap = CARD_LIMITS
   const definition = card?.type === 'unit' ? UNIT_CARDS[card.unitId] : null;
   const fail = (reason) => ({ ok: false, reason, state });
   if (!definition) return fail('unit-card-not-found');
-  if (!canAfford(state, definition.cost)) return fail('insufficient-supply');
+  const stars=card?.stars??1;
+  if(!Number.isInteger(stars)||stars<1||stars>UPGRADE_MAX_STARS) return fail('invalid-star-grade');
+  const population=UPGRADE_POPULATION_BY_STARS[stars];
+  if (!canAfford(state, card.cost)) return fail('insufficient-supply');
   if (state.reserves.length >= reserveCapacity) return fail('reserve-capacity');
-  if (state.population + definition.population > populationCap) return fail('population-cap');
+  if (state.population + population > populationCap) return fail('population-cap');
   const next = copy(state);
   next.hand.splice(index, 1);
-  next.supply -= definition.cost;
-  const reserve = { id: `reserve-${card.instanceId}`, unitId: definition.unitId, classId: definition.unitId, variantId: definition.unitId, faction: 'blue', stars: definition.stars, costPaid: definition.cost, population: definition.population, state: 'reserve', hp: null, maxHp: null };
+  next.supply -= card.cost;
+  const reserve = { id: `reserve-${card.instanceId}`, unitId: definition.unitId, classId: definition.unitId, variantId: definition.unitId, faction: 'blue', rarity: card.rarity??definition.rarity, stars, costPaid: card.cost, population, state: 'reserve', hp: null, maxHp: null };
   next.reserves.push(reserve);
-  next.population += definition.population;
-  return { ok: true, state: next, reserve: copy(reserve), supplySpent: definition.cost, populationDelta: definition.population };
+  next.population += population;
+  return { ok: true, state: next, reserve: copy(reserve), supplySpent: card.cost, populationDelta: population };
 }
 
 /** Validate a reserve deployment. `location` is controlled and `tile` describes the proposed board tile. */
@@ -123,4 +128,44 @@ export function projectPopulation(state, action, reserveId) {
   }
   if (action === 'deploy') return { current: state.population, delta: 0, projected: state.population, cap: CARD_LIMITS.populationCap };
   return { current: state.population, delta: 0, projected: state.population, cap: CARD_LIMITS.populationCap };
+}
+
+/** Preview does not touch inventory or RNG. A full hand blocks bench cycling without losing value. */
+export function previewCycle(state,{source,id}) {
+  const fail=reason=>({ok:false,reason});
+  if((state.cyclesRemaining??0)<=0) return fail('cycle-used');
+  if(!['hand','bench'].includes(source)) return fail('invalid-cycle-source');
+  const item=source==='hand'?state.hand.find(c=>c.instanceId===id):state.reserves.find(u=>u.id===id);
+  if(!item) return fail(source==='hand'?'card-not-found':'reserve-not-found');
+  if(source==='bench'&&state.hand.length>=CARD_LIMITS.hand) return fail('hand-full');
+  const type=source==='bench'?'unit':item.type;
+  const rarity=item.rarity??(source==='bench'?UNIT_CARDS[item.unitId]?.rarity:'common');
+  const stars=type==='unit'?(item.stars??1):null;
+  if(type==='unit'&&(!Number.isInteger(stars)||stars<1||stars>UPGRADE_MAX_STARS)) return fail('invalid-star-grade');
+  const pool=RECRUITMENT_POOL.filter(key=>cardFor(key)?.type===type&&cardFor(key)?.rarity===rarity);
+  if(!pool.length) return fail('no-matching-pool');
+  return {ok:true,type,rarity,stars,pool,refund:source==='bench'?(item.costPaid??0):0,
+    populationFreed:source==='bench'?(item.population??1):0};
+}
+/** One seeded replacement, same type/rarity/grade. Same identity may be drawn again. */
+export function cycleCard(state,action,rng) {
+  const preview=previewCycle(state,action);
+  if(!preview.ok) return {...preview,state};
+  const next=copy(state);
+  const index=Math.min(preview.pool.length-1,Math.floor(rng()*preview.pool.length));
+  const replacement=copy(cardFor(preview.pool[index]));
+  if(preview.type==='unit') {
+    replacement.stars=preview.stars;
+    replacement.population=UPGRADE_POPULATION_BY_STARS[preview.stars];
+    replacement.cost*=3**(preview.stars-1);
+  }
+  next.cardSequence=(next.cardSequence??next.hand.length)+1;
+  replacement.instanceId=`card-${next.cardSequence}-cycle`;
+  if(action.source==='hand') next.hand[next.hand.findIndex(c=>c.instanceId===action.id)]=replacement;
+  else {
+    next.reserves=next.reserves.filter(u=>u.id!==action.id);
+    next.hand.push(replacement);next.supply+=preview.refund;next.population-=preview.populationFreed;
+  }
+  next.cyclesRemaining-=1;
+  return {ok:true,state:next,replacement,refund:preview.refund,populationFreed:preview.populationFreed};
 }

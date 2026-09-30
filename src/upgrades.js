@@ -22,7 +22,7 @@ const clone = (value) => globalThis.structuredClone
   ? structuredClone(value)
   : JSON.parse(JSON.stringify(value));
 const finite = (value) => Number.isFinite(value);
-const identity = (unit) => [unit.classId ?? unit.unitId ?? unit.cls, unit.variantId ?? unit.variant ?? '', unit.faction ?? '']
+const identity = (unit) => [unit.classId ?? unit.unitId ?? unit.cls, unit.variantId ?? unit.variant ?? '', unit.faction ?? '', unit.rarity ?? 'common']
   .map(String).join('\u0000');
 const isEligible = (unit) => unit && unit.type !== 'spell' && unit.type !== 'unit-card'
   && unit.state !== 'hand' && unit.state !== 'card'
@@ -57,6 +57,7 @@ function validate(records, selectedIds) {
 function makeResult(selected, stars, survivorId, destination) {
   const survivor = selected.find((unit) => unit.id === survivorId);
   const result = clone(survivor);
+  result.costPaid=selected.reduce((sum,u)=>sum+(u.costPaid??0),0);
   result.stars = stars + 1;
   const oldMax = selected.reduce((sum, unit) => sum + (finite(unit.maxHp) && unit.maxHp > 0 ? unit.maxHp : 0), 0);
   const oldHp = selected.reduce((sum, unit) => sum + (finite(unit.hp) ? Math.max(0, unit.hp) : (finite(unit.maxHp) ? unit.maxHp : 0)), 0);

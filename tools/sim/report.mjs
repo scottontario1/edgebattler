@@ -35,7 +35,7 @@ for (const key of Object.keys(groups)) {
   const rounds = g.map((r) => r.rounds);
   console.log(`  rounds: mean ${mean(rounds).toFixed(1)}, median ${median(rounds)}, min ${Math.min(...rounds)}, max ${Math.max(...rounds)}`);
   console.log(`  end reasons: ${Object.entries(count(g.map((r) => `${r.winner}:${r.reason}`))).map(([k, v]) => `${k} ${v}`).join(', ')}`);
-  const stats = ['recruited', 'pikeman', 'archer', 'cavalier', 'spells', 'skills', 'combined', 'withdrawn', 'lost', 'killed', 'captures', 'respawns', 'supply_spent', 'blocked_draws', 'ability_uses', 'ability_skips', 'energy_spent', 'energy_capped', 'final_units', 'final_hp', 'final_territory', 'final_supply'];
+  const stats = ['recruited', 'pikeman', 'archer', 'cavalier', 'spells', 'skills', 'combined', 'withdrawn', 'lost', 'killed', 'captures', 'respawns', 'supply_spent', 'blocked_draws', 'hand_cycles', 'bench_cycles', 'supply_refunded', 'ability_uses', 'ability_skips', 'energy_spent', 'energy_capped', 'final_units', 'final_hp', 'final_territory', 'final_supply'];
   console.log(`  ${'per game (mean)'.padEnd(18)} ${'blue'.padStart(7)} ${'red'.padStart(7)}`);
   for (const s of stats) console.log(`  ${s.padEnd(18)} ${mean(g.map((r) => r[`blue_${s}`])).toFixed(2).padStart(7)} ${mean(g.map((r) => r[`red_${s}`])).toFixed(2).padStart(7)}`);
 }
