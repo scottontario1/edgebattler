@@ -43,7 +43,7 @@ Evaluate balance experiments on match completion, duration, faction viability, s
 
 ## Questions still requiring direction
 
-- SYS-01 revised by Scott: planning-selected active abilities replace automatic prioritization for the MVP; Brace forces defense, Charge requires Advance, flanking uses side/back facing, and advancing battle movement is approximately two-thirds planning movement. Selection scope/count/persistence, facing, resource commitment and concrete kit values remain open. See ABILITY_PROPOSAL.md. Earlier shared-priority decisions are deferred, not current MVP requirements.
+- SYS-01 revised by Scott: planning-selected active abilities replace automatic prioritization for the MVP; Brace forces defense, Charge requires Advance, flanking uses side/back facing, and advancing battle movement is approximately two-thirds planning movement. Confirmed follow-up: per-unit picks with group/apply-to-class controls, multiple picks in fixed phases, persistence with an out-of-energy exception, planning facing updated by movement, temporary Brace defense, pre-existing Advance for Charge, and passive side/back Cavalier flanking including Charge. Exact energy exception, affordability/resource commitment, facing algorithm and kit values remain open. See ABILITY_PROPOSAL.md. Earlier shared-priority decisions are deferred, not current MVP requirements.
 - What observable outcomes define an acceptable match: expected duration, tolerable draw rate and meaningful choices at capacity?
 - Which selling/recycling and card repayment/state rules should SYS-02 implement?
 
@@ -52,3 +52,5 @@ These are open decisions, not permission to invent new gameplay direction.
 ## Decision change: 2026-09-29
 
 Scott explicitly replaced automatic ability prioritization with planning-selected abilities for the MVP, replaced opposite-ally flanking with side/back attacks, added Brace/Charge stance constraints, and reduced advancing battle movement from a separate full allowance to approximately two-thirds of planning movement. Update implementation and verification around these rules; do not reintroduce the previous design through a later task prompt.
+
+Follow-up answers 22A, 23B, 24A with energy exception, 25A with movement rotation, 26B and 27A confirm the selection/facing/stance rules above. Future Cavalier auto-battle AI should prefer flanks; do not treat that future preference as a reason to reopen automatic ability prioritization.

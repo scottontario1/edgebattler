@@ -22,7 +22,7 @@ Acceptance: agree the attacking counterplay, run paired-seed/side-swapped experi
 
 Status: partially implemented; agreed player experience incomplete.
 No baseline energy accrues to field units; Rally costs zero and generates energy, while Barrier is an automatic passive reduction. No planning-selected energy-consuming active kit. Automatic priority editing is now deferred for the MVP. Confirmed direction requires charging over turns and sustained engagement with cooldown/energy decisions.
-Acceptance: implement agreed planning selection and gain/spend timing, expose energy/cooldowns, enforce Brace defense and Charge Advance, define/test side/back facing and reduced advancing battle movement, demonstrate charge -> spend -> recover, and verify AI uses the same rules. Selection scope/count/persistence and kit numbers await agreement; ABILITY_PROPOSAL.md is the pending revised proposal. Type-wide equipment remains distinct from per-round picks. Do not implement the superseded priority editor.
+Acceptance: implement agreed planning selection and gain/spend timing, expose energy/cooldowns, enforce Brace defense and Charge Advance, define/test side/back facing and reduced advancing battle movement, demonstrate charge -> spend -> recover, and verify AI uses the same rules. Per-unit/group picks, multiple fixed-phase abilities, persistence with an energy exception, movement-updated facing, temporary Brace defense and passive flanking are confirmed. Energy exception, affordability and kit numbers await agreement; ABILITY_PROPOSAL.md is the pending revised proposal. Type-wide equipment remains distinct from per-round picks. Do not implement the superseded priority editor.
 
 ## SYS-02: Capacity, reserves and card circulation
 
