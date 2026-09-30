@@ -13,38 +13,38 @@
    "cell": "crown-vs-base",
    "games": 400,
    "aWins": 0,
-   "bWins": 6,
-   "draws": 394,
-   "meanRounds": 29.71,
-   "keep": 6,
+   "bWins": 7,
+   "draws": 393,
+   "meanRounds": 29.7025,
+   "keep": 7,
    "wipe": 0,
-   "limit": 394,
+   "limit": 393,
    "villages": 2.1475,
-   "aUnits": 7.090532936507933,
-   "bUnits": 6.913361111111114,
-   "aForm": 1.317502710055764,
-   "bForm": 0.7698446208169786,
-   "aLost": 5.745,
-   "bLost": 7.5,
+   "aUnits": 7.091621031746031,
+   "bUnits": 6.91695932539683,
+   "aForm": 1.3220791320381224,
+   "bForm": 0.7784208914408619,
+   "aLost": 5.7675,
+   "bLost": 7.485,
    "lostDiff": {
-    "mean": 1.755,
-    "half": 0.27908931727592867
+    "mean": 1.7175,
+    "half": 0.2968548091564266
    },
    "hpDiff": {
-    "mean": 19.4775,
-    "half": 3.2604656490440873
+    "mean": 18.5025,
+    "half": 3.2454676968664335
    },
-   "aHp": 168.2175,
-   "bHp": 148.74,
-   "drawsAAhead": 291,
-   "drawsBAhead": 98,
+   "aHp": 167.0075,
+   "bHp": 148.505,
+   "drawsAAhead": 283,
+   "drawsBAhead": 104,
    "bySide": [
     {
      "aSide": "blue",
      "games": 200,
      "aWins": 0,
-     "bWins": 6,
-     "draws": 194
+     "bWins": 7,
+     "draws": 193
     },
     {
      "aSide": "red",
@@ -59,45 +59,45 @@
    "cell": "crownplain-vs-base",
    "games": 400,
    "aWins": 8,
-   "bWins": 4,
-   "draws": 388,
-   "meanRounds": 29.34,
-   "keep": 12,
+   "bWins": 6,
+   "draws": 386,
+   "meanRounds": 29.325,
+   "keep": 14,
    "wipe": 0,
-   "limit": 388,
-   "villages": 2.09,
-   "aUnits": 7.430345238095234,
-   "bUnits": 6.883080357142851,
-   "aForm": 0.7855706789580537,
-   "bForm": 0.702651868229258,
-   "aLost": 7.595,
-   "bLost": 7.515,
+   "limit": 386,
+   "villages": 2.0925,
+   "aUnits": 7.430532738095237,
+   "bUnits": 6.884330357142853,
+   "aForm": 0.7886912607478967,
+   "bForm": 0.7056844004342026,
+   "aLost": 7.5425,
+   "bLost": 7.495,
    "lostDiff": {
-    "mean": -0.08,
-    "half": 0.3459240277610912
+    "mean": -0.0475,
+    "half": 0.3455988387833803
    },
    "hpDiff": {
-    "mean": 6.65,
-    "half": 3.606090432937906
+    "mean": 5.99,
+    "half": 3.5215397577285943
    },
-   "aHp": 156.135,
-   "bHp": 149.485,
-   "drawsAAhead": 212,
-   "drawsBAhead": 172,
+   "aHp": 155.8,
+   "bHp": 149.81,
+   "drawsAAhead": 214,
+   "drawsBAhead": 168,
    "bySide": [
     {
      "aSide": "blue",
      "games": 200,
      "aWins": 0,
-     "bWins": 4,
-     "draws": 196
+     "bWins": 5,
+     "draws": 195
     },
     {
      "aSide": "red",
      "games": 200,
      "aWins": 8,
-     "bWins": 0,
-     "draws": 192
+     "bWins": 1,
+     "draws": 191
     }
    ]
   },
@@ -105,38 +105,38 @@
    "cell": "crown-vs-crownplain",
    "games": 400,
    "aWins": 0,
-   "bWins": 14,
-   "draws": 386,
-   "meanRounds": 29.455,
-   "keep": 14,
+   "bWins": 13,
+   "draws": 387,
+   "meanRounds": 29.47,
+   "keep": 13,
    "wipe": 0,
-   "limit": 386,
-   "villages": 1.985,
-   "aUnits": 7.105070180258341,
-   "bUnits": 7.539616367842688,
-   "aForm": 1.356003639565718,
-   "bForm": 0.9088168685452108,
-   "aLost": 5.1125,
-   "bLost": 6.98,
+   "limit": 387,
+   "villages": 2.015,
+   "aUnits": 7.097921450365049,
+   "bUnits": 7.5247663917318395,
+   "aForm": 1.3610447874629552,
+   "bForm": 0.905636080735238,
+   "aLost": 5.015,
+   "bLost": 7.0025,
    "lostDiff": {
-    "mean": 1.8675,
-    "half": 0.3063872429321738
+    "mean": 1.9875,
+    "half": 0.31025010425942223
    },
    "hpDiff": {
-    "mean": 6.215,
-    "half": 3.0448240110465528
+    "mean": 6.1925,
+    "half": 3.180978563796576
    },
-   "aHp": 167.9575,
-   "bHp": 161.7425,
-   "drawsAAhead": 225,
-   "drawsBAhead": 155,
+   "aHp": 168.6425,
+   "bHp": 162.45,
+   "drawsAAhead": 221,
+   "drawsBAhead": 157,
    "bySide": [
     {
      "aSide": "blue",
      "games": 200,
      "aWins": 0,
-     "bWins": 13,
-     "draws": 187
+     "bWins": 12,
+     "draws": 188
     },
     {
      "aSide": "red",
@@ -157,25 +157,25 @@
    "keep": 1,
    "wipe": 0,
    "limit": 399,
-   "villages": 1.855,
-   "aUnits": 7.1071666666666635,
-   "bUnits": 7.004500000000003,
-   "aForm": 1.4188003940661666,
-   "bForm": 1.4108673181010352,
-   "aLost": 5.4275,
-   "bLost": 6.48,
+   "villages": 1.88,
+   "aUnits": 7.104249999999996,
+   "bUnits": 6.995083333333338,
+   "aForm": 1.4133070710237272,
+   "bForm": 1.4047085909805102,
+   "aLost": 5.4325,
+   "bLost": 6.5075,
    "lostDiff": {
-    "mean": 1.0525,
-    "half": 0.27587574656692715
+    "mean": 1.075,
+    "half": 0.2640098682366168
    },
    "hpDiff": {
-    "mean": 2.6975,
-    "half": 3.1545976955114767
+    "mean": 3.765,
+    "half": 3.1373118802063997
    },
-   "aHp": 169.6075,
-   "bHp": 166.91,
-   "drawsAAhead": 216,
-   "drawsBAhead": 176,
+   "aHp": 169.41,
+   "bHp": 165.645,
+   "drawsAAhead": 217,
+   "drawsBAhead": 178,
    "bySide": [
     {
      "aSide": "blue",
@@ -203,25 +203,25 @@
    "keep": 0,
    "wipe": 0,
    "limit": 200,
-   "villages": 1.735,
-   "aUnits": 7.115333333333329,
-   "bUnits": 7.135333333333334,
-   "aForm": 1.4398352924966396,
-   "bForm": 1.4139045433907678,
-   "aLost": 5.08,
-   "bLost": 5.715,
+   "villages": 1.785,
+   "aUnits": 7.082166666666665,
+   "bUnits": 7.1683333333333294,
+   "aForm": 1.4419741486190047,
+   "bForm": 1.4184501667616112,
+   "aLost": 5.035,
+   "bLost": 5.655,
    "lostDiff": {
-    "mean": 0.635,
-    "half": 0.3548235518744834
+    "mean": 0.62,
+    "half": 0.3466730967062478
    },
    "hpDiff": {
-    "mean": 1.29,
-    "half": 3.9066460530896068
+    "mean": -3.8,
+    "half": 3.9681624217041733
    },
-   "aHp": 170.605,
-   "bHp": 169.315,
-   "drawsAAhead": 106,
-   "drawsBAhead": 90,
+   "aHp": 168.575,
+   "bHp": 172.375,
+   "drawsAAhead": 93,
+   "drawsBAhead": 103,
    "bySide": [
     {
      "aSide": "blue",

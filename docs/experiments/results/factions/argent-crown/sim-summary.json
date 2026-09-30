@@ -19,25 +19,25 @@
    "keep": 2,
    "wipe": 0,
    "limit": 398,
-   "villages": 1.215,
-   "aUnits": 7.301710144927533,
-   "bUnits": 7.32338801054019,
-   "aForm": 1.3969962986838382,
-   "bForm": 0.8719240766164117,
-   "aLost": 3.68,
-   "bLost": 3.815,
+   "villages": 1.2225,
+   "aUnits": 7.30779347826087,
+   "bUnits": 7.325721343873522,
+   "aForm": 1.394546842715674,
+   "bForm": 0.879240355658531,
+   "aLost": 3.6525,
+   "bLost": 3.8125,
    "lostDiff": {
-    "mean": 0.135,
-    "half": 0.21389348554337692
+    "mean": 0.16,
+    "half": 0.21055043651293995
    },
    "hpDiff": {
-    "mean": 6.22,
-    "half": 2.7428709958087936
+    "mean": 7.11,
+    "half": 2.653259126353652
    },
-   "aHp": 175.34,
-   "bHp": 169.12,
-   "drawsAAhead": 230,
-   "drawsBAhead": 161,
+   "aHp": 176.0825,
+   "bHp": 168.9725,
+   "drawsAAhead": 241,
+   "drawsBAhead": 152,
    "bySide": [
     {
      "aSide": "blue",
@@ -58,38 +58,38 @@
   {
    "cell": "crownplain-vs-base",
    "games": 400,
-   "aWins": 2,
-   "bWins": 1,
+   "aWins": 1,
+   "bWins": 2,
    "draws": 397,
-   "meanRounds": 29.955,
+   "meanRounds": 29.9375,
    "keep": 3,
    "wipe": 0,
    "limit": 397,
-   "villages": 1.205,
-   "aUnits": 7.749462121212129,
-   "bUnits": 7.272234848484848,
-   "aForm": 0.8962225849526025,
-   "bForm": 0.9099170590673912,
-   "aLost": 3.7525,
-   "bLost": 3.3675,
+   "villages": 1.195,
+   "aUnits": 7.755333333333339,
+   "bUnits": 7.2748333333333335,
+   "aForm": 0.8982817803819445,
+   "bForm": 0.9101863164176868,
+   "aLost": 3.75,
+   "bLost": 3.325,
    "lostDiff": {
-    "mean": -0.385,
-    "half": 0.22346953636728714
+    "mean": -0.425,
+    "half": 0.223417829001603
    },
    "hpDiff": {
-    "mean": 5.635,
-    "half": 2.7904520356939964
+    "mean": 6.8,
+    "half": 2.7867805483319668
    },
-   "aHp": 174.8425,
-   "bHp": 169.2075,
-   "drawsAAhead": 221,
-   "drawsBAhead": 169,
+   "aHp": 175.4575,
+   "bHp": 168.6575,
+   "drawsAAhead": 230,
+   "drawsBAhead": 160,
    "bySide": [
     {
      "aSide": "blue",
      "games": 200,
-     "aWins": 1,
-     "bWins": 1,
+     "aWins": 0,
+     "bWins": 2,
      "draws": 198
     },
     {
@@ -111,25 +111,25 @@
    "keep": 2,
    "wipe": 0,
    "limit": 398,
-   "villages": 1.1275,
-   "aUnits": 7.327250905797099,
-   "bUnits": 7.742145833333332,
-   "aForm": 1.4089094844740702,
-   "bForm": 0.9083516823458117,
-   "aLost": 3.12,
-   "bLost": 4.18,
+   "villages": 1.14,
+   "aUnits": 7.333084239130435,
+   "bUnits": 7.748479166666669,
+   "aForm": 1.4101314036637052,
+   "bForm": 0.9151533228235702,
+   "aLost": 3.0375,
+   "bLost": 4.16,
    "lostDiff": {
-    "mean": 1.06,
-    "half": 0.254673382845213
+    "mean": 1.1225,
+    "half": 0.24973138446331686
    },
    "hpDiff": {
-    "mean": 0.6225,
-    "half": 2.8516767999553356
+    "mean": -2.9275,
+    "half": 2.9371531728660636
    },
-   "aHp": 175.005,
-   "bHp": 174.3825,
-   "drawsAAhead": 199,
-   "drawsBAhead": 191,
+   "aHp": 173.87,
+   "bHp": 176.7975,
+   "drawsAAhead": 179,
+   "drawsBAhead": 211,
    "bySide": [
     {
      "aSide": "blue",
@@ -157,25 +157,25 @@
    "keep": 2,
    "wipe": 0,
    "limit": 398,
-   "villages": 1.17,
-   "aUnits": 7.216733974358972,
-   "bUnits": 7.139185897435908,
-   "aForm": 1.3498814360182774,
-   "bForm": 1.3591456742499737,
-   "aLost": 3.935,
-   "bLost": 4.5475,
+   "villages": 1.15,
+   "aUnits": 7.226900641025638,
+   "bUnits": 7.145352564102572,
+   "aForm": 1.3525632734322715,
+   "bForm": 1.3596545132420115,
+   "aLost": 3.92,
+   "bLost": 4.51,
    "lostDiff": {
-    "mean": 0.6125,
-    "half": 0.2566682017497954
+    "mean": 0.59,
+    "half": 0.24807591933596848
    },
    "hpDiff": {
-    "mean": 0.69,
-    "half": 2.7470577699748038
+    "mean": 3.205,
+    "half": 2.683747212322562
    },
-   "aHp": 172.81,
-   "bHp": 172.12,
-   "drawsAAhead": 188,
-   "drawsBAhead": 206,
+   "aHp": 174.0975,
+   "bHp": 170.8925,
+   "drawsAAhead": 199,
+   "drawsBAhead": 192,
    "bySide": [
     {
      "aSide": "blue",
@@ -196,39 +196,39 @@
   {
    "cell": "mirror",
    "games": 200,
-   "aWins": 2,
+   "aWins": 1,
    "bWins": 0,
-   "draws": 198,
-   "meanRounds": 29.92,
-   "keep": 2,
+   "draws": 199,
+   "meanRounds": 30,
+   "keep": 1,
    "wipe": 0,
-   "limit": 198,
-   "villages": 1.11,
-   "aUnits": 7.212761904761907,
-   "bUnits": 7.243857142857142,
-   "aForm": 1.4320929014470132,
-   "bForm": 1.264370619939432,
-   "aLost": 3.315,
-   "bLost": 4.46,
+   "limit": 199,
+   "villages": 1.14,
+   "aUnits": 7.190833333333334,
+   "bUnits": 7.236333333333334,
+   "aForm": 1.4458145369173334,
+   "bForm": 1.268935566809161,
+   "aLost": 3.2,
+   "bLost": 4.49,
    "lostDiff": {
-    "mean": 1.145,
-    "half": 0.30830988750552313
+    "mean": 1.29,
+    "half": 0.28460471962383327
    },
    "hpDiff": {
-    "mean": -0.75,
-    "half": 3.930935876394018
+    "mean": -3.54,
+    "half": 4.064314956734739
    },
-   "aHp": 173.8,
-   "bHp": 174.55,
-   "drawsAAhead": 97,
-   "drawsBAhead": 100,
+   "aHp": 172.945,
+   "bHp": 176.485,
+   "drawsAAhead": 93,
+   "drawsBAhead": 105,
    "bySide": [
     {
      "aSide": "blue",
      "games": 200,
-     "aWins": 2,
+     "aWins": 1,
      "bWins": 0,
-     "draws": 198
+     "draws": 199
     },
     {
      "aSide": "red",

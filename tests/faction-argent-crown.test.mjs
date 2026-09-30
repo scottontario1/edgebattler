@@ -170,20 +170,20 @@ test('Line Doctrine: -1 damage per adjacent friendly infantry, at most -2; nothi
   const x = rec('crownPike', 'x', 'blue', 5, 5, hold);
   const ally = (id, c, r, key = 'pikeman') => rec(key, id, 'blue', c, r, hold);
   assert.equal(at([x]).get('x'), undefined, 'alone: no bonus and no penalty');
-  assert.equal(at([x, ally('a', 4, 5)]).get('x').damageTaken, 1);
-  assert.equal(at([x, ally('a', 4, 5), ally('b', 6, 5)]).get('x').damageTaken, 2);
-  assert.equal(at([x, ally('a', 4, 5), ally('b', 6, 5), ally('c', 5, 4)]).get('x').damageTaken, 2, 'capped at 2');
-  assert.equal(at([x, ally('a', 4, 5, 'archer')]).get('x').damageTaken, 1, 'archers count as infantry');
-  assert.equal(at([x, ally('a', 4, 5, 'crownGuard')]).get('x').damageTaken, 1, 'a Crown Guard neighbour counts (its own Shieldwall is on the Guard)');
+  assert.equal(at([x, ally('a', 4, 5)]).get('x').equipDef, 1);
+  assert.equal(at([x, ally('a', 4, 5), ally('b', 6, 5)]).get('x').equipDef, 2);
+  assert.equal(at([x, ally('a', 4, 5), ally('b', 6, 5), ally('c', 5, 4)]).get('x').equipDef, 2, 'capped at 2');
+  assert.equal(at([x, ally('a', 4, 5, 'archer')]).get('x').equipDef, 1, 'archers count as infantry');
+  assert.equal(at([x, ally('a', 4, 5, 'crownGuard')]).get('x').equipDef, 1, 'a Crown Guard neighbour counts (its own Shieldwall is on the Guard)');
   assert.equal(at([x, ally('a', 4, 4)]).get('x'), undefined, 'diagonal is not adjacent');
   assert.equal(at([x, ally('a', 3, 5)]).get('x'), undefined, 'two tiles away is not adjacent');
   assert.equal(at([x, rec('cavalier', 'k', 'blue', 4, 5, hold)]).get('x'), undefined, 'a cavalier is not infantry');
   assert.equal(at([x, rec('pikeman', 'e', 'red', 4, 5, hold)]).get('x'), undefined, 'an enemy is not an ally');
   const knight = rec('crownCavalier', 'kn', 'blue', 5, 5, hold);
-  assert.equal(at([knight, ally('a', 4, 5)]).get('kn').damageTaken, 1, 'mounted nobility benefits from adjacent infantry');
+  assert.equal(at([knight, ally('a', 4, 5)]).get('kn').equipDef, 1, 'mounted nobility benefits from adjacent infantry');
   assert.equal(at([knight, rec('cavalier', 'k2', 'blue', 4, 5, hold)]).get('kn'), undefined);
   const brenna = { ...createChampionUnit('brennaCrown', 'blue', 5, 4), stance: 'hold' };
-  assert.equal(at([x, brenna]).get('x').damageTaken, 1 + C.BRENNA_PRESENCE.reduction, 'Brenna is infantry: Line Doctrine 1 plus her Presence');
+  assert.deepEqual(at([x, brenna]).get('x'), { equipDef: C.LINE_DEFENSE_PER_ADJACENT, damageTaken: C.BRENNA_PRESENCE.reduction }, 'Brenna is infantry: Line Doctrine (Defense) plus her Presence (damage reduction)');
   // the plain (baseline) Pikeman carries nothing
   assert.equal(at([ally('a', 4, 5), ally('b', 5, 5)]).get('a'), undefined);
   resetCultures();
@@ -215,8 +215,8 @@ test('Shieldwall: a Crown Guard beside friendly infantry takes 2 more off (3 wit
   const x = rec('crownGuard', 'x', 'blue', 6, 5, hold);
   const nb = (id, c, r) => rec('pikeman', id, 'blue', c, r, hold);
   assert.equal(reduction(cleanHit([x], 'x')), 0, 'alone');
-  assert.equal(reduction(cleanHit([x, nb('a', 5, 5)], 'x')), C.LINE_REDUCTION_PER_ADJACENT + C.SHIELDWALL_REDUCTION);
-  assert.equal(reduction(cleanHit([x, nb('a', 5, 5), nb('b', 6, 4)], 'x')), 2 * C.LINE_REDUCTION_PER_ADJACENT + C.SHIELDWALL_REDUCTION);
+  assert.equal(reduction(cleanHit([x, nb('a', 5, 5)], 'x')), C.LINE_DEFENSE_PER_ADJACENT + C.SHIELDWALL_REDUCTION);
+  assert.equal(reduction(cleanHit([x, nb('a', 5, 5), nb('b', 6, 4)], 'x')), 2 * C.LINE_DEFENSE_PER_ADJACENT + C.SHIELDWALL_REDUCTION);
   assert.equal(reduction(cleanHit([x, rec('cavalier', 'k', 'blue', 5, 5, hold)], 'x')), 0, 'cavalry do not count as infantry for Shieldwall');
   resetCultures();
 });
@@ -288,9 +288,9 @@ test('Sworn Guard: while Protecting with a neighbour, adjacent allies take 2 les
   assert.equal(prot.get('a').damageTaken, C.SWORN_ALLY_REDUCTION, 'the neighbour is shielded');
   assert.equal(prot.get('f'), undefined, 'a distant unit is not');
   // the Oathsworn: Line Doctrine for its one neighbour (+1) and the Sworn Guard cost (-2) net to -1
-  assert.equal(prot.get('o').damageTaken, C.LINE_REDUCTION_PER_ADJACENT - C.SWORN_SELF_PENALTY);
+  assert.deepEqual(prot.get('o'), { equipDef: C.LINE_DEFENSE_PER_ADJACENT, damageTaken: -C.SWORN_SELF_PENALTY }, 'Line Doctrine for its neighbour, and the Sworn Guard cost');
   assert.equal(at([o('hold'), ally]).get('a'), undefined, 'not Protecting: no Sworn Guard');
-  assert.equal(at([o('hold'), ally]).get('o').damageTaken, C.LINE_REDUCTION_PER_ADJACENT, 'not Protecting: Line Doctrine only');
+  assert.deepEqual(at([o('hold'), ally]).get('o'), { equipDef: C.LINE_DEFENSE_PER_ADJACENT }, 'not Protecting: Line Doctrine only');
   assert.equal(at([o('protect')]).get('o'), undefined, 'a lone Oathsworn is not penalised');
   assert.equal(at([o('protect'), rec('cavalier', 'k', 'blue', 4, 5, hold)]).get('k').damageTaken, C.SWORN_ALLY_REDUCTION, 'any adjacent ally is shielded (known simplification: should be the subject only)');
   resetCultures();
@@ -305,8 +305,8 @@ test('Sworn Guard in battle: the neighbour of a Protecting Oathsworn takes 2 les
   // the Oathsworn as the target: it stands at 6,5 next to a subject at 5,5 and is struck by the attacker at 7,5
   const oath = (stance) => rec('oathsworn', 'x', 'blue', 6, 5, { stance, ...(stance === 'protect' ? { objective: { type: 'protect', targetId: 's' } } : {}) });
   const s = rec('pikeman', 's', 'blue', 5, 5, hold);
-  assert.equal(reduction(cleanHit([oath('protect'), s], 'x')), C.LINE_REDUCTION_PER_ADJACENT - C.SWORN_SELF_PENALTY, 'Line Doctrine 1 less, Sworn Guard 2 more: -1');
-  assert.equal(reduction(cleanHit([oath('hold'), s], 'x')), C.LINE_REDUCTION_PER_ADJACENT, 'not Protecting: Line Doctrine only');
+  assert.equal(reduction(cleanHit([oath('protect'), s], 'x')), C.LINE_DEFENSE_PER_ADJACENT - C.SWORN_SELF_PENALTY, 'Line Doctrine 1 less, Sworn Guard 2 more: -1');
+  assert.equal(reduction(cleanHit([oath('hold'), s], 'x')), C.LINE_DEFENSE_PER_ADJACENT, 'not Protecting: Line Doctrine only');
   resetCultures();
 });
 
@@ -393,7 +393,7 @@ test('Crown\'s Presence: friendly infantry within 2 tiles of Brenna take 1 less 
   assert.equal(fx.get('n').damageTaken, 1);
   assert.equal(fx.get('f'), undefined);
   assert.equal(fx.get('k'), undefined, 'cavalry are not infantry');
-  assert.equal(at([brenna, rec('pikeman', 'a', 'blue', 4, 5, hold)]).get('brennaCrown').damageTaken, 1, 'Line Doctrine on Brenna');
+  assert.equal(at([brenna, rec('pikeman', 'a', 'blue', 4, 5, hold)]).get('brennaCrown').equipDef, 1, 'Line Doctrine on Brenna');
   // battle: a Holding Pikeman one tile off Brenna (adjacent: Presence only, the pikeman has no doctrine) takes 1 less
   const r = cleanHit([rec('pikeman', 'x', 'blue', 6, 5, hold), { ...createChampionUnit('brennaCrown', 'blue', 5, 5), stance: 'hold' }], 'x', { champions: { blue: 'brennaCrown' } });
   assert.equal(reduction(r), 1);

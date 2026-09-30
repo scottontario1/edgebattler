@@ -5,16 +5,16 @@
 // Design and results: docs/factions/ARGENT_CROWN.md. Source design: FACTIONS.md sections 1b and 4.
 //
 // Core idea: LINE DOCTRINE (the simple version, confirmed 2026-09-30): +1 Defense per adjacent friendly infantry unit, up to +2.
-// The engine has no per-unit Defense aura, so it is expressed as the `damageTaken` battle status (damage reduction per strike,
-// see docs/CULTURE_HOOKS.md): -1 damage per adjacent infantry unit, at most -2. Against a strike this is what +1/+2 Defense
-// does, except on a critical hit (the engine triples damage before this reduction, so a crit is reduced by 1-2, not 3-6) and the
-// forecast (which reads Defense) does not show it.
+// It is a real Defense bonus: the passive adds the `equipDef` battle status, which the combat forecast already reads (src/match.js
+// withEquip), so it behaves exactly like +Defense (Defense is subtracted before the crit multiplier, so a crit is reduced by 3 per
+// point). The forecast UI does not show it, because statuses exist only during a battle. Every other reduction in this module uses
+// the `damageTaken` status: "take N less damage per strike", applied after the crit multiplier and after Ward.
 import { RECRUIT, CHAMPION_TEMPLATES } from '../roster.js';
 import { registerCulture } from '../cultures.js';
 
 // ---------------------------------------------------------------- Line Doctrine
-export const LINE_REDUCTION_PER_ADJACENT = 1; // damage taken per strike, per adjacent friendly infantry unit (= +1 Defense)
-export const LINE_CAP = 2;                    // most adjacent units that count (= +2 Defense at most)
+export const LINE_DEFENSE_PER_ADJACENT = 1; // Defense per adjacent friendly infantry unit
+export const LINE_CAP = 2;                    // most adjacent units that count (so +2 Defense at most)
 // "Infantry" for Line Doctrine: every foot class (Brenna counts). Cavalry and unit-less objects do not. Cavalry can BENEFIT.
 export const INFANTRY = ['pikeman', 'archer', 'bannerman', 'oathsworn', 'paladin']; // (a Crown Guard is a pikeman variant, so its class is 'pikeman')
 
@@ -71,7 +71,7 @@ export const TINTS = { crownPike: '#9db8ea', crownArcher: '#9db8ea', crownCavali
 // ---------------------------------------------------------------- passives
 const base = (cls, delta) => { const t = { ...RECRUIT[cls] }; for (const [k, d] of Object.entries(delta)) t[k] += d; return t; };
 export const LINE_DOCTRINE = Object.freeze({
-  id: 'lineDoctrine', when: { adjacentAlly: { classes: INFANTRY, min: 1 } }, perAdjacent: true, cap: LINE_CAP, effect: { damageTaken: LINE_REDUCTION_PER_ADJACENT },
+  id: 'lineDoctrine', when: { adjacentAlly: { classes: INFANTRY, min: 1 } }, perAdjacent: true, cap: LINE_CAP, effect: { equipDef: LINE_DEFENSE_PER_ADJACENT },
 });
 export const SHIELDWALL = Object.freeze({ id: 'shieldwall', when: { adjacentAlly: { classes: INFANTRY, min: 1 } }, effect: { damageTaken: SHIELDWALL_REDUCTION } });
 export const BANNER = Object.freeze({ id: 'banner', aura: { radius: BANNER_RADIUS, stance: BANNER_STANCES }, effect: { damageTaken: BANNER_REDUCTION } });
