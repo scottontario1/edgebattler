@@ -103,3 +103,9 @@ Next: playtest action placement, army management and readability with a larger r
 Status: implemented with rendering-work validation, 2026-09-30. User explicitly requested a Luna game-development performance pass with internet research. Official Three.js docs informed adaptive buffer pixel budget, multi-pass counters and effect skipping. Idle planning 30 fps / playback and dragging 60 fps, 1.6M backing-pixel cap, AO/denoise samples 16→8, and disabled Painterly pass skipping are live. Dynamic shadows remain to preserve moving geometry.
 Evidence: build, normal controls and screenshot verification. At 2552x1238 CSS pixels, measured backing area is 1,599,896 pixels (ratio 0.711638), versus 3,159,376 at ratio1. P/H toggles reduce measured draw work and restore the original rendering path. See docs/PERFORMANCE_PASS.md.
 Limits: GPU utilization percentage was not measured; headless timings are not a device GPU benchmark. Large 3D canvases soften under the pixel budget; HUD remains at browser resolution. Next: compare local GPU usage during planning/playback with the same camera/viewport.
+
+
+## UI-04: Army rail covering unit action menu
+
+Status: fixed and browser verified, 2026-09-30. Unit planning/details sheets now share the root overlay context with sidebar/campaign controls and render above them. Desktop sheets clear the army rail; portrait sheets retain their full-width bottom layout. Sidebar clearance is owned by the sheet stylesheet so import order cannot reset it.
+Evidence: tools/verify-action-menu.mjs opens Iron League Coil Crossbowman's type plan at 1280x800, 960x480 and 390x844, checks viewport bounds, desktop sidebar clearance and actual hit targets for ability/close buttons, and verifies dismissal. Screenshots: docs/campaign/evidence/action-menu-{1280,960,390}.png. Production build passes with the existing bundle-size notice; no gameplay rules changed.

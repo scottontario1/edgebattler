@@ -227,6 +227,8 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
   const actions = document.getElementById('actions');
   const planning = document.getElementById('planning');
   const sheet = document.getElementById('sheet');
+  // Share the overlay stacking context with the army rail and campaign controls.
+  document.body.appendChild(sheet);
   const army = document.createElement('nav'); army.className='panel army-rail'; army.setAttribute('aria-label','Your recruited army'); document.body.appendChild(army);
   const armyPopover=document.createElement('div');armyPopover.className='panel army-popover';armyPopover.hidden=true;document.body.appendChild(armyPopover);
   const reportBackdrop=document.createElement('div');reportBackdrop.className='battle-report-backdrop';reportBackdrop.hidden=true;document.body.appendChild(reportBackdrop);

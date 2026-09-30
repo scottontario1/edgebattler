@@ -294,7 +294,6 @@ html, body {
  .actions .btn .lbl { display:inline; }
  .actions .btn .key { display:none; }
  .turn .mini.blue { display:none; }
- .sheet { left:158px; }
 }
 @media (max-width:820px) {
  .army-rail { top:200px; width:57px; padding:3px; bottom:calc(var(--tray-h,142px) + 160px); }

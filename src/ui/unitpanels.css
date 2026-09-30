@@ -199,7 +199,8 @@
 
 /* ---------- Inspect sheet (full stats) ---------- */
 .sheet {
-  z-index: 6; /* above the planning tray (4) */
+  position: fixed;
+  z-index: 26; /* above army rail (14) and type popover (24) */
   left: calc(var(--edge) + var(--safe-l));
   bottom: calc(var(--edge) + var(--safe-b) + var(--tray-h, 0px) + 6px);
   width: 340px;
@@ -337,3 +338,12 @@
 /* Monster kits are automatic; inspection explains their trigger and effect. */
 .monster-passive { display: grid; gap: 3px; margin-bottom: 8px; }
 .monster-passive span { font-size: 11px; line-height: 1.45; color: var(--muted); }
+
+/* Keep desktop planning sheets beside the recruited-army rail. These rules live
+   with the sheet so its responsive rules cannot reset the sidebar clearance. */
+@media (min-width:821px) and (min-aspect-ratio:1/1) {
+  .sheet {
+    left: calc(158px + var(--safe-l));
+    max-width: calc(100vw - 174px - var(--safe-l) - var(--safe-r));
+  }
+}
