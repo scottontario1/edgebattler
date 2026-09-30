@@ -16,7 +16,7 @@
 //   { type: 'equip', faction, cardId, unitType }             type-wide skill card
 //   { type: 'transfer', faction, skillId, from, to }
 //   { type: 'combine', faction, ids, survivorId, destination }
-import { W, H, LAYOUT, inBounds, terrainAt } from './board.js';
+import { MAP, W, H, LAYOUT, inBounds, terrainAt } from './board.js';
 import { MOVE_COST, MOVE_TYPE, computeRange } from './rules.js';
 import { forecast, weaponOf } from './combat.js';
 import { CARD_LIMITS, UNIT_CARDS, SKILL_CARDS, createCardState, drawOpeningHand, refreshRound, recruitUnit, canDeployReserve, seededRandom, cycleCard } from './cards.js';
@@ -552,7 +552,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
   const statsEntry = () => ({ blue: clone(sides.blue.stats), red: clone(sides.red.stats) });
 
   for (const f of FACTIONS) sides[f].cards.population = population(f);
-  emit({ t: 'header', schema: SCHEMA, seed, maxRounds, map: MAP_ID, rules: RULES, abilityRules: ABILITY_RULES, abilities: ABILITIES, cardLimits: CARD_LIMITS, ...meta });
+  emit({ t: 'header', schema: SCHEMA, seed, maxRounds, map: MAP.id, rules: RULES, abilityRules: ABILITY_RULES, abilities: ABILITIES, cardLimits: CARD_LIMITS, ...meta });
   emit(summaryEntry(0));
 
   Object.assign(m, {
@@ -562,4 +562,3 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
   return m;
 }
 
-const MAP_ID = 'river_ford';

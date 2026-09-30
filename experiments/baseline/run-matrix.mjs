@@ -10,6 +10,7 @@ const argv = process.argv.slice(2);
 const opt = (n, d) => { const i = argv.indexOf(`--${n}`); return i >= 0 ? argv[i + 1] : d; };
 const games = Number(opt('games', 50));
 const out = resolve(opt('out', 'logs/sim/base'));
+const map = opt('map', null); // e.g. experiments/maps/flat_open.js
 const MATCHUPS = [['heuristic', 'greedy'], ['heuristic', 'heuristic'], ['greedy', 'greedy'], ['heuristic', 'passive'], ['greedy', 'passive'], ['passive', 'passive']];
 
 const wilson = (k, n) => { const z = 1.96, p = k / n, d = 1 + z * z / n, c = (p + z * z / (2 * n)) / d, h = z * Math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / d; return [Math.max(0, c - h), Math.min(1, c + h)]; };
@@ -18,7 +19,7 @@ const rows = [];
 for (const [a, b] of MATCHUPS) {
   const dir = join(out, `${a}-${b}`);
   const same = a === b;
-  execFileSync('node', ['tools/sim/run.mjs', '--games', String(games), '--blue', a, '--red', b, '--seed', '1', ...(same ? [] : ['--swap']), '--verify', '--out', dir], { stdio: ['ignore', 'pipe', 'inherit'] });
+  execFileSync('node', ['tools/sim/run.mjs', '--games', String(games), '--blue', a, '--red', b, '--seed', '1', ...(same ? [] : ['--swap']), '--verify', '--out', dir, ...(map ? ['--map', map] : [])], { stdio: ['ignore', 'pipe', 'inherit'] });
   const [head, ...lines] = readFileSync(join(dir, 'summary.csv'), 'utf8').trim().split('\n');
   const cols = head.split(',');
   const g = lines.map((l) => Object.fromEntries(l.split(',').map((v, i) => [cols[i], Number.isNaN(Number(v)) || v === '' ? v : Number(v)])));

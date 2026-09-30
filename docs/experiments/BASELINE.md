@@ -71,3 +71,30 @@ Of 10,218 located strikes: 81% melee on land, 9% archers on land, 7% melee invol
 - These are AI policies at prototype numbers, not human play. Heuristic weights (`DEFAULT_PARAMS`) were not tuned here.
 - The round limit of 30 defines "draw"; no scoring rule exists (CORE-03 remains open).
 - Ordinary `--verify` replay covers matches on the default map and roster only.
+
+## Flat open field (same keeps and villages, no river, forest, mountain or road)
+
+Requested follow-up: the same matrix on `experiments/maps/flat_open.js`, a 16 × 12 grid of plains with only the two keeps and three village plots kept at their river_ford coordinates. `src/board.js` gained `setMap()` for this; the game never calls it and the default-map results above are byte-identical before and after (checked with `cmp` on the summary CSVs). All 450 games replay.
+
+```bash
+node experiments/baseline/run-matrix.mjs --games 50 --out logs/sim/flat --map experiments/maps/flat_open.js
+node tools/sim/inspect.mjs logs/sim/flat/heuristic-heuristic --map experiments/maps/flat_open.js
+```
+
+| matchup (A v B) | games | A wins | B wins | draws (rate, 95%) | mean rounds | village captures / game | units lost / game (both) | blocked draws / game (both) |
+|---|---|---|---|---|---|---|---|---|
+| heuristic v greedy | 100 | 54 | 0 | 46 (46%, 37–56%) | 26.8 | 1.96 | 21.5 | 116 |
+| heuristic v heuristic | 50 | 1 | 2 | 47 (94%, 84–98%) | 29.0 | 2.00 | 15.3 | 107 |
+| greedy v greedy | 50 | 6 | 0 | 44 (88%, 76–94%) | 29.1 | 1.80 | 26.7 | 143 |
+| heuristic v passive | 100 | 100 | 0 | 0 (0%, 0–4%) | 6.3 | 0.56 | 3.3 | 16 |
+| greedy v passive | 100 | 30 | 0 | 70 (70%, 60–78%) | 24.6 | 0.75 | 11.6 | 132 |
+| passive v passive | 50 | 31 | 0 | 19 (38%, 26–52%) | 19.7 | 0.12 | 8.3 | 109 |
+
+- **Terrain was part of the stalemate, not all of it.** Removing the river lifts heuristic v greedy from 11% to 54% decisive, heuristic v passive to 100% (in 6 rounds, against 79% in 18), and greedy v passive from 8% to 30%. A stronger side can now convert an advantage.
+- **The mirror stays stuck.** Heuristic v heuristic is 94% draws on flat ground, the same as with the river. Terrain does not fix the even match.
+- **Contact is total, not sparse.** Every round of every game contains strikes, at 8 strikes a round (river map: 3.7), but still only 0.5 deaths a round. Population is 7 units per side at the end, steady, with 57% of round ends at the population cap and 91% with a full hand. Losses are replaced as fast as they occur; Supply income buys about six times the loss rate.
+- **Crowding replaces the river.** 26% of movement decisions are "no legal movement" (blocked by friendly and enemy bodies) and 73% of decisions are holds. Both armies pile into one brawl in the north-west quarter (columns 2–8, rows 0–6), between the two keeps' line; neither keep is ever approached (blue keep has an enemy within 2 tiles in 2% of round ends, red's in 0%).
+- **Keeps still hold.** Three keep captures in 50 mirror games. The same 0-damage arithmetic applies on flat ground.
+- **Passive is not passive on flat ground.** Passive v passive is decisive 62% of games, all by the starting units walking to a keep unopposed, and blue's start is closer (the map's start positions are not symmetric).
+
+So a level board makes decisive play possible when strength differs, but for equal armies the stall is structural: even trades, healing and free replacement.

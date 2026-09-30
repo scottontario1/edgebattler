@@ -8,6 +8,7 @@
 //   summary  round, blue {...}, red {...}   state after that round (round 0 = start)
 //   result   round, winner ('blue' | 'red' | null), reason, stats
 import { createMatch, SCHEMA } from './match.js';
+import { MAP } from './board.js';
 
 export const toJSONL = (entries) => entries.map((e) => JSON.stringify(e)).join('\n') + '\n';
 export const fromJSONL = (text) => text.split('\n').filter((l) => l.trim()).map((l) => JSON.parse(l));
@@ -54,12 +55,14 @@ export function playLog({ endpoint = '/__log', name = `${new Date().toISOString(
  * mismatch is a summary/result entry that differs from the log (the rules or RNG changed, or a
  * nondeterministic code path crept in).
  */
-export function replay(entries) {
+export function replay(entries, { create } = {}) {
   const header = entries.find((e) => e.t === 'header');
   if (!header) return { ok: false, mismatches: [{ reason: 'no-header' }] };
   if(header.schema!==SCHEMA) return {ok:false,mismatches:[{reason:'unsupported-schema',schema:header.schema,expected:SCHEMA}]};
+  if (!create && header.map && header.map !== MAP.id) return { ok: false, mismatches: [{ reason: 'unsupported-map', map: header.map, active: MAP.id }] };
   const out = memoryLog();
-  const m = createMatch({ seed: header.seed, maxRounds: header.maxRounds, log: out.push });
+  // Custom scenarios (other map, roster, candidate rules) pass create(header, log) to rebuild the same match.
+  const m = create ? create(header, out.push) : createMatch({ seed: header.seed, maxRounds: header.maxRounds, log: out.push });
   for (const e of entries) {
     if (e.t === 'action') m.apply(e.action, e.actor);
     else if (e.t === 'round') m.resolveRound();

@@ -3,15 +3,19 @@
 //   node tools/sim/inspect.mjs <game.jsonl> [--board 1,5,10] [--events]   one game, round by round
 // Aggregate output: how many rounds contain any strike, the round of first contact, kills per round,
 // movement outcomes by reason, tile occupancy heat, strike hit/damage by attacker->target class.
+// --map file.js draws boards and heat on that experiment map (needed for runs made with run.mjs --map).
 // Single game output: per-round table (units, HP, strikes, deaths, holds) and ASCII boards.
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fromJSONL } from '../../src/log.js';
-import { LAYOUT, W, H } from '../../src/board.js';
+import { pathToFileURL } from 'node:url';
+import { LAYOUT, W, H, setMap } from '../../src/board.js';
 
 const argv = process.argv.slice(2);
 const target = resolve(argv.find((a) => !a.startsWith('--')) || '.');
 const opt = (name) => { const i = argv.indexOf(`--${name}`); return i >= 0 ? argv[i + 1] : null; };
+const mapFile = opt('map');
+if (mapFile) setMap((await import(pathToFileURL(resolve(mapFile)).href)).default); // boards and heat maps follow the run's map
 const isDir = statSync(target).isDirectory();
 const files = isDir ? readdirSync(target).filter((f) => f.endsWith('.jsonl')).map((f) => join(target, f)) : [target];
 

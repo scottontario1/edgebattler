@@ -6,13 +6,16 @@
 //   --swap        also play every seed with the policies swapped (the map is not symmetric)
 //   --verify      replay every game from its log and fail on any mismatch (determinism check)
 //   --no-logs     write only summary.csv (faster, smaller)
+//   --map file.js experiment map (default export {id, layout}); the header records its id, and --verify replays on it
 // Then: node tools/sim/report.mjs <out dir>
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { createMatch } from '../../src/match.js';
 import { runCommander, DEFAULT_PARAMS } from '../../src/ai/commander.js';
 import { memoryLog, replay } from '../../src/log.js';
+import { setMap, DEFAULT_MAP } from '../../src/board.js';
 
 const argv = process.argv.slice(2);
 const flag = (name) => argv.includes(`--${name}`);
@@ -27,6 +30,9 @@ const params = { blue: readParams(opt('blue-params')), red: readParams(opt('red-
 const stamp = new Date().toISOString().replace(/[:.]/g, '-');
 const out = resolve(opt('out', join('logs', 'sim', `${stamp}-${blue}-vs-${red}`)));
 const writeLogs = !flag('no-logs');
+const mapFile = opt('map', null);
+const customMap = mapFile ? (await import(pathToFileURL(resolve(mapFile)).href)).default : null;
+if (customMap) setMap(customMap);
 const commit = (() => { try { return execFileSync('git',['-c',`safe.directory=${process.cwd()}`,'rev-parse','--short','HEAD']).toString().trim(); } catch { return null; } })();
 mkdirSync(out, { recursive: true });
 
@@ -78,13 +84,13 @@ for (const { seed, sides, swapped } of plan) {
   rows.push(row);
   if (writeLogs) writeFileSync(join(out, `game-${String(seed).padStart(5, '0')}${swapped ? '-swap' : ''}.jsonl`), log.text());
   if (flag('verify')) {
-    const r = replay(log.entries);
+    const r = replay(log.entries, { create: (h, push) => h.map !== (customMap?.id || DEFAULT_MAP.id) ? (() => { throw new Error(`log map ${h.map} is not the active map`); })() : createMatch({ seed: h.seed, maxRounds: h.maxRounds, log: push }) });
     if (!r.ok) { failures += 1; console.error(`seed ${seed}${swapped ? ' (swapped)' : ''}: replay mismatch`, JSON.stringify(r.mismatches[0]).slice(0, 400)); }
   }
 }
 const cols = Object.keys(rows[0]);
 writeFileSync(join(out, 'summary.csv'), [cols.join(','), ...rows.map((r) => cols.map((c) => r[c]).join(','))].join('\n') + '\n');
-writeFileSync(join(out, 'run.json'), JSON.stringify({ commit, games, firstSeed, maxRounds, blue, red, params, swap: flag('swap'), ms: Date.now() - t0 }, null, 2));
+writeFileSync(join(out, 'run.json'), JSON.stringify({ commit, games, firstSeed, maxRounds, blue, red, map: customMap?.id || DEFAULT_MAP.id, params, swap: flag('swap'), ms: Date.now() - t0 }, null, 2));
 const wins = (f) => rows.filter((r) => r.winner === f).length;
 console.log(`${rows.length} games in ${((Date.now() - t0) / 1000).toFixed(1)}s -> ${out}`);
 console.log(`blue ${wins('blue')}  red ${wins('red')}  draw ${wins('draw')}${flag('verify') ? `  replay failures ${failures}` : ''}`);

@@ -6,7 +6,7 @@
 //
 // Policies: passive (baseline, does nothing), greedy (units only: most expensive affordable card,
 // deployed nearest the front), heuristic (all card types, stances, withdraw, combine; tunable).
-import { LAYOUT } from '../board.js';
+import { findTile } from '../board.js';
 import { computeRange, MOVE_COST, MOVE_TYPE } from '../rules.js';
 import { UNIT_CARDS, CARD_LIMITS, previewCycle } from '../cards.js';
 import { findUpgradeMatches } from '../upgrades.js';
@@ -27,11 +27,7 @@ export const DEFAULT_PARAMS = Object.freeze({
 
 const manhattan = (a, b) => Math.abs(a.c - b.c) + Math.abs(a.r - b.r);
 const other = (f) => (f === 'blue' ? 'red' : 'blue');
-function findTile(letter) {
-  for (let r = 0; r < LAYOUT.length; r += 1) { const c = LAYOUT[r].indexOf(letter); if (c >= 0) return [c, r]; }
-  return null;
-}
-const KEEP = { blue: findTile('C'), red: findTile('K') };
+const KEEP = { get blue() { return findTile('C'); }, get red() { return findTile('K'); } }; // follows the active map
 const nearestFoeDistance = (m, f, c, r) => m.alive(other(f)).reduce((best, o) => Math.min(best, Math.abs(o.c - c) + Math.abs(o.r - r)), 99);
 
 // Deploy a reserve on the legal tile closest to the enemy (greedy and heuristic share this).
