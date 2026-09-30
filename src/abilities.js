@@ -59,7 +59,7 @@ export function validateAbilitySelection(unit,ids) {
 }
 // Bundle eligibility is frozen before recovery: Rally cannot rescue an unaffordable paid bundle.
 export const paidBundleReady = unit => unit.energy>=selectedCost(unit);
-export function activatePhase(unit,phase,{paid=true,moved=false,hasTarget=false,movedTiles=0,onControlled=false}={}) {
+export function activatePhase(unit,phase,{paid=true,moved=false,hasTarget=false,movedTiles=0,onControlled=false,objectCount=null}={}) {
  const next=initializeAbilityState(unit),events=[];
  for(const a of kitFor(next).filter(a=>a.phase===phase&&(next.selectedAbilities||[]).includes(a.id))) {
   let reason=null;
@@ -77,6 +77,8 @@ export function activatePhase(unit,phase,{paid=true,moved=false,hasTarget=false,
   else if(a.requires?.hpBelow!==undefined&&!(next.hp<next.maxHp*a.requires.hpBelow)) reason='hp-trigger-unmet';
   else if(a.requires?.hpAbove!==undefined&&!(next.hp>next.maxHp*a.requires.hpAbove)) reason='hp-trigger-unmet';
   else if(a.requires?.onControlled&&!onControlled) reason='location-trigger-unmet';
+  // Tile objects (corpses...) within `radius` of the unit; objectCount(kind, radius) is supplied by the match.
+  else if(a.requires?.objectNear&&(objectCount?objectCount(a.requires.objectNear.kind,a.requires.objectNear.radius):0)<(a.requires.objectNear.min??1)) reason='object-trigger-unmet';
   if(reason) {events.push({unitId:next.id,abilityId:a.id,name:a.name,applied:false,reason});continue;}
   next.energy-=a.cost;next.cooldowns[a.id]=a.cooldown;
   let effect={type:'status'},energyCapped=0;
@@ -88,8 +90,9 @@ export function activatePhase(unit,phase,{paid=true,moved=false,hasTarget=false,
   else if(a.effect) {
    for(const [k,v] of Object.entries(a.effect)) {const n=typeof v==='function'?v({movedTiles}):v;next.statuses[k]=(next.statuses[k]||0)+n;}
   }
+  else if(a.spawn||a.consume) {/* effect handled by the match (tile objects) */}
   else {next.statuses.attackBonus=4;if(a.id==='focusedShot') next.statuses.hitBonus=20;}
-  events.push({unitId:next.id,abilityId:a.id,name:a.name,applied:true,cost:a.cost,energyCapped,effect,cooldown:a.cooldown,...(a.spawn?{spawn:a.spawn}:{}),...(a.mark?{mark:a.mark}:{})});
+  events.push({unitId:next.id,abilityId:a.id,name:a.name,applied:true,cost:a.cost,energyCapped,effect,cooldown:a.cooldown,...(a.spawn?{spawn:a.spawn}:{}),...(a.mark?{mark:a.mark}:{}),...(a.consume?{consume:a.consume}:{})});
  }
  return {unit:next,events};
 }

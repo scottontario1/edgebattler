@@ -28,6 +28,7 @@ const CULTURE = {
   abilities: [
     { id: 'sysDig', name: 'Sys Dig', classes: ['sysSapper', 'pikeman'], cost: 0, cooldown: 1, phase: 'defense', spawn: { kind: 'barricade', hp: 10, blocks: true }, description: 'test' },
     { id: 'sysChallenge', name: 'Sys Challenge', units: ['sysCaptain'], classes: [], cost: 0, cooldown: 1, phase: 'defense', mark: { radius: 6 }, effect: { damageDealt: 4, offTargetPenalty: 8 }, description: 'test' },
+    { id: 'sysEat', name: 'Sys Eat', classes: ['sysSapper'], cost: 0, cooldown: 1, phase: 'recovery', requires: { objectNear: { kind: 'corpse', radius: 3 } }, consume: { kind: 'corpse', radius: 3, count: 1, heal: { radius: 2, amount: 8 } }, description: 'test' },
     { id: 'sysPaladin', name: 'Sys Paladin Kit', classes: ['paladin', 'barbarian'], cost: 0, cooldown: 1, phase: 'recovery', effect: { damageDealt: 1 }, description: 'test' },
   ],
   pool: ['pikeman', 'sysPlain', 'sysSapper', 'sysBow'],
@@ -266,6 +267,31 @@ test('corpses: onDeath spawns a non-blocking object that decays after 3 rounds a
   const c = m2.addObject({ objectKind: 'corpse', faction: 'blue', c: 3, r: 3, hp: 1, blocks: false, decay: 3 });
   assert.equal(m2.consumeObject(c.id), true);
   assert.equal(m2.consumeObject(c.id), false);
+  resetCultures();
+});
+
+test('consume ability and objectNear: eats the nearest corpse and heals friends; needs a corpse; spawn abilities get no accidental bonus', async () => {
+  registerCulture(CULTURE);
+  const eater = () => rec('sysSapper', 'e', 'blue', 5, 5, { stance: 'hold', hp: 8, selectedAbilities: ['sysEat'] });
+  const mate = () => rec('pikeman', 'mate', 'blue', 5, 6, { stance: 'hold', hp: 10 });
+  const foe = () => rec('pikeman', 'r1', 'red', 14, 10, { stance: 'hold' });
+  const withCorpse = (n) => { const m = createMatch({ seed: 8, roster: [eater(), mate(), foe()] }); for (let i = 0; i < n; i += 1) m.addObject({ objectKind: 'corpse', faction: 'red', c: 4 + i, r: 5, hp: 1, blocks: false, decay: 3 }); return m; };
+  let m = withCorpse(0);
+  let res = m.resolveRound();
+  assert.equal(res.batches.filter((b) => b.type === 'abilities').flatMap((b) => b.events).find((e) => e.abilityId === 'sysEat').reason, 'object-trigger-unmet');
+  m = withCorpse(2);
+  res = m.resolveRound();
+  const ev = res.batches.filter((b) => b.type === 'abilities').flatMap((b) => b.events).find((e) => e.abilityId === 'sysEat');
+  assert.equal(ev.applied, true);
+  assert.equal(ev.consumed, 1);
+  assert.equal(m.objects.filter((o) => o.objectKind === 'corpse').length, 1, 'one corpse eaten (the nearest)');
+  assert.equal(m.objects[0].c, 4, 'the corpse under the unit (distance 0) was eaten first; 4,5 remains');
+  assert.ok(m.byId('e').hp >= 16 && m.byId('mate').hp >= 18, 'healed 8 each');
+  // a spawn ability without an effect does not grant the default +4 attack bonus
+  const dig = rec('sysSapper', 'd', 'blue', 5, 5, { selectedAbilities: ['sysDig'], facing: 'east' });
+  const act = ABILITY_CATALOG.sysDig && (await import('../src/abilities.js')).activatePhase(dig, 'defense');
+  assert.equal(act.events[0].applied, true);
+  assert.equal(act.unit.statuses.attackBonus, undefined);
   resetCultures();
 });
 

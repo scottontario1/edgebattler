@@ -8,6 +8,7 @@
 //             stance: ['hold', ...]      its effective stance
 //             hpBelow / hpAbove: 0..1    fraction of max HP (strict)
 //             onControlled: true         it stands on an owned keep or village
+//             objectNear: { kind, radius, min? }   at least `min` (1) tile objects of that kind (corpse...) within radius
 //             adjacentAlly: { classes?: [...], min?: n }   at least n adjacent friendly units (of those classes)
 //   effect  numeric statuses added for this battle: damageTaken (less damage per strike), damageDealt (more per strike),
 //           hitBonus, ignoreDefense, offTargetPenalty, energyWhenStruck, plus any custom numeric key
@@ -31,6 +32,7 @@ export function passiveHolds(unit, passive, ctx) {
   if (w.hpBelow !== undefined && !(unit.hp < unit.maxHp * w.hpBelow)) return -1;
   if (w.hpAbove !== undefined && !(unit.hp > unit.maxHp * w.hpAbove)) return -1;
   if (w.onControlled && !(ctx.controlled && ctx.controlled(unit))) return -1;
+  if (w.objectNear && (ctx.objectCount ? ctx.objectCount(unit, w.objectNear.kind, w.objectNear.radius) : 0) < (w.objectNear.min ?? 1)) return -1;
   let count = 0;
   if (w.adjacentAlly || passive.perAdjacent) {
     count = adjacentAllies(unit, ctx.units, w.adjacentAlly?.classes).length;

@@ -434,7 +434,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
     };
     const defenseEvents=[];
     for(const u of alive()) {
-      const act=activatePhase(u,'defense',{paid:paid.get(u.id),onControlled:onOwnedTile(u)});
+      const act=activatePhase(u,'defense',{paid:paid.get(u.id),onControlled:onOwnedTile(u),objectCount:(k,r)=>objectsNear(u.c,u.r,r,k).length});
       Object.assign(u,act.unit);defenseEvents.push(...act.events);
       // Spawn abilities (phase 'defense', before movement): put a tile object (barricade...) in front of or under the unit.
       for(const e of act.events) if(e.applied&&e.spawn) {
@@ -501,8 +501,16 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
           if(u.kind==='object') continue;
           const e=events.find(e=>e.unitId===u.id&&e.type==='move');
           if(e) u.facing=facingFromPath([[e.from.c,e.from.r],...e.path],u.facing);
-          const act=activatePhase(u,'recovery',{paid:paid.get(u.id),onControlled:onOwnedTile(u)});
+          const act=activatePhase(u,'recovery',{paid:paid.get(u.id),onControlled:onOwnedTile(u),objectCount:(k,r)=>objectsNear(u.c,u.r,r,k).length});
           Object.assign(u,act.unit);recoveryEvents.push(...act.events);
+          // Consume ability (recovery phase): eat the nearest tile objects of a kind and heal friends around the unit.
+          for(const e of act.events) if(e.applied&&e.consume) {
+            const c=e.consume;
+            const eaten=objectsNear(u.c,u.r,c.radius,c.kind).sort((a,b)=>Math.abs(a.c-u.c)+Math.abs(a.r-u.r)-Math.abs(b.c-u.c)-Math.abs(b.r-u.r)||String(a.id).localeCompare(String(b.id))).slice(0,c.count??1);
+            for(const o of eaten) consumeObject(o.id);
+            e.consumed=eaten.length;
+            if(c.heal&&eaten.length) for(const o of moved) if(o.kind!=='object'&&o.faction===u.faction&&o.hp>0&&Math.abs(o.c-u.c)+Math.abs(o.r-u.r)<=(c.heal.radius??0)) o.hp=Math.min(o.maxHp,o.hp+c.heal.amount);
+          }
         }
         // Target eligibility comes from the shared post-move snapshot, never presentation direction.
         for(const u of moved) {
@@ -516,7 +524,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
         // Culture passives (src/passives.js): evaluated on post-movement positions, before strikes. No-op without `passives`.
         if(moved.some(u=>u.passives?.length)) {
           const movedIds=new Set(events.filter(e=>e.type==='move').map(e=>e.unitId));
-          const fx=evaluatePassives(moved,{moved:movedIds,stanceOf:u=>orders[u.id]?.stance||u.stance,controlled:onOwnedTile});
+          const fx=evaluatePassives(moved,{moved:movedIds,stanceOf:u=>orders[u.id]?.stance||u.stance,controlled:onOwnedTile,objectCount:(u,k,r)=>objectsNear(u.c,u.r,r,k).length});
           for(const u of moved) {
             const add=fx.get(u.id);
             if(!add) continue;
