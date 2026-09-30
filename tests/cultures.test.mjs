@@ -55,7 +55,7 @@ test('culture hooks are inert until a culture registers, and fully removable', (
   assert.deepEqual(VARIANTS, {});
   assert.equal(cardFor('fxGuard'), null);
   assert.equal(ACTIVE_CULTURES.length, 0);
-  assert.ok(RECRUITMENT_POOL.length === 26);
+  assert.ok(RECRUITMENT_POOL.length === 20);
 });
 
 test('a variant recruits as its base class with the stat delta, culture and passives', () => {

@@ -18,7 +18,7 @@ test('full-hand cycling replaces one card in place at no cost and shares the ben
  assert.deepEqual(state.hand,hand);assert.equal(state.cyclesRemaining,1);
 });
 test('each card type remains in its own rarity pool; a singleton pool can return the same identity',()=>{
- for(const def of [UNIT_CARDS.archer,SPELL_CARDS.mend,SHARD_CARDS.ruby]) {
+ for(const def of [UNIT_CARDS.archer,SHARD_CARDS.ruby]) {
   const state=createCardState({hand:[card(def)]}),r=cycleCard(state,{source:'hand',id:'test'},()=>0.99);
   assert.ok(r.ok);assert.equal(r.replacement.type,def.type);assert.equal(r.replacement.rarity,def.rarity);
   if(def.type==='skill')assert.equal(r.replacement.id,def.id);

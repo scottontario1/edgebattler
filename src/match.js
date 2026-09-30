@@ -393,6 +393,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       return { ok: true };
     },
     spell({ faction: f, cardId, c, r, unitId }) {
+      if (!sides[f].cards.hand.some((x) => x.instanceId === cardId && x.type === 'spell')) return fail('spell-card-not-found');
       const side = sides[f];
       const card = side.cards.hand.find((x) => x.instanceId === cardId);
       if (!card || card.type !== 'spell') return fail('spell-card-not-found');

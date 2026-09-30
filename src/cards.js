@@ -43,7 +43,6 @@ export const SKILL_CARDS = Object.freeze({
 // SKILL_CARDS stays exported for old level scripts and experiments, but no skill card is drawable.
 export const RECRUITMENT_POOL = Object.freeze([
   'pikeman', 'pikeman', 'pikeman', 'pikeman', 'pikeman', 'pikeman', 'archer', 'archer', 'archer', 'archer', 'cavalier', 'cavalier',
-  'mend', 'mend', 'ward', 'ward', 'fireburst', 'fireburst',
   ...SHARD_IDS,
 ]);
 
