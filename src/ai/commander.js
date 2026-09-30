@@ -10,6 +10,7 @@ import { findTile } from '../board.js';
 import { computeRange, MOVE_COST, MOVE_TYPE } from '../rules.js';
 import { UNIT_CARDS, CARD_LIMITS, previewCycle } from '../cards.js';
 import { findUpgradeMatches } from '../upgrades.js';
+import { ABILITY_CATALOG, selectedCost } from '../abilities.js';
 
 export const DEFAULT_PARAMS = Object.freeze({
   cycling: true,       // set false for matched-seed circulation comparisons
@@ -184,12 +185,19 @@ export function heuristic(m, f, { act, params = {} }) {
   for(const u of mine()) {
     const near=foes().some(o=>manhattan(o,u)<=u.mov+2);
     const picks=[];
-    if(u.cls==='pikeman') {picks.push('rally');if(near&&u.energy>=2&&u.hp/u.maxHp<0.8) picks.push('brace');}
+    if(u.cls==='pikeman') {
+      picks.push('rally');
+      // Experimental kit (registered only by experiments/candidates): Set Spears when a Cavalier is coming.
+      const horse=ABILITY_CATALOG.setSpears&&foes().some(o=>o.cls==='cavalier'&&manhattan(o,u)<=o.mov+2)&&u.energy>=ABILITY_CATALOG.setSpears.cost;
+      if(horse) picks.push('setSpears');
+      else if(near&&u.energy>=2&&u.hp/u.maxHp<0.8) picks.push('brace');
+    }
     if(u.cls==='archer'&&near&&u.energy>=2) picks.push('focusedShot');
     if(u.cls==='cavalier') {
       if(near&&u.stance==='advance'&&u.energy>=2) picks.push('charge');
       if(u.hp<=u.maxHp/2&&u.energy>=(picks.length?3:1)) picks.push('secondWind');
     }
+    if(u.cls==='cavalier'&&ABILITY_CATALOG.momentum&&near&&u.stance==='advance'&&selectedCost({selectedAbilities:picks})+ABILITY_CATALOG.momentum.cost<=u.energy) picks.push('momentum');
     if(JSON.stringify(picks)!==JSON.stringify(u.selectedAbilities||[])) act({type:'abilities',faction:f,unitId:u.id,abilityIds:picks});
   }
 }

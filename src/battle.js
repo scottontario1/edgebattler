@@ -164,14 +164,18 @@ export function resolveBattleRound({
     const hit = rand() * 100 < Math.min(100,(f.atk.hit ?? 100)+(attacker.statuses?.hitBonus||0));
     const crit = hit && rand() * 100 < (f.atk.crit ?? 0);
     const flank = attacker.cls==='cavalier' ? flankSide(attacker,target) : null;
-    const flankBonus = flank && flank!=='front' ? ABILITY_RULES.flankDamage : 0;
-    const rawDamage = hit ? Math.max(0,(f.atk.dmg??0)+(attacker.statuses?.attackBonus||0)+flankBonus)*(crit?3:1) : 0;
+    // Candidate Set Spears (experiments only): the guarded pikeman ignores a cavalier's Charge, Momentum and flank bonuses,
+    // and strikes a cavalier for extra damage. Without the status both terms are 0 and nothing changes.
+    const mountedGuard = attacker.cls==='cavalier' && target.statuses?.setSpears>0;
+    const spearBonus = target.cls==='cavalier' ? (attacker.statuses?.setSpears||0) : 0;
+    const flankBonus = flank && flank!=='front' && !mountedGuard ? ABILITY_RULES.flankDamage : 0;
+    const rawDamage = hit ? Math.max(0,(f.atk.dmg??0)+(mountedGuard?0:(attacker.statuses?.attackBonus||0))+flankBonus+spearBonus)*(crit?3:1) : 0;
     const warded = target.statuses?.ward === 'upcoming-battle';
     const mitigatedDamage = warded ? Math.floor(rawDamage / 2) : rawDamage;
     const barrier = target.statuses?.barrier;
     const barrierAmount = typeof barrier === 'number' ? barrier : barrier?.amount;
     const damage = mitigatedDamage;
-    strikes.push({ flank, flankBonus, attackBonus:attacker.statuses?.attackBonus||0, attackerId: attacker.id, targetId: target.id, hit, crit, damage, warded,
+    strikes.push({ flank, flankBonus, attackBonus:attacker.statuses?.attackBonus||0, ...(spearBonus?{spearBonus}:{}), ...(mountedGuard?{mountedGuard:true}:{}), attackerId: attacker.id, targetId: target.id, hit, crit, damage, warded,
       barrierAmount: Number.isFinite(barrierAmount) ? Math.max(0, barrierAmount) : 0, barrierReduction: 0 });
   }
   // Deterministic absorption across the entire incoming batch, including multiple small hits.
@@ -199,7 +203,7 @@ export function resolveBattleRound({
       delete next.statuses.barrier;
     }
     next.statuses={...(next.statuses||{})};
-    for(const key of ['brace','attackBonus','hitBonus']) delete next.statuses[key];
+    for(const key of ['brace','attackBonus','hitBonus','setSpears','equipStr','equipDef']) delete next.statuses[key];
     return next;
   });
   const combatEvents = strikes.map((s) => ({ type: 'strike', ...s }));

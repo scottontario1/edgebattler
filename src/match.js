@@ -19,7 +19,7 @@
 import { MAP, W, H, LAYOUT, inBounds, terrainAt } from './board.js';
 import { MOVE_COST, MOVE_TYPE, computeRange } from './rules.js';
 import { forecast, weaponOf } from './combat.js';
-import { CARD_LIMITS, UNIT_CARDS, SKILL_CARDS, createCardState, drawOpeningHand, refreshRound, recruitUnit, canDeployReserve, seededRandom, cycleCard } from './cards.js';
+import { CARD_LIMITS, UNIT_CARDS, skillCardFor, createCardState, drawOpeningHand, refreshRound, recruitUnit, canDeployReserve, seededRandom, cycleCard } from './cards.js';
 import { advanceAbilityRound, initializeAbilityState, queueSpell, cancelSpell, activatePhase, paidBundleReady, validateAbilitySelection, facingFromPath, FACING, battleMovement, ABILITY_RULES, ABILITIES, resolveQueuedSpells, equipTypeSkill, transferTypeSkill, skillsForUnitType } from './abilities.js';
 import { previewUpgrade, combineUnits } from './upgrades.js';
 import { resolveBattleRound, selectAttackTarget } from './battle.js';
@@ -34,6 +34,8 @@ export const RULES = Object.freeze({
   reserveEnergy: 1,    // extra energy a benched unit gains per round
 });
 export const FACTIONS = ['blue', 'red'];
+// Candidate equipment adds to Str/Def for one battle's forecasts only (no-op unless statuses.equip* is set).
+const withEquip = (u) => (u.statuses?.equipStr || u.statuses?.equipDef ? { ...u, str: u.str + (u.statuses.equipStr || 0), def: u.def + (u.statuses.equipDef || 0) } : u);
 const CHAMPION = { blue: 'brenna', red: 'dreg' };
 const HOME = { blue: 'C', red: 'K' };     // own keep tile
 const TARGET = { blue: 'K', red: 'C' };   // keep to seize
@@ -268,7 +270,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       if (!card || card.type !== 'skill') return fail('skill-card-not-found');
       if (side.cards.supply < card.cost) return fail('insufficient-supply');
       if ((side.loadouts[unitType] || []).some((s) => s.id === card.skillId)) return fail('already-equipped');
-      const res = equipTypeSkill(side.loadouts, unitType, { ...SKILL_CARDS[card.skillId], id: card.skillId }, { slots: 2 });
+      const res = equipTypeSkill(side.loadouts, unitType, { ...skillCardFor(card.skillId), id: card.skillId }, { slots: 2 });
       if (!res.ok) return fail(res.reason);
       side.loadouts = res.loadouts;
       side.cards = { ...side.cards, supply: side.cards.supply - card.cost, hand: side.cards.hand.filter((x) => x.instanceId !== cardId) };
@@ -368,10 +370,15 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
     for (const u of snapshot) {
       const barrier = skillsForUnitType(sides[u.faction].loadouts, u.cls).find((s) => s.id === 'barrier');
       if (barrier) u.statuses.barrier = { amount: barrier.blockDamage, duration: 'upcoming-battle' };
+      // Candidate passive equipment (statMods) applies for this battle only, through statuses that battle.js clears.
+      for (const skill of skillsForUnitType(sides[u.faction].loadouts, u.cls)) {
+        if (skill.statMods?.str) u.statuses.equipStr = (u.statuses.equipStr || 0) + skill.statMods.str;
+        if (skill.statMods?.def) u.statuses.equipDef = (u.statuses.equipDef || 0) + skill.statMods.def;
+      }
     }
     const ids = new Set(snapshot.map((u) => u.id));
     const orders = Object.fromEntries(snapshot.map((u) => {
-      let stance = u.statuses?.brace ? 'hold' : u.stance || 'advance';
+      let stance = u.statuses?.brace || u.statuses?.setSpears ? 'hold' : u.stance || 'advance';
       // A Protect order whose subject has fallen reverts to the class default (GAME.md, Stances).
       if (stance === 'protect' && !(u.objective?.type === 'protect' && ids.has(u.objective.targetId))) stance = UNIT_CARDS[u.cls]?.defaultStance || 'advance';
       const order = { stance, range: weaponOf(u).rng, objective: u.objective };
@@ -395,7 +402,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
     const battle = resolveBattleRound({
       units: snapshot, orders, seed: (m.seed + m.round) >>> 0,
       legalMoves: (u, shared) => computeRange(u, board(shared), battleMovement({...u,stance:orders[u.id].stance})).move.map(([c, r]) => ({ c, r })),
-      forecastAttack: (a, d, from) => forecast(a, d, [from.c, from.r]),
+      forecastAttack: (a, d, from) => forecast(withEquip(a), withEquip(d), [from.c, from.r]),
       pathForMove:(u,to,shared)=>computeRange(u,board(shared),battleMovement({...u,stance:orders[u.id].stance})).pathTo(to.c,to.r),
       beforeCombat:(moved,events)=>{
         for(const u of moved) {
@@ -408,7 +415,8 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
         for(const u of moved) {
           const act=activatePhase(u,'enhancement',{paid:paid.get(u.id),
             moved:events.some(e=>e.unitId===u.id&&e.type==='move'),
-            hasTarget:Boolean(selectAttackTarget(u,moved,(a,d,from)=>forecast(a,d,[from.c,from.r])))});
+            movedTiles:events.find(e=>e.unitId===u.id&&e.type==='move')?.path?.length||0,
+            hasTarget:Boolean(selectAttackTarget(u,moved,(a,d,from)=>forecast(withEquip(a),withEquip(d),[from.c,from.r])))});
           Object.assign(u,act.unit);recoveryEvents.push(...act.events);
         }
         return moved;

@@ -6,6 +6,7 @@
 //   --swap        also play every seed with the policies swapped (the map is not symmetric)
 //   --verify      replay every game from its log and fail on any mismatch (determinism check)
 //   --no-logs     write only summary.csv (faster, smaller)
+//   --candidates a,b [--pool]  enable experimental abilities/cards from experiments/candidates (--pool adds the cards to the draw pool)
 //   --map file.js experiment map (default export {id, layout}); the header records its id, and --verify replays on it
 // Then: node tools/sim/report.mjs <out dir>
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
@@ -33,13 +34,17 @@ const writeLogs = !flag('no-logs');
 const mapFile = opt('map', null);
 const customMap = mapFile ? (await import(pathToFileURL(resolve(mapFile)).href)).default : null;
 if (customMap) setMap(customMap);
+const candidateIds = (opt('candidates', '') || '').split(',').filter(Boolean);
+const candidatePool = flag('pool');
+const { enableCandidates } = await import('../../experiments/candidates/index.mjs');
+if (candidateIds.length) enableCandidates(candidateIds, { pool: candidatePool });
 const commit = (() => { try { return execFileSync('git',['-c',`safe.directory=${process.cwd()}`,'rev-parse','--short','HEAD']).toString().trim(); } catch { return null; } })();
 mkdirSync(out, { recursive: true });
 
 /** Play one game; `sides` maps faction -> { policy, params }. Returns a CSV row object and the log. */
 export function playGame(seed, sides) {
   const log = memoryLog();
-  const m = createMatch({ seed, maxRounds, log: log.push, meta: { source: 'sim', commit,
+  const m = createMatch({ seed, maxRounds, log: log.push, meta: { source: 'sim', commit, ...(candidateIds.length ? { candidates: candidateIds, pool: candidatePool } : {}),
     blue: `ai:${sides.blue.policy}`, red: `ai:${sides.red.policy}`,
     params: { blue: { ...DEFAULT_PARAMS, ...sides.blue.params }, red: { ...DEFAULT_PARAMS, ...sides.red.params } } } });
   while (!m.over) {
@@ -90,7 +95,7 @@ for (const { seed, sides, swapped } of plan) {
 }
 const cols = Object.keys(rows[0]);
 writeFileSync(join(out, 'summary.csv'), [cols.join(','), ...rows.map((r) => cols.map((c) => r[c]).join(','))].join('\n') + '\n');
-writeFileSync(join(out, 'run.json'), JSON.stringify({ commit, games, firstSeed, maxRounds, blue, red, map: customMap?.id || DEFAULT_MAP.id, params, swap: flag('swap'), ms: Date.now() - t0 }, null, 2));
+writeFileSync(join(out, 'run.json'), JSON.stringify({ commit, games, firstSeed, maxRounds, blue, red, map: customMap?.id || DEFAULT_MAP.id, candidates: candidateIds, pool: candidatePool, params, swap: flag('swap'), ms: Date.now() - t0 }, null, 2));
 const wins = (f) => rows.filter((r) => r.winner === f).length;
 console.log(`${rows.length} games in ${((Date.now() - t0) / 1000).toFixed(1)}s -> ${out}`);
 console.log(`blue ${wins('blue')}  red ${wins('red')}  draw ${wins('draw')}${flag('verify') ? `  replay failures ${failures}` : ''}`);

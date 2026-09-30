@@ -50,7 +50,14 @@ export function seededRandom(seed = 1) {
 }
 
 const copy = (value) => structuredClone(value);
-export const cardFor = (key) => UNIT_CARDS[key] ?? SPELL_CARDS[key] ?? SKILL_CARDS[key] ?? null;
+// Experiments (experiments/candidates) register extra cards and swap the draw pool; the game never does.
+const CANDIDATE_CARDS = {};
+let ACTIVE_POOL = RECRUITMENT_POOL;
+export const registerCandidateCards = (cards) => Object.assign(CANDIDATE_CARDS, cards);
+export const setRecruitmentPool = (keys) => { ACTIVE_POOL = keys ? Object.freeze([...keys]) : RECRUITMENT_POOL; };
+export const resetCandidateCards = () => { for (const k of Object.keys(CANDIDATE_CARDS)) delete CANDIDATE_CARDS[k]; ACTIVE_POOL = RECRUITMENT_POOL; };
+export const cardFor = (key) => UNIT_CARDS[key] ?? SPELL_CARDS[key] ?? SKILL_CARDS[key] ?? CANDIDATE_CARDS[key] ?? null;
+export const skillCardFor = (skillId) => SKILL_CARDS[skillId] ?? Object.values(CANDIDATE_CARDS).find((c) => c.skillId === skillId) ?? null;
 
 /** Create a fresh match inventory. `cards` defaults to an empty hand. */
 export function createCardState({ cyclesRemaining = CARD_LIMITS.cyclesPerRound, supply = CARD_LIMITS.initialSupply, hand = [], reserves = [], population = 0 } = {}) {
@@ -62,10 +69,11 @@ export function drawCards(state, rng = seededRandom(1), count = CARD_LIMITS.open
   const next = copy(state);
   const requested = Math.max(0, Math.floor(count));
   const slots = Math.max(0, CARD_LIMITS.hand - next.hand.length);
+  const POOL = ACTIVE_POOL;
   const drawn = [];
   for (let i = 0; i < Math.min(requested, slots); i += 1) {
-    const index = Math.min(RECRUITMENT_POOL.length - 1, Math.floor(rng() * RECRUITMENT_POOL.length));
-    const key = RECRUITMENT_POOL[index];
+    const index = Math.min(POOL.length - 1, Math.floor(rng() * POOL.length));
+    const key = POOL[index];
     const card = copy(cardFor(key));
     next.cardSequence = (next.cardSequence ?? next.hand.length) + 1;
     card.instanceId = `card-${next.cardSequence}-${index}`;
@@ -142,7 +150,7 @@ export function previewCycle(state,{source,id}) {
   const rarity=item.rarity??(source==='bench'?UNIT_CARDS[item.unitId]?.rarity:'common');
   const stars=type==='unit'?(item.stars??1):null;
   if(type==='unit'&&(!Number.isInteger(stars)||stars<1||stars>UPGRADE_MAX_STARS)) return fail('invalid-star-grade');
-  const pool=RECRUITMENT_POOL.filter(key=>cardFor(key)?.type===type&&cardFor(key)?.rarity===rarity);
+  const pool=ACTIVE_POOL.filter(key=>cardFor(key)?.type===type&&cardFor(key)?.rarity===rarity);
   if(!pool.length) return fail('no-matching-pool');
   return {ok:true,type,rarity,stars,pool,refund:source==='bench'?(item.costPaid??0):0,
     populationFreed:source==='bench'?(item.population??1):0};
