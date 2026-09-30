@@ -33,6 +33,15 @@ Built 2026-09-30 on `ccr-d70cb868-ob7chg` for the faction sub-agents (first batc
 
 Added for the Hollow Court (corpse consumption): an ability `requires: { objectNear: { kind, radius, min? } }` (skip reason `object-trigger-unmet`); a passive `when: { objectNear: { kind, radius, min? } }`; and `consume: { kind, radius, count, heal: { radius, amount } }` on a `recovery`-phase ability, which removes the nearest `count` objects of that kind within `radius` (the unit's own tile counts, distance 0) and heals every friendly unit within `heal.radius` of the unit by `amount`. An ability with `spawn` or `consume` and no `effect` no longer falls into the default +4 attack bonus branch.
 
+## Categories, healing and buffs (third batch)
+
+| hook | where | how a culture uses it |
+|---|---|---|
+| Unit categories | `src/categories.js`, `src/cultures.js` | `category` on a class or variant (`melee`, `ranged`, `mounted`, `caster`, `support`; default caster for a magic weapon) and optional `aiStance`. Shown in the inspect sheet and the unit card tooltip; read by the AI. |
+| Heal on others | `src/match.js` (recovery phase) | Kit ability `healAllies: { radius, amount, self }`. |
+| Grant statuses on others | `src/match.js` (defense phase) | Kit ability `grant: { radius, statuses: { damageDealt: 2 }, self, classes? }`: numeric battle statuses for friendly units in range, cleared after the battle. |
+| Data-driven AI | `src/ai/commander.js` | Category-weighted recruit mix, category/`aiStance` stances, kit abilities chosen from `requires`/`spawn`/`mark`/`consume`/`healAllies`/`grant` data, faction spells. Nothing changes without a registered culture. |
+
 ## Not built (deliberately)
 
 Summoning or reviving units mid-match, aura visuals, UI for the mark action, object interaction in the UI (objects are draw-only), object HP bars, real sprites for new classes, and AI behaviour for any culture (the AI does not yet place objects, mark targets or deliberately play new-class cards). Those belong to the faction branches or to a decision by Scott.

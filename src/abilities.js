@@ -92,9 +92,9 @@ export function activatePhase(unit,phase,{paid=true,moved=false,hasTarget=false,
   else if(a.effect) {
    for(const [k,v] of Object.entries(a.effect)) {const n=typeof v==='function'?v({movedTiles}):v;next.statuses[k]=(next.statuses[k]||0)+n;}
   }
-  else if(a.spawn||a.consume) {/* effect handled by the match (tile objects) */}
+  else if(a.spawn||a.consume||a.healAllies||a.grant) {/* effect handled by the match (tile objects, heals and grants on other units) */}
   else {next.statuses.attackBonus=4;if(a.id==='focusedShot') next.statuses.hitBonus=20;}
-  events.push({unitId:next.id,abilityId:a.id,name:a.name,applied:true,cost:a.cost,energyCapped,effect,cooldown:a.cooldown,...(a.spawn?{spawn:a.spawn}:{}),...(a.mark?{mark:a.mark}:{}),...(a.consume?{consume:a.consume}:{})});
+  events.push({unitId:next.id,abilityId:a.id,name:a.name,applied:true,cost:a.cost,energyCapped,effect,cooldown:a.cooldown,...(a.spawn?{spawn:a.spawn}:{}),...(a.mark?{mark:a.mark}:{}),...(a.consume?{consume:a.consume}:{}),...(a.healAllies?{healAllies:a.healAllies}:{}),...(a.grant?{grant:a.grant}:{})});
  }
  return {unit:next,events};
 }

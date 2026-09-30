@@ -41,6 +41,7 @@ export const SWORN_RADIUS = 1;                // adjacent
 export const SWORN_ALLY_REDUCTION = 2;        // damage less per strike for the units next to a Protecting Oathsworn (see Engine requests: should be the subject only)
 export const SWORN_SELF_PENALTY = 2;          // damage MORE per strike taken by the Oathsworn itself while that holds
 // Variants of the shipped classes: same stats as the base class, plus Line Doctrine.
+export const CLERIC = { hp: 20, mag: 7, staffMight: 4, cost: 3, healAmount: 6, healRadius: 2, sanctuaryCost: 2, sanctuaryCooldown: 2 }; // Battle Cleric (prototype defaults)
 export const CROWN_PIKE_COST = 1, CROWN_ARCHER_COST = 2, CROWN_CAVALIER_COST = 3; // same as the base cards
 
 // ---------------------------------------------------------------- skills (kit abilities)
@@ -61,12 +62,12 @@ export const BRENNA_IDS = ['brenna', 'brennaCrown', 'brennaCrownB'];    // shipp
 // The shared spells Mend, Ward and Fireburst stay in the pool (FACTIONS.md 1b, "One faction per side"). Barrier is not drawn.
 export const POOL = [
   'crownPike', 'crownPike', 'crownPike', 'crownGuard', 'crownGuard', 'crownArcher', 'crownArcher', 'crownCavalier',
-  'bannerman', 'oathsworn',
+  'bannerman', 'oathsworn', 'battleCleric',
   'mend', 'ward', 'fireburst', 'rallyBanner',
 ];
 
 // ---------------------------------------------------------------- placeholder art (no binary assets): base sprite x tint
-export const TINTS = { crownPike: '#9db8ea', crownArcher: '#9db8ea', crownCavalier: '#9db8ea', crownGuard: '#7f9fd6', bannerman: '#d7deef', oathsworn: '#eef1f8', brenna: '#ffffff' };
+export const TINTS = { crownPike: '#9db8ea', crownArcher: '#9db8ea', crownCavalier: '#9db8ea', crownGuard: '#7f9fd6', bannerman: '#d7deef', oathsworn: '#eef1f8', battleCleric: '#f4f1e2', brenna: '#ffffff' };
 
 // ---------------------------------------------------------------- passives
 const base = (cls, delta) => { const t = { ...RECRUIT[cls] }; for (const [k, d] of Object.entries(delta)) t[k] += d; return t; };
@@ -90,12 +91,20 @@ const ARGENT_CROWN = {
   id: 'crown',
   // New classes (real classes because kits are keyed by class): they reuse the Iron Pike weapon and move as foot.
   classes: {
-    bannerman: { name: 'Bannerman', title: 'Standard-bearer', stats: stats(bannerman), weapon: 'Iron Pike', spriteBase: 'pikeman', tint: TINTS.bannerman, label: 'Bannerman',
+    bannerman: { category: 'support', aiStance: 'hold', name: 'Bannerman', title: 'Standard-bearer', stats: stats(bannerman), weapon: 'Iron Pike', spriteBase: 'pikeman', tint: TINTS.bannerman, label: 'Bannerman',
       passives: [LINE_DOCTRINE, BANNER], description: 'Banner: friendly Hold/Protect units within 2 tiles take 1 less damage per strike.',
       card: { rarity: 'uncommon', cost: BANNERMAN_COST, class: 'Foot', range: 1, defaultStance: BANNERMAN_STANCE, population: 1 } },
-    oathsworn: { name: 'Oathsworn', title: 'Sworn Guard', stats: stats(oath), weapon: 'Iron Pike', spriteBase: 'pikeman', tint: TINTS.oathsworn, label: 'Oathsworn',
+    oathsworn: { aiStance: 'hold', name: 'Oathsworn', title: 'Sworn Guard', stats: stats(oath), weapon: 'Iron Pike', spriteBase: 'pikeman', tint: TINTS.oathsworn, label: 'Oathsworn',
       passives: [LINE_DOCTRINE, SWORN_GUARD_ALLIES, SWORN_GUARD_SELF], description: 'Sworn Guard: while Protecting, the allies beside it take 2 less damage per strike and it takes 2 more.',
       card: { rarity: 'rare', cost: OATHSWORN_COST, class: 'Foot', range: 1, defaultStance: OATHSWORN_STANCE, population: 1 } },
+    // Battle Cleric (NEW class, support): a Crown healer-priest with a blessed staff (a magic weapon: Mag against Res, reach 2). Prototype
+    // numbers, labelled: frail in melee, worth protecting; Sanctuary heals the line around it.
+    battleCleric: { category: 'support', aiStance: 'hold', name: 'Battle Cleric', title: 'Field priest', label: 'Battle Cleric',
+      stats: { hp: CLERIC.hp, str: 3, mag: CLERIC.mag, skl: 6, spd: 5, def: 4, res: 4, mov: 4 }, weapon: 'Blessed Staff',
+      weaponDef: { mt: CLERIC.staffMight, hit: 85, crit: 0, rng: [1, 2], kind: 'tome', magic: true },
+      spriteBase: 'archer', tint: TINTS.battleCleric, passives: [LINE_DOCTRINE],
+      description: `Sanctuary: heals ${CLERIC.healAmount} HP to itself and friendly units within ${CLERIC.healRadius} tiles each round it is chosen. Weak in melee, so keep it behind the line.`,
+      card: { rarity: 'uncommon', cost: CLERIC.cost, class: 'Foot', range: 2, defaultStance: 'hold', population: 1 } },
   },
   // Brenna, as a registered champion so she works on either side, respawns as herself and can be given passives (see registerArgentCrown).
   champions: {
@@ -106,7 +115,7 @@ const ARGENT_CROWN = {
   },
   // Variants of the shipped classes: identical stats, Line Doctrine only.
   variants: {
-    crownGuard: { base: 'pikeman', name: 'Crown Guard', title: 'Line Infantry', delta: GUARD_DELTA, stats: { stance: GUARD_STANCE }, // stats.stance: how a variant sets its default stance on the unit (the card alone is not enough)
+    crownGuard: { aiStance: 'hold', base: 'pikeman', name: 'Crown Guard', title: 'Line Infantry', delta: GUARD_DELTA, stats: { stance: GUARD_STANCE }, // stats.stance: how a variant sets its default stance on the unit (the card alone is not enough)
       tint: TINTS.crownGuard, passives: [LINE_DOCTRINE, SHIELDWALL],
       description: 'Holds the line. Shieldwall: takes 2 less damage per strike beside friendly infantry.', card: { rarity: 'common', cost: GUARD_COST, defaultStance: GUARD_STANCE } },
     crownPike: { base: 'pikeman', name: 'Crown Pikeman', title: 'Levy', tint: TINTS.crownPike, passives: [LINE_DOCTRINE], description: 'Line Doctrine: +1 Defense per adjacent friendly infantry (max +2).',
@@ -120,6 +129,9 @@ const ARGENT_CROWN = {
     { id: 'closeRanks', name: 'Close Ranks', classes: ['pikeman'], cost: CLOSE_RANKS.cost, cooldown: CLOSE_RANKS.cooldown, phase: 'defense',
       effect: { damageTaken: CLOSE_RANKS.reduction },
       description: `Pikeman class (Crown Pikeman, Crown Guard). Take ${CLOSE_RANKS.reduction} less damage per strike this battle. Does not force Hold. (Simplified: the design gives this to adjacent friendly infantry too.)` },
+    { id: 'sanctuary', name: 'Sanctuary', classes: ['battleCleric'], cost: CLERIC.sanctuaryCost, cooldown: CLERIC.sanctuaryCooldown, phase: 'recovery',
+      healAllies: { radius: CLERIC.healRadius, amount: CLERIC.healAmount, self: true },
+      description: `Heal ${CLERIC.healAmount} HP to the Cleric and every friendly unit within ${CLERIC.healRadius} tiles.` },
     { id: 'holdTheStandard', name: 'Hold the Standard', classes: ['bannerman'], cost: HOLD_STANDARD.cost, cooldown: HOLD_STANDARD.cooldown, phase: 'defense', requires: { stance: 'hold' },
       effect: { damageTaken: HOLD_STANDARD.reduction },
       description: `Requires Hold. Take ${HOLD_STANDARD.reduction} less damage per strike this battle. (Simplified: the design heals friendly units within 2 tiles by 6.)` },

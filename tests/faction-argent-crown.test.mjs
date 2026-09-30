@@ -55,9 +55,9 @@ test('registration is explicit and fully removable; nothing registers by importi
   assert.equal(cardFor('crownGuard'), null);
   const rec1 = registerArgentCrown();
   assert.deepEqual(ACTIVE_CULTURES, ['crown']);
-  assert.deepEqual(rec1.classes.sort(), ['bannerman', 'oathsworn']);
+  assert.deepEqual(rec1.classes.sort(), ['bannerman', 'battleCleric', 'oathsworn']);
   assert.deepEqual(rec1.variants.sort(), ['crownArcher', 'crownCavalier', 'crownGuard', 'crownPike']);
-  assert.deepEqual(rec1.abilities.sort(), ['bulwarkOfTheRealm', 'closeRanks', 'holdTheStandard', 'interpose', 'oathkeepersStrike']);
+  assert.deepEqual(rec1.abilities.sort(), ['bulwarkOfTheRealm', 'closeRanks', 'holdTheStandard', 'interpose', 'oathkeepersStrike', 'sanctuary']);
   resetCultures();
   assert.equal(snap(), before, 'every registry is back to the shipped contents');
   assert.deepEqual(Object.keys(ABILITY_CATALOG), Object.keys(ABILITIES));
@@ -71,9 +71,9 @@ test('registration is explicit and fully removable; nothing registers by importi
 
 test('the culture definition has the shape registerCulture documents and one entry per FACTIONS.md item', () => {
   assert.equal(ARGENT_CROWN.id, 'crown');
-  assert.deepEqual(Object.keys(ARGENT_CROWN.classes).sort(), ['bannerman', 'oathsworn']);
+  assert.deepEqual(Object.keys(ARGENT_CROWN.classes).sort(), ['bannerman', 'battleCleric', 'oathsworn']);
   assert.deepEqual(Object.keys(ARGENT_CROWN.variants).sort(), ['crownArcher', 'crownCavalier', 'crownGuard', 'crownPike']);
-  assert.deepEqual(ARGENT_CROWN.abilities.map((a) => a.id).sort(), ['bulwarkOfTheRealm', 'closeRanks', 'holdTheStandard', 'interpose', 'oathkeepersStrike']);
+  assert.deepEqual(ARGENT_CROWN.abilities.map((a) => a.id).sort(), ['bulwarkOfTheRealm', 'closeRanks', 'holdTheStandard', 'interpose', 'oathkeepersStrike', 'sanctuary']);
   assert.deepEqual(Object.keys(ARGENT_CROWN.spells), ['rallyBanner']);
   assert.deepEqual(Object.keys(ARGENT_CROWN.champions).sort(), ['brennaCrown', 'brennaCrownB']);
 });
@@ -81,7 +81,7 @@ test('the culture definition has the shape registerCulture documents and one ent
 // ---------------------------------------------------------------- cards, rarity, pool
 test('every card has a rarity, a cost and a culture; the pool is Crown cards plus the shared spells', () => {
   reg();
-  const expect = { crownPike: ['common', 1], crownArcher: ['common', 2], crownCavalier: ['common', 3], crownGuard: ['common', 2], bannerman: ['uncommon', 2], oathsworn: ['rare', 3], rallyBanner: ['common', 1] };
+  const expect = { crownPike: ['common', 1], crownArcher: ['common', 2], crownCavalier: ['common', 3], crownGuard: ['common', 2], bannerman: ['uncommon', 2], oathsworn: ['rare', 3], battleCleric: ['uncommon', 3], rallyBanner: ['common', 1] };
   for (const [key, [rarity, cost]] of Object.entries(expect)) {
     const card = cardFor(key);
     assert.equal(card.rarity, rarity, `${key} rarity`);

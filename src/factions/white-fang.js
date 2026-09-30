@@ -82,6 +82,7 @@ export const POOL = Object.freeze([
   'fangHunter', 'fangHunter',               // common
   'cavalier',                               // the plain Cavalier: Charge already is a momentum kit
   'fangAxeguard', 'fangAxeguard',           // uncommon (drawable from round 3)
+  'wolfRider', 'fangShaman',                // uncommon: mounted flanker and caster (category system)
   'fangBerserker',                          // rare (from round 6)
   'warCry', 'bloodOath', 'hunt',
   'mend', 'ward', 'fireburst',
@@ -90,7 +91,7 @@ export const POOL = Object.freeze([
 // Placeholder tints multiplied onto the base sprite (the pikeman or archer sprite) until the supplied reference art (design_assets/factions/
 // white_fang/*_sprite.png on the root branch) becomes runtime sprites. Palette from that art: iron grey plate, off-white wolf fur, brown
 // leather, crimson only on the Berserker.
-const TINT = Object.freeze({ reaver: '#B4B2AC' /* iron grey and wolf fur */, axeguard: '#7A828C' /* full iron plate */, berserker: '#B5382C' /* crimson war paint */, hunter: '#8C6B4F' /* brown leather */ });
+const TINT = Object.freeze({ reaver: '#B4B2AC' /* iron grey and wolf fur */, axeguard: '#7A828C' /* full iron plate */, berserker: '#B5382C' /* crimson war paint */, hunter: '#8C6B4F' /* brown leather */, rider: '#8A8F99' /* grey wolf-pelted mount */, shaman: '#6F8FA8' /* cold spirit-blue */ });
 
 /**
  * Build the culture definition. `options` exist only for sensitivity experiments; the default export uses the defaults.
@@ -116,6 +117,18 @@ export function buildWhiteFang({ weaponKind = NEUTRAL_WEAPON_KIND, reaverMovDelt
         passives: [{ id: 'lastFang', when: { hpBelow: LAST_FANG_BELOW }, effect: { damageDealt: LAST_FANG_DAMAGE } }],
         card: { rarity: 'rare', cost: BERSERKER.cost, class: 'Foot', range: 1, defaultStance: 'advance' },
         description: `Bare-chested glass cannon. Last Fang: below ${LAST_FANG_BELOW * 100}% HP, +${LAST_FANG_DAMAGE} Str. Frenzy when hurt.` },
+      // Wolf Rider (NEW class, mounted): a raider on a shaggy northern warhorse. Momentum on horseback.
+      wolfRider: { category: 'mounted', aiStance: 'advance', name: 'Wolf Rider', title: 'Fang Outrider', label: 'Wolf Rider',
+        stats: { hp: 22, str: 8, skl: 5, spd: 8, def: 5, mov: 7 }, ...axe('Fang Spear'), moveType: 'mounted', spriteBase: 'cavalier', tint: TINT.rider,
+        passives: [{ id: 'packCharge', when: { moved: true }, effect: { damageDealt: MOMENTUM_DAMAGE } }],
+        card: { rarity: 'uncommon', cost: 3, class: 'Mounted', typeLabel: 'Mounted', range: 1, defaultStance: 'advance' },
+        description: `Fast flanker. Pack Charge: +${MOMENTUM_DAMAGE} damage if it moved before attacking. Howling Charge adds a Charge-style bonus.` },
+      // Fang Shaman (NEW class, caster): a spirit-caller with a totem staff (Mag against Res, reach 2). Wolf Spirit buffs the pack.
+      fangShaman: { category: 'caster', name: 'Fang Shaman', title: 'Spirit-Caller', label: 'Fang Shaman',
+        stats: { hp: 18, str: 3, mag: 8, skl: 5, spd: 5, def: 2, res: 5, mov: 4 }, weapon: 'Spirit Totem',
+        weaponDef: { mt: 4, hit: 85, crit: 0, rng: [1, 2], kind: 'tome', magic: true }, spriteBase: 'archer', tint: TINT.shaman,
+        card: { rarity: 'uncommon', cost: 3, class: 'Foot', range: 2, defaultStance: 'hold' },
+        description: 'Frail spirit-caller. Wolf Spirit: friendly units within 2 tiles (and the Shaman) deal +2 damage this battle.' },
     },
     variants: {
       fangHunter: { base: 'archer', name: 'Fang Hunter', title: 'Trophy Hunter', delta: { hp: HUNTER.hp, str: HUNTER.str, def: HUNTER.def }, tint: TINT.hunter,
@@ -135,6 +148,12 @@ export function buildWhiteFang({ weaponKind = NEUTRAL_WEAPON_KIND, reaverMovDelt
       { id: 'frenzy', name: 'Frenzy', classes: ['fangBerserker'], cost: FRENZY.cost, cooldown: FRENZY.cooldown, phase: 'enhancement',
         requires: { hpBelow: FRENZY.below }, effect: { damageDealt: FRENZY.damage, damageTaken: -FRENZY.extraTaken },
         description: `Only below ${FRENZY.below * 100}% HP: strikes gain +${FRENZY.damage} damage and the unit takes ${FRENZY.extraTaken} more damage per strike.` },
+      { id: 'howlingCharge', name: 'Howling Charge', classes: ['wolfRider'], cost: 2, cooldown: 2, phase: 'enhancement',
+        requires: { stance: 'advance', moved: 2, target: true }, effect: { damageDealt: 3 },
+        description: 'Requires Advance, 2+ tiles of movement and a target: the strike gains +3 damage.' },
+      { id: 'wolfSpirit', name: 'Wolf Spirit', classes: ['fangShaman'], cost: 2, cooldown: 3, phase: 'defense',
+        grant: { radius: 2, self: true, statuses: { damageDealt: 2 } },
+        description: 'Friendly units within 2 tiles, and the Shaman, deal +2 damage on every strike this battle.' },
       { id: 'bloodChallenge', name: 'Blood Challenge', units: ['dreg'], classes: [], cost: BLOOD_CHALLENGE.cost, cooldown: BLOOD_CHALLENGE.cooldown, phase: 'defense',
         mark: { radius: BLOOD_CHALLENGE.radius }, effect: { damageDealt: BLOOD_CHALLENGE.bonus, offTargetPenalty: BLOOD_CHALLENGE.bonus - BLOOD_CHALLENGE.offTargetNet },
         description: `Mark one enemy within ${BLOOD_CHALLENGE.radius} tiles: Dreg heads for it, deals +${BLOOD_CHALLENGE.bonus} damage to it and ${-BLOOD_CHALLENGE.offTargetNet} less to anything else. Not a hard lock.` },

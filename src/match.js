@@ -442,6 +442,16 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
         if(o) notes.push({faction:u.faction,text:`${u.name} raised a ${o.name}`});
         else e.spawned=false;
       }
+      // Grant abilities (phase 'defense'): numeric battle statuses for friendly units within a radius (Blood Cry, Sanctuary...).
+      for(const e of act.events) if(e.applied&&e.grant) {
+        const g=e.grant;
+        for(const o of alive(u.faction)) {
+          if(o.id===u.id?!g.self:Math.abs(o.c-u.c)+Math.abs(o.r-u.r)>g.radius) continue;
+          if(g.classes&&!g.classes.includes(o.cls)) continue;
+          o.statuses={...(o.statuses||{})};
+          for(const [k,v] of Object.entries(g.statuses||{})) o.statuses[k]=(o.statuses[k]||0)+v;
+        }
+      }
       // Mark abilities (phase 'defense', before movement): the chosen or nearest enemy in radius becomes the unit's target.
       for(const e of act.events) if(e.applied&&e.mark) {
         const foes=alive().filter(o=>o.faction!==u.faction&&Math.abs(o.c-u.c)+Math.abs(o.r-u.r)<=e.mark.radius);
@@ -503,6 +513,16 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
           if(e) u.facing=facingFromPath([[e.from.c,e.from.r],...e.path],u.facing);
           const act=activatePhase(u,'recovery',{paid:paid.get(u.id),onControlled:onOwnedTile(u),objectCount:(k,r)=>objectsNear(u.c,u.r,r,k).length});
           Object.assign(u,act.unit);recoveryEvents.push(...act.events);
+          // Heal-allies ability (recovery phase): heal friendly units within a radius (the healer itself only with `self`).
+          for(const e of act.events) if(e.applied&&e.healAllies) {
+            const h=e.healAllies;
+            e.healed=0;
+            for(const o of moved) {
+              if(o.kind==='object'||o.faction!==u.faction||o.hp<=0) continue;
+              if(o.id===u.id?!h.self:Math.abs(o.c-u.c)+Math.abs(o.r-u.r)>h.radius) continue;
+              const before=o.hp;o.hp=Math.min(o.maxHp,o.hp+h.amount);e.healed+=o.hp-before;
+            }
+          }
           // Consume ability (recovery phase): eat the nearest tile objects of a kind and heal friends around the unit.
           for(const e of act.events) if(e.applied&&e.consume) {
             const c=e.consume;

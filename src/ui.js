@@ -1062,7 +1062,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
   // Dev only: lets design checks drive UI states without playing to them (see docs/design_overhaul/tasks).
   if (import.meta.env.DEV) {
     window.__ui = {
-      state, feed, plates, commands, refresh, territory, units,
+      state, feed, plates, commands, refresh, syncView, territory, units,
       match,
       get cardState() { return blue().cards; }, set cardState(v) { blue().cards = v; },
       get skillLoadouts() { return blue().loadouts; }, set skillLoadouts(v) { blue().loadouts = v; },

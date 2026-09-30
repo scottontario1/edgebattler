@@ -276,3 +276,19 @@ Engine fixes made while merging (all inert for the classic game, checked byte-id
 - **URL flags:** `?you=<faction>&foe=<faction>&red=<ai>&seed=N` for a skirmish (`crown`, `fang`, `league`, `court`, default `classic`), `?level=<id>` for a level.
 - **Levels** (`src/levels.js`): the suites written for the experiments (7 classic, 3 Crown, 5 Fang, 5 League, 4 Court) played as Blue by a human. Red follows the level's script and its units' stances. The panel under the objective ("About this level") shows the question, the setup and the suggested plan (the skilled variant's Blue steps).
 - **In game:** a "Menu" link in the objective panel returns to the menu.
+
+## 12. Unit categories and more classes (2026-09-30)
+
+Scott asked for room for mages and other roles and for more character diversity. `src/categories.js` adds five categories; a category never changes combat rules by itself, it drives display, AI defaults and design of new classes.
+
+| category | role | shipped | faction classes added |
+|---|---|---|---|
+| melee | front line, holds ground | Pikeman, Paladin, Barbarian | Crown Guard, Oathsworn, Reaver, Axeguard, Berserker, Relic Walker, Ghoul, Graveguard, Wight |
+| ranged | shoots from behind the line | Archer | Levy Archer, Fang Hunter, Coil Crossbowman |
+| mounted | fast shock and flank | Cavalier | Crown Knight, **Wolf Rider** (Fang), **Dragoon** (League), Mourning Knight |
+| caster | magic damage (Mag against Res, ignores Defense), fragile | none | **Fang Shaman**, **Artificer** (League, range 2-3), **Wraith** (Court) |
+| support | heals, buffs, auras | none | Bannerman, **Battle Cleric** (Crown), Sapper, Necromancer |
+
+New this pass (prototype numbers, all in the faction modules): Battle Cleric (Sanctuary heals 6 HP to itself and friends within 2), Fang Shaman (Wolf Spirit: +2 damage for friends within 2), Wolf Rider (Pack Charge, Howling Charge), Artificer (Overload: +4 damage, Overheat), Dragoon (Ironclad), Wraith (Ethereal, Withering Touch). A class picks its category with `category` (default caster for a magic weapon) and may set `aiStance: 'hold' | 'advance'`. The League's classes now prefer to hold. New engine hooks: kit abilities can `healAllies: { radius, amount, self }` and `grant: { radius, statuses, self }`.
+
+**AI.** The shipped heuristic commander now reads class data: it counts and recruits faction classes by category (variants and new classes included), holds or advances by category and `aiStance`, picks faction abilities from each unit's kit by what the ability data says it needs (affordable, off cooldown, requirements met, something to act on), aims mark abilities, and casts faction spells. Classic games are unchanged (byte-identical simulations).

@@ -69,7 +69,7 @@ export const IRON_LEAGUE = Object.freeze({
 const N = IRON_LEAGUE;
 
 // Placeholder art (tint over the borrowed base sprite; no new binary assets): brass, bronze, patina, rust.
-const TINT = { pike: '#6F8F7A', pavise: '#8C7A4A', coil: '#4E8F7A', walker: '#B08A3C', sapper: '#9A6A3A', champion: '#C9A24A' };
+const TINT = { artificer: '#C9A24A', dragoon: '#7F8F6A', pike: '#6F8F7A', pavise: '#8C7A4A', coil: '#4E8F7A', walker: '#B08A3C', sapper: '#9A6A3A', champion: '#C9A24A' };
 
 export const DEFAULT_LEAGUE_CHAMPION = 'ilseVoss'; // PROVISIONAL default: Scott chooses among ilseVoss, tobiahKettle, oldSixty
 
@@ -78,15 +78,28 @@ const ironLeague = {
 
   classes: {
     relicWalker: {
-      name: 'Relic Walker', title: 'Salvaged machine',
+      aiStance: 'hold', name: 'Relic Walker', title: 'Salvaged machine',
       stats: { hp: N.WALKER_HP, str: N.WALKER_STR, skl: N.WALKER_SKL, spd: N.WALKER_SPD, def: N.WALKER_DEF, mov: N.WALKER_MOV },
       weapon: 'Relic Coil', weaponDef: N.WALKER_WEAPON, moveType: 'armor', spriteBase: 'pikeman', tint: TINT.walker, label: 'Relic Walker',
       passives: [{ id: 'wear', when: { hpBelow: N.WEAR_HP_FRACTION }, effect: { damageDealt: N.WEAR_DAMAGE, hitBonus: N.WEAR_HIT } }],
       description: 'Slow, sturdy, reaches 2 tiles. Wear: below half HP it deals 2 less damage and -10 hit (Field Repair mends it).',
       card: { rarity: 'rare', cost: N.WALKER_COST, class: 'Armor', range: 2, defaultStance: 'hold' },
     },
+    // Artificer (NEW class, caster): a League engineer with a salvaged arc rod: magic damage (Mag against Res) at range 2-3, from behind the line.
+    artificer: { category: 'caster', aiStance: 'hold', name: 'Artificer', title: 'Arc engineer', label: 'Artificer',
+      stats: { hp: 16, str: 3, mag: 8, skl: 7, spd: 4, def: 3, res: 3, mov: 3 }, weapon: 'Arc Rod',
+      weaponDef: { mt: 5, hit: 80, crit: 0, rng: [2, 3], kind: 'tome', magic: true }, spriteBase: 'archer', tint: TINT.artificer,
+      description: 'Frail artillery: reaches 2-3 tiles with Defense-ignoring arcs. Overload trades safety for damage (Overheat).',
+      card: { rarity: 'uncommon', cost: 3, class: 'Foot', range: 3, defaultStance: 'hold' } },
+    // Dragoon (NEW class, mounted): an armoured rider on a salvaged-plate mount, the League's mobile reserve.
+    dragoon: { category: 'mounted', name: 'Dragoon', title: 'Plate rider', label: 'Dragoon',
+      stats: { hp: 24, str: 7, skl: 5, spd: 6, def: 7, mov: 6 }, weapon: 'Dragoon Lance', weaponDef: { mt: 7, hit: 75, crit: 0, rng: [1, 1], kind: 'coil' },
+      moveType: 'mounted', spriteBase: 'cavalier', tint: TINT.dragoon,
+      passives: [{ id: 'ironclad', when: { hpAbove: 0.5 }, effect: { damageTaken: 1 } }],
+      description: 'Armoured mounted reserve. Ironclad: takes 1 less damage per strike while above half HP.',
+      card: { rarity: 'uncommon', cost: 3, class: 'Mounted', typeLabel: 'Mounted', range: 1, defaultStance: 'advance' } },
     sapper: {
-      name: 'Sapper', title: 'League engineer',
+      category: 'support', aiStance: 'hold', name: 'Sapper', title: 'League engineer',
       stats: { hp: N.SAPPER_HP, str: N.SAPPER_STR, skl: N.SAPPER_SKL, spd: N.SAPPER_SPD, def: N.SAPPER_DEF, mov: N.SAPPER_MOV },
       weapon: 'League Sapper Pick', weaponDef: N.SAPPER_WEAPON, spriteBase: 'pikeman', tint: TINT.sapper, label: 'Sapper',
       description: 'Digs a barricade (10 HP, blocks enemy movement) on the tile it faces while holding.',
@@ -96,14 +109,14 @@ const ironLeague = {
 
   variants: {
     leaguePike: {
-      base: 'pikeman', name: 'League Pikeman', title: 'Free-city pikeman', tint: TINT.pike,
+      aiStance: 'hold', base: 'pikeman', name: 'League Pikeman', title: 'Free-city pikeman', tint: TINT.pike,
       delta: {},
       passives: [{ id: 'plantedPike', when: { stance: ['hold'], moved: false }, effect: { damageDealt: N.PIKE_HOLD_DAMAGE } }],
       description: 'Planted Pike: +1 damage per strike while holding and unmoved.',
       card: { rarity: 'common', cost: N.PIKE_COST, defaultStance: 'hold' },
     },
     pavise: {
-      base: 'pikeman', name: 'Pavise Guard', title: 'Shield-bearer', tint: TINT.pavise,
+      aiStance: 'hold', base: 'pikeman', name: 'Pavise Guard', title: 'Shield-bearer', tint: TINT.pavise,
       delta: { hp: N.PAVISE_HP, def: N.PAVISE_DEF, str: N.PAVISE_STR, mov: N.PAVISE_MOV },
       // Set Shield: while it did not move, adjacent friendly Archers/Crossbowmen (cls archer) take less damage per strike.
       passives: [{ id: 'setShield', when: { moved: false }, aura: { radius: N.SET_SHIELD_RADIUS, classes: ['archer'] }, effect: { damageTaken: N.SET_SHIELD_REDUCTION } }],
@@ -111,7 +124,7 @@ const ironLeague = {
       card: { rarity: 'common', cost: N.PAVISE_COST, defaultStance: 'hold' },
     },
     coil: {
-      base: 'archer', name: 'Coil Crossbowman', title: 'Coil-crossbow', tint: TINT.coil,
+      aiStance: 'hold', base: 'archer', name: 'Coil Crossbowman', title: 'Coil-crossbow', tint: TINT.coil,
       delta: {},
       passives: [{ id: 'preparedShot', when: { stance: ['hold'], moved: false }, effect: { damageDealt: N.PREPARED_SHOT_DAMAGE, hitBonus: N.PREPARED_SHOT_HIT } }],
       description: 'Prepared Shot: while holding and unmoved, +3 damage and +15 hit per strike.',
@@ -143,6 +156,9 @@ const ironLeague = {
     { id: 'arcBurst', name: 'Arc Burst', culture: N.id, rarity: 'rare', classes: ['relicWalker'], cost: N.ARC_BURST_COST, cooldown: N.ARC_BURST_BASE_COOLDOWN + N.OVERHEAT_COOLDOWN, phase: 'enhancement',
       requires: { stance: 'hold', target: true }, effect: { ignoreDefense: N.ARC_BURST_IGNORE_DEF, damageDealt: N.ARC_BURST_DAMAGE, damageTaken: -N.OVERHEAT_VULNERABLE },
       description: 'Requires Hold. The strike ignores 3 Defense and gains +3 damage. Overheat (fixed): cooldown 4 and the unit takes 2 more damage per strike this battle.' },
+    { id: 'overload', name: 'Overload', culture: N.id, rarity: 'uncommon', classes: ['artificer'], cost: 2, cooldown: 3, phase: 'enhancement',
+      requires: { stance: 'hold', target: true }, effect: { damageDealt: 4, damageTaken: -2 },
+      description: 'Requires Hold and a target. The arc gains +4 damage. Overheat: the Artificer takes 2 more damage per strike this battle.' },
     { id: 'digIn', name: 'Dig In', culture: N.id, rarity: 'uncommon', classes: ['sapper'], cost: N.DIG_IN_COST, cooldown: N.DIG_IN_COOLDOWN, phase: 'defense',
       requires: { stance: 'hold' }, spawn: { kind: 'barricade', name: 'Barricade', hp: N.BARRICADE_HP, blocks: true, decay: N.BARRICADE_DECAY, at: 'front' },
       description: 'Requires Hold. Raise a barricade (10 HP, blocks enemy movement, lasts 4 rounds) on the free tile it faces.' },
@@ -172,6 +188,7 @@ const ironLeague = {
     'pavise', 'pavise', 'pavise',
     'coil', 'coil', 'coil',
     'sapper', 'sapper',
+    'artificer', 'dragoon',
     'relicWalker',
     'fieldRepair', 'flare', 'mend', 'ward', 'fireburst',
   ],

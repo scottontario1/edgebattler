@@ -7,7 +7,7 @@
 //
 // def = {
 //   id: 'crown',
-//   classes:   { key: { name, title?, stats: { hp, str, skl, spd, def, res, mov, lv? }, weapon: 'Coil Crossbow',
+//   classes:   { key: { name, title?, category: 'melee'|'ranged'|'mounted'|'caster'|'support' (src/categories.js; default caster for a magic weapon), aiStance?: 'hold'|'advance', stats: { hp, str, skl, spd, def, res, mov, lv? }, weapon: 'Coil Crossbow',
 //                       weaponDef?: { mt, hit, crit, rng: [1, 1], kind }, moveType?: 'foot'|'armor'|'mounted',
 //                       spriteBase: 'pikeman', tint: '#4E7C6A', label?, passives?, onDeath?, card: { rarity, cost, class, range, defaultStance } } },
 //   champions: { id: { name, title, cls, stats, weapon, look, tint?, spriteBase? } },        // a champion per culture; kits via ability `units: [id]`
@@ -27,6 +27,7 @@ import { registerAbilities, unregisterAbilities, registerSpells, unregisterSpell
 import { registerCandidateCards, unregisterCandidateCards, UNIT_CARDS } from './cards.js';
 import { registerVariants, resetVariants, VARIANTS, RECRUIT, registerChampions, CHAMPION_TEMPLATES } from './roster.js';
 import { MOVE_TYPE } from './rules.js';
+import { registerClassMeta, unregisterClassMeta } from './categories.js';
 import { WEAPONS } from './combat.js';
 
 // Placeholder art until sprites exist: class or variant key -> { base: existing class whose sprite/model is borrowed, tint, label }.
@@ -50,6 +51,7 @@ export function registerCulture(def) {
       ...(c.passives ? { passives: c.passives } : {}), ...(c.onDeath ? { onDeath: c.onDeath } : {}) };
     if (c.moveType) { MOVE_TYPE[key] = c.moveType; record.moveTypes.push(key); }
     SPRITE_FALLBACK[key] = { base: c.spriteBase, tint: c.tint, label: c.label || c.name };
+    registerClassMeta(key, { category: c.category || (c.weaponDef?.magic ? 'caster' : 'melee'), ...(c.aiStance ? { aiStance: c.aiStance } : {}) });
     cards[key] = { id: `unit-${key}`, type: 'unit', rarity: 'common', unitId: key, name: c.name, cost: 2, class: 'Foot', stars: 1, range: 1,
       defaultStance: 'advance', ability: c.description || c.name, culture: def.id, ...(c.card || {}) };
     record.classes.push(key);
@@ -63,6 +65,7 @@ export function registerCulture(def) {
     cards[key] = { id: `unit-${key}`, type: 'unit', rarity: 'common', unitId: key, base: v.base, name: v.name, cost: base.cost, class: base.class,
       typeLabel: base.typeLabel, stars: 1, range: base.range, defaultStance: base.defaultStance, ability: v.description || base.ability,
       culture: def.id, ...(v.card || {}) };
+    if (v.category || v.aiStance) registerClassMeta(key, { ...(v.category ? { category: v.category } : {}), ...(v.aiStance ? { aiStance: v.aiStance } : {}) });
     record.variants.push(key);
   }
   for (const [key, v] of Object.entries(def.variants || {})) if (v.tint) SPRITE_FALLBACK[key] = { base: v.base, tint: v.tint, label: v.name };
@@ -102,8 +105,8 @@ export function unregisterCulture(id) {
   unregisterCandidateCards(rec.cards);
   unregisterAbilities(rec.abilities);
   unregisterSpells(rec.spells);
-  for (const key of rec.variants) { delete VARIANTS[key]; delete SPRITE_FALLBACK[key]; }
-  for (const key of rec.classes) { delete RECRUIT[key]; delete SPRITE_FALLBACK[key]; }
+  for (const key of rec.variants) { delete VARIANTS[key]; delete SPRITE_FALLBACK[key]; unregisterClassMeta(key); }
+  for (const key of rec.classes) { delete RECRUIT[key]; delete SPRITE_FALLBACK[key]; unregisterClassMeta(key); }
   for (const w of rec.weapons) delete WEAPONS[w];
   for (const key of rec.moveTypes) delete MOVE_TYPE[key];
   for (const id of rec.champions) { delete CHAMPION_TEMPLATES[id]; delete SPRITE_FALLBACK[id]; }

@@ -63,13 +63,13 @@ const N = COURT;
 
 // Rarity tags (round-step time gate: uncommon from round 3, rare from round 6). Kept in one table so Scott can move a card.
 export const COURT_RARITY = Object.freeze({
-  feralGhoul: 'common', graveguard: 'uncommon', wight: 'uncommon', necromancer: 'uncommon', mourningKnight: 'rare',
+  feralGhoul: 'common', graveguard: 'uncommon', wight: 'uncommon', necromancer: 'uncommon', wraith: 'uncommon', mourningKnight: 'rare',
   graveChill: 'common', mendBone: 'uncommon',
 });
 
 // Draw pool: repeated entries are weights (as in RECRUITMENT_POOL). Shared spells Mend, Ward and Fireburst stay in (Scott, 1b).
 export const COURT_POOL = Object.freeze([
-  'feralGhoul', 'feralGhoul', 'feralGhoul', 'graveguard', 'graveguard', 'wight', 'necromancer', 'mourningKnight',
+  'feralGhoul', 'feralGhoul', 'feralGhoul', 'graveguard', 'graveguard', 'wight', 'necromancer', 'wraith', 'mourningKnight',
   'graveChill', 'mendBone', 'mend', 'ward', 'fireburst',
 ]);
 
@@ -81,7 +81,7 @@ export const DEFAULT_CHAMPION = 'hollowRegent';
 // steel with purple and pale gold; blue-white spectral glow for the undead, candle amber for the living court.
 //   feral_ghoul_sprite.png -> Feral Ghoul (pale grey skin, brown rags)   mourning_knight_sprite.png -> Mourning Knight (steel, purple)
 //   necromancer_sprite.png -> Necromancer (black velvet, grey silk, lantern staff)   Graveguard, Wight, champions: no reference art yet
-const TINT = { ghoul: '#a5a396', guard: '#7f8794', wight: '#9db4c8', knight: '#6a5a9a', necro: '#4a4656', noble: '#5a3a70' };
+const TINT = { wraith: '#8FB8C8', ghoul: '#a5a396', guard: '#7f8794', wight: '#9db4c8', knight: '#6a5a9a', necro: '#4a4656', noble: '#5a3a70' };
 const CORPSE = { spawn: { kind: 'corpse', hp: N.corpseHp, blocks: false, decay: N.corpseDecay, name: 'Corpse' } };
 const consume = (radius, count, healRadius, amount) => ({ kind: 'corpse', radius, count, heal: { radius: healRadius, amount } });
 const nearCorpse = (radius) => ({ objectNear: { kind: 'corpse', radius } });
@@ -130,12 +130,22 @@ export function buildHollowCourt(options = {}) {
       card: { rarity: rar('wight'), cost: w.cost, class: 'Foot', range: 1, defaultStance: 'advance' },
     },
     necromancer: {
-      name: 'Necromancer', title: 'Court Necromancer', label: 'Necromancer',
+      category: 'support', name: 'Necromancer', title: 'Court Necromancer', label: 'Necromancer',
       stats: { hp: nc.hp, str: 0, mag: nc.mag, skl: nc.skl, spd: nc.spd, def: nc.def, res: nc.res, mov: nc.mov },
       weapon: 'Lantern Staff', weaponDef: { mt: nc.mt, hit: nc.hit, crit: 0, rng: [1, 2], kind: 'tome', magic: true },
       spriteBase: 'archer', tint: TINT.necro, ...onDeath,
       description: 'A living court official: frail support with a weak Defense-ignoring lantern staff. Consume Remains eats a Corpse and heals friends nearby.',
       card: { rarity: rar('necromancer'), cost: nc.cost, class: 'Foot', range: 2, defaultStance: 'hold' },
+    },
+    // Wraith (NEW class, caster): a pale spectre with a Defense-ignoring touch at range 2. Fragile, fast, hard to hit (Ethereal).
+    wraith: {
+      category: 'caster', name: 'Wraith', title: 'Court Wraith', label: 'Wraith',
+      stats: { hp: 14, str: 3, mag: 8, skl: 6, spd: 8, def: 1, res: 6, mov: 5 },
+      weapon: 'Grave Touch', weaponDef: { mt: 5, hit: 80, crit: 0, rng: [1, 2], kind: 'tome', magic: true },
+      spriteBase: 'archer', tint: TINT.wraith, ...onDeath,
+      passives: [{ id: 'ethereal', effect: { damageTaken: 1 } }],
+      description: 'A fragile, fast spectre. Ethereal: takes 1 less damage per strike. Withering Touch adds damage.',
+      card: { rarity: rar('wraith'), cost: 3, class: 'Foot', range: 2, defaultStance: 'advance' },
     },
   };
 
@@ -154,6 +164,8 @@ export function buildHollowCourt(options = {}) {
 
   const kit = (a) => ({ ...a });
   const abilities = [
+    kit({ id: 'witheringTouch', name: 'Withering Touch', classes: ['wraith'], cost: 2, cooldown: 3, phase: 'enhancement', requires: { target: true }, effect: { damageDealt: 3 },
+      description: 'Requires a target: the touch gains +3 damage.' }),
     kit({ id: 'unquietStep', name: 'Unquiet Step', classes: ['feralGhoul'], cost: g.unquietCost, cooldown: g.unquietCooldown, phase: 'enhancement',
       requires: { stance: 'advance', moved: 1, target: true }, effect: { damageDealt: g.unquietDamage },
       description: `Requires Advance, movement and a target: strike gains +${g.unquietDamage} damage.` }),
