@@ -215,6 +215,89 @@ The League has no rare spell (proposal); its rare cards are units and skills.
 
 ---
 
+## 4. The Hollow Court
+
+*Bone, black velvet and pale candlelight. A dead civilization that has ruled the same provinces for centuries.*
+
+### Lore
+
+The Hollow Court is not a horde. It is a government, and it has been in session for four hundred years. Its founders were the provincial nobility of a realm older than Ashvale, who discovered that an heir does not have to wait for an inheritance if the incumbent never leaves. The great families ended their own deaths by rite and decree, and the households that served them followed. Their lands were never conquered or abandoned; they simply kept going. The Court still holds assizes, collects rents, seals writs and settles precedence at banquets, and it does all of it with servants who are sometimes alive, sometimes dead, and sometimes both in the same week.
+
+The Court believes, sincerely and without malice, that mortality is a barbaric condition that a civilized society should eventually eliminate, like plague or debt slavery. The living are not treated as enemies but as citizens who have not yet been invited into the franchise. A Court army therefore is not an invasion but an administrative act: it arrives to regularise a province. It brings Graveguards to hold the roads, Wights to carry writs, Mourning Knights to keep old vows, and Necromancers who are less sorcerers than civil servants of the grave, filing the fallen back into service. At the bottom are the feral ghouls, the Court's failed cases, kept for labour and for the front line, and considered rude company by everyone above them.
+
+Everyone else finds this appalling, which the Court finds provincial. The Argent Crown's knights die and are mourned, and the Court thinks that is the barbaric part. The White Fang wants to give death meaning, and the Court considers that a very old-fashioned superstition. The Iron League treats the dead as salvage, which is a shocking idea to the Court, since it thinks the dead are its constituents. The Court is very patient, and every defeat is only a delay in the schedule.
+
+### Personality and key traits
+
+**Formal, patient, entitled, inevitable.** The Court does not need to win every exchange. It expects to lose some units and lose nothing that matters. Its identity is that **defeating a unit does not necessarily remove its battlefield value.**
+
+- **Death is a resource, not a loss.** Cheap undead leave **Corpse** tokens; Necromancers spend them; the great units come back. The opponent has to ask "did I actually get rid of it?" and can be wrong, which is the counterplay the game needs against "just kill the 2-star".
+- **Individually modest.** Units are not overwhelmingly strong. The lever is attrition: an army that keeps returning, keeps healing from its own dead and can be starved of Corpses.
+- **Slow and inevitable.** They want long games, low tempo and tokens on the board. Weak against fast finishes (a keep capture before value converts), against Fireburst-style burst on packed clumps (Corpses appear where they die) and against anything that cleans up Corpses.
+- **Ties to permanent death.** A dead 2★ is normally a strategic victory in this game (units are permanent, champions respawn). Against the Court that victory needs to be verified: the Court can return a unit once per match or turn a ghoul into a Graveguard. Kills against the Court are worth less on average, but they are not worthless, and the cost is denied elsewhere (see Death as a resource below).
+- **Champion:** not decided. Natural candidates: a deathless noble (the Hollow Regent), or a Necromancer-chancellor. Questions below.
+- **Play pattern:** cheap ghoul front, Graveguards holding a line, Necromancers behind spending Corpses each round, Revenants and Mourning Knights as the elite that comes back. Trades cheaply, wins slowly, and punishes an opponent who commits everything to the first kill.
+
+### Unique units
+
+| Rarity | Unit | Class (proposed) | Role |
+|---|---|---|---|
+| Common | **Feral Ghoul** | Fast melee swarm | Cheap disposable front line that leaves a Corpse. |
+| Uncommon | **Graveguard** | Armoured infantry | Old household troops; heals from Corpses. |
+| Rare | **Mourning Knight** | Mounted or heavy elite | A knight of the Court who returns once per match. |
+
+Further roster (not one of the three, for later): **Wight** (fast courier and duelist), **Necromancer** (the Corpse consumer, below), **Hollow Noble** (champion tier).
+
+**Feral Ghoul (common).** Cheap, quick and hungry, wearing what remains of livery. Suggested stats: HP 14, Str 7, Skl 4, Spd 7, Def 2, Mov 5, range 1, low recruitment cost. Passive **Leave Remains**: when it dies it leaves a Corpse token on its tile. Ghouls are poor fighters that turn kills into a resource for someone else.
+
+**Graveguard (uncommon).** Pale household troops in black-and-silver plate, still marching in step. Suggested stats: HP 26, Str 7, Skl 5, Spd 3, Def 9, Mov 3, range 1. Passive **Duty Beyond Death**: heals 4 HP at refresh if a Corpse is within 2 tiles (consuming the Corpse only if its own Necromancer is not present; see rules). A slow, dependable anchor that needs the field to be full of the recently dead.
+
+**Mourning Knight (rare).** An armoured knight who has kept a vow past death, wearing a mourning veil and a rusted crest. Suggested stats: HP 28, Str 8, Skl 5, Spd 5, Def 10, Mov 6, range 1. Passive **Revenant Vow**: once per match, when it dies it returns at the end of battle with 1 HP on its own tile (or the nearest empty tile). It keeps its stars and equipment. It is rare because the first kill has to be redone.
+
+### Unique skills
+
+| Rarity | Skill | Classes | Cost / cooldown (proposed) | Phase | Effect |
+|---|---|---|---|---|---|
+| Common | **Consume Remains** | Necromancer (any unit that can reach a Corpse) | 1 / 1 | recovery | Consume one Corpse within 3 tiles: heal a chosen friendly Graveguard 8 HP. |
+| Uncommon | **Raise Ghoul** | Necromancer | 2 / 2 | recovery | Consume two Corpses within 3 tiles: place a Feral Ghoul on an empty adjacent tile (population and bench limits still apply). |
+| Rare | **Revenant** | Any 2★+ Court unit, Mourning Knight | 0 / once per match | on death | The unit returns at the end of battle with 1 HP, keeping stars and equipment. A second death is permanent. Cannot trigger on the champion. |
+
+### Spells
+
+| Rarity | Spell | Effect |
+|---|---|---|
+| Common | **Grave Chill** | An enemy in range takes 3 damage and loses 1 energy; if it dies, a Corpse is left. |
+| Uncommon | **Writ of Recall** | Return one dead Court unit from this match to the reserve bench at 1 HP (cost: 2 Corpses; the unit is unpaid again). |
+| Rare | **Assize of the Dead** | For one battle, every Court unit that dies leaves a Corpse and every Corpse on the field heals the nearest friendly unit 2 HP. |
+
+### Design notes
+
+- **Corpse tokens are an engine change**: a tile object that persists across rounds, blocks or does not block movement (decide), is removed by being consumed, occupied for capture, or decaying (proposed: 3 rounds). They belong in the match state and the replay log, and need an overlay for the player.
+- **Revenant and permanent death** interact with the population cap, reserve state and the end check (an army is not destroyed while a Revenant is pending). Match victory by wipe must account for pending returns, the same way champion respawn already does.
+- **The balance lever** is the Court's *unit quality*, not its resource loop. Keep individual stats low, and make Corpses scarce, so that starving them is a real strategy.
+
+---
+
+## Death as a resource (cross-faction)
+
+The same idea can be applied to the whole game, not only the Court. Death is already meaningful (permanent for recruits, respawn for champions, population freed on death); these options turn it into something a player can plan around. Each is a menu item, none is adopted.
+
+| Idea | How it works | Best fit |
+|---|---|---|
+| **Corpse tokens** | Some units leave a token on their tile; effects consume it (heal, summon, capture bonus). Can be denied by standing on it. | Hollow Court |
+| **Revenant / return once** | A unit comes back with 1 HP after battle, once per match. | Hollow Court, rare |
+| **Death payoffs** | A dying unit passes energy or a status to the nearest ally. | White Fang (Ancestors' Fury already proposes 2 energy) |
+| **Bounty on kills** | Killing certain units pays Supply or energy to the killer's side. | Iron League (mercenary bounties), any faction |
+| **Fallen banner / memorial** | A dead Bannerman or champion leaves a marker tile that buffs units defending it for a few rounds. | Argent Crown |
+| **Sacrifice** | Spend a unit (its population and its investment) for a stronger effect. Blood Oath (White Fang) is a small version. | White Fang, Hollow Court |
+| **Graveyard pile** | A per-side count of the dead this match; some cards scale with it (Writ of Recall, Ancestors' Fury). | Hollow Court, White Fang |
+| **Salvage** | A dead machine leaves scrap; spend it to repair or field a cheap unit. | Iron League |
+| **Capture cost of kills** | Killing a 2★ unit refunds part of its cost to the killer (bounty), so killing expensive units is rewarded. | Any |
+
+Important caution: death-as-a-resource can make the CORE-02 stalemate worse (more replacement, less loss). If the Court is adopted, test it by paired-seed simulation for match length and draw rate before choosing defaults.
+
+---
+
 ## Open questions to bring up later
 
 **All factions**
@@ -238,3 +321,10 @@ The League has no rare spell (proposal); its rare cards are units and skills.
 12. Is the Sapper a class, or a skill any League unit can carry?
 13. Is Garrison Doctrine (free Brace on controlled locations) a faction rule, or is it too strong with the village and deployment-radius experiments?
 14. Do the lore claims about the Foundry Age fit the wider setting (Ashvale, the Crown's magic and forest spirits), or should the ancient tech stay unexplained?
+
+**Hollow Court and death as a resource**
+15. Are Corpse tokens acceptable as a new persistent tile object, and do they block movement or capture? How long do they last (proposed: 3 rounds)?
+16. Does Revenant Vow apply to any 2★+ unit or only to Mourning Knights? Should Revenants count as alive for the army-destroyed end check while pending (as champion respawn does)?
+17. Who is the champion (Hollow Regent, Necromancer-chancellor, or another)?
+18. Should death-as-a-resource effects (bounty, death payoffs, graveyard pile) be shared across factions or stay faction-specific? Which of the cross-faction menu items do you want to explore?
+19. Is the Court's "feral ghouls" tier one class or a rank within the Court (ghoul → graveguard by Corpse spending)?
