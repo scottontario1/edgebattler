@@ -1,0 +1,28 @@
+[
+ {
+  "key": "river_ford league v baseline",
+  "map": "river_ford",
+  "first": "league",
+  "second": "baseline",
+  "games": 200,
+  "firstWins": 0,
+  "secondWins": 9,
+  "draws": 191,
+  "keep": 9,
+  "rounds": 29.795,
+  "abilityUsePerLeagueGame": {}
+ },
+ {
+  "key": "choke_gap1 league v baseline",
+  "map": "choke_gap1",
+  "first": "league",
+  "second": "baseline",
+  "games": 200,
+  "firstWins": 0,
+  "secondWins": 16,
+  "draws": 184,
+  "keep": 16,
+  "rounds": 29.665,
+  "abilityUsePerLeagueGame": {}
+ }
+]

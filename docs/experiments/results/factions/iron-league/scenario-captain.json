@@ -1,0 +1,589 @@
+[
+ {
+  "label": "N naive: every unit Advances, no picks",
+  "budget": {
+   "blue": {
+    "supply": 9,
+    "pop": 6
+   },
+   "red": {
+    "supply": 18,
+    "pop": 15
+   }
+  },
+  "n": 400,
+  "blue": 0.1825,
+  "red": 0,
+  "mutual": 0,
+  "none": 0.8175,
+  "blueCI": [
+   0.14772676508161553,
+   0.2233137616991817
+  ],
+  "rounds": 39.4275,
+  "decidedRounds": 36.863013698630134,
+  "surv": {
+   "blue": 1.225,
+   "red": 2.9425
+  },
+  "startN": {
+   "blue": 6,
+   "red": 15
+  },
+  "hpLeft": {
+   "blue": 0.15344642857142865,
+   "red": 0.12730263157894753
+  },
+  "dealt": {
+   "blue": 367.1,
+   "red": 199.7975
+  },
+  "objectDamage": 0,
+  "strikes": 139.5525,
+  "moves": 73.125,
+  "blocked": 94.2325,
+  "planFails": 0,
+  "abilityUses": 0,
+  "energy": 0,
+  "barricades": 0,
+  "barricadesLost": 0,
+  "uses": {}
+ },
+ {
+  "label": "M moving: Advance with the skill picks (skills need Hold)",
+  "budget": {
+   "blue": {
+    "supply": 9,
+    "pop": 6
+   },
+   "red": {
+    "supply": 18,
+    "pop": 15
+   }
+  },
+  "n": 400,
+  "blue": 0.2675,
+  "red": 0,
+  "mutual": 0,
+  "none": 0.7325,
+  "blueCI": [
+   0.22648167576028763,
+   0.31294170211856387
+  ],
+  "rounds": 39.1025,
+  "decidedRounds": 36.64485981308411,
+  "surv": {
+   "blue": 3.4575,
+   "red": 2.4025
+  },
+  "startN": {
+   "blue": 6,
+   "red": 15
+  },
+  "hpLeft": {
+   "blue": 0.5725535714285719,
+   "red": 0.11326754385964914
+  },
+  "dealt": {
+   "blue": 368.1425,
+   "red": 220.545
+  },
+  "objectDamage": 0,
+  "strikes": 141.745,
+  "moves": 42.1225,
+  "blocked": 100.92,
+  "planFails": 0,
+  "abilityUses": 26.7875,
+  "energy": 0,
+  "barricades": 0,
+  "barricadesLost": 0,
+  "uses": {
+   "rally": 26.787499999999998
+  }
+ },
+ {
+  "label": "H held: Hold with Rally only (League passives, no League skills)",
+  "budget": {
+   "blue": {
+    "supply": 9,
+    "pop": 6
+   },
+   "red": {
+    "supply": 18,
+    "pop": 15
+   }
+  },
+  "n": 400,
+  "blue": 0.89,
+  "red": 0,
+  "mutual": 0,
+  "none": 0.11,
+  "blueCI": [
+   0.8555483868341889,
+   0.9170317534980603
+  ],
+  "rounds": 29.85,
+  "decidedRounds": 28.59550561797753,
+  "surv": {
+   "blue": 3.715,
+   "red": 0.15
+  },
+  "startN": {
+   "blue": 6,
+   "red": 15
+  },
+  "hpLeft": {
+   "blue": 0.6585178571428559,
+   "red": 0.00703216374269006
+  },
+  "dealt": {
+   "blue": 403.1725,
+   "red": 218.4
+  },
+  "objectDamage": 0,
+  "strikes": 127.9125,
+  "moves": 42.3175,
+  "blocked": 48.1075,
+  "planFails": 0,
+  "abilityUses": 29.035,
+  "energy": 0,
+  "barricades": 0,
+  "barricadesLost": 0,
+  "uses": {
+   "rally": 29.034999999999986
+  }
+ },
+ {
+  "label": "S skilled: Captain Voss fortifying the bridge exit with Field Works",
+  "budget": {
+   "blue": {
+    "supply": 9,
+    "pop": 6
+   },
+   "red": {
+    "supply": 18,
+    "pop": 15
+   }
+  },
+  "n": 400,
+  "blue": 0.82,
+  "red": 0,
+  "mutual": 0,
+  "none": 0.18,
+  "blueCI": [
+   0.7793616474280234,
+   0.8545502625881809
+  ],
+  "rounds": 32.6825,
+  "decidedRounds": 31.076219512195124,
+  "surv": {
+   "blue": 3.7525,
+   "red": 0.3
+  },
+  "startN": {
+   "blue": 6,
+   "red": 15
+  },
+  "hpLeft": {
+   "blue": 0.6733928571428559,
+   "red": 0.013837719298245612
+  },
+  "dealt": {
+   "blue": 405.13,
+   "red": 172.1625
+  },
+  "objectDamage": 53.65,
+  "strikes": 127.46,
+  "moves": 43.1225,
+  "blocked": 47.8425,
+  "planFails": 0,
+  "abilityUses": 138.4475,
+  "energy": 87.1875,
+  "barricades": 4.08,
+  "barricadesLost": 3.0025,
+  "uses": {
+   "setPosition": 58.61999999999967,
+   "fieldWorks": 11.272500000000027,
+   "rally": 62.53250000000006,
+   "preparedPosition": 6.022500000000008
+  }
+ },
+ {
+  "label": "S-Rally skilled without Rally",
+  "budget": {
+   "blue": {
+    "supply": 9,
+    "pop": 6
+   },
+   "red": {
+    "supply": 18,
+    "pop": 15
+   }
+  },
+  "n": 400,
+  "blue": 0.56,
+  "red": 0,
+  "mutual": 0.01,
+  "none": 0.43,
+  "blueCI": [
+   0.511011885079453,
+   0.6078465980485853
+  ],
+  "rounds": 36.315,
+  "decidedRounds": 33.53508771929825,
+  "surv": {
+   "blue": 1.3675,
+   "red": 0.9175
+  },
+  "startN": {
+   "blue": 6,
+   "red": 15
+  },
+  "hpLeft": {
+   "blue": 0.15657142857142875,
+   "red": 0.030058479532163743
+  },
+  "dealt": {
+   "blue": 402.08,
+   "red": 181.33
+  },
+  "objectDamage": 42.08,
+  "strikes": 131.3675,
+  "moves": 66.83,
+  "blocked": 57.4625,
+  "planFails": 0.0175,
+  "abilityUses": 50.7075,
+  "energy": 58.165,
+  "barricades": 2.6975,
+  "barricadesLost": 2.395,
+  "uses": {
+   "setPosition": 37.2275,
+   "fieldWorks": 7.457499999999992,
+   "preparedPosition": 6.022500000000008
+  }
+ },
+ {
+  "label": "S-Set Position skilled without Set Position",
+  "budget": {
+   "blue": {
+    "supply": 9,
+    "pop": 6
+   },
+   "red": {
+    "supply": 18,
+    "pop": 15
+   }
+  },
+  "n": 400,
+  "blue": 0.8175,
+  "red": 0,
+  "mutual": 0,
+  "none": 0.1825,
+  "blueCI": [
+   0.7766862383008183,
+   0.8522732349183845
+  ],
+  "rounds": 32.685,
+  "decidedRounds": 31.051987767584098,
+  "surv": {
+   "blue": 3.75,
+   "red": 0.305
+  },
+  "startN": {
+   "blue": 6,
+   "red": 15
+  },
+  "hpLeft": {
+   "blue": 0.6691071428571415,
+   "red": 0.014035087719298244
+  },
+  "dealt": {
+   "blue": 405.0875,
+   "red": 199.5975
+  },
+  "objectDamage": 53.73,
+  "strikes": 127.505,
+  "moves": 43.115,
+  "blocked": 47.8675,
+  "planFails": 0,
+  "abilityUses": 50.705,
+  "energy": 28.5675,
+  "barricades": 4.0875,
+  "barricadesLost": 3.0075,
+  "uses": {
+   "fieldWorks": 11.27250000000003,
+   "rally": 33.410000000000004,
+   "preparedPosition": 6.022500000000008
+  }
+ },
+ {
+  "label": "S-Prepared Position skilled without Prepared Position",
+  "budget": {
+   "blue": {
+    "supply": 9,
+    "pop": 6
+   },
+   "red": {
+    "supply": 18,
+    "pop": 15
+   }
+  },
+  "n": 400,
+  "blue": 0.835,
+  "red": 0,
+  "mutual": 0,
+  "none": 0.165,
+  "blueCI": [
+   0.7954710126340742,
+   0.8681555181641397
+  ],
+  "rounds": 32.8,
+  "decidedRounds": 31.377245508982035,
+  "surv": {
+   "blue": 3.735,
+   "red": 0.27
+  },
+  "startN": {
+   "blue": 6,
+   "red": 15
+  },
+  "hpLeft": {
+   "blue": 0.6692678571428555,
+   "red": 0.012638888888888892
+  },
+  "dealt": {
+   "blue": 399.525,
+   "red": 173.9375
+  },
+  "objectDamage": 55.6,
+  "strikes": 128.775,
+  "moves": 43.165,
+  "blocked": 48.1725,
+  "planFails": 0,
+  "abilityUses": 132.64,
+  "energy": 81.4075,
+  "barricades": 4.145,
+  "barricadesLost": 3.1325,
+  "uses": {
+   "setPosition": 58.80749999999968,
+   "fieldWorks": 11.30000000000002,
+   "rally": 62.532500000000006
+  }
+ },
+ {
+  "label": "S-Field Works skilled without Field Works",
+  "budget": {
+   "blue": {
+    "supply": 9,
+    "pop": 6
+   },
+   "red": {
+    "supply": 18,
+    "pop": 15
+   }
+  },
+  "n": 400,
+  "blue": 0.89,
+  "red": 0,
+  "mutual": 0,
+  "none": 0.11,
+  "blueCI": [
+   0.8555483868341889,
+   0.9170317534980603
+  ],
+  "rounds": 29.5875,
+  "decidedRounds": 28.30056179775281,
+  "surv": {
+   "blue": 3.73,
+   "red": 0.1575
+  },
+  "startN": {
+   "blue": 6,
+   "red": 15
+  },
+  "hpLeft": {
+   "blue": 0.6679999999999982,
+   "red": 0.007032163742690059
+  },
+  "dealt": {
+   "blue": 406.71,
+   "red": 183.16
+  },
+  "objectDamage": 0,
+  "strikes": 125.75,
+  "moves": 42.1425,
+  "blocked": 47.2175,
+  "planFails": 0,
+  "abilityUses": 115.5575,
+  "energy": 58.5525,
+  "barricades": 0,
+  "barricadesLost": 0,
+  "uses": {
+   "setPosition": 54.06749999999972,
+   "rally": 57.00500000000005,
+   "preparedPosition": 4.484999999999997
+  }
+ },
+ {
+  "label": "S-Set Shield (passive) skilled without Set Shield (passive)",
+  "budget": {
+   "blue": {
+    "supply": 9,
+    "pop": 6
+   },
+   "red": {
+    "supply": 18,
+    "pop": 15
+   }
+  },
+  "n": 400,
+  "blue": 0.8075,
+  "red": 0,
+  "mutual": 0,
+  "none": 0.1925,
+  "blueCI": [
+   0.766010151768214,
+   0.8431395742629825
+  ],
+  "rounds": 32.8825,
+  "decidedRounds": 31.185758513931887,
+  "surv": {
+   "blue": 3.76,
+   "red": 0.3225
+  },
+  "startN": {
+   "blue": 6,
+   "red": 15
+  },
+  "hpLeft": {
+   "blue": 0.6737142857142845,
+   "red": 0.01476608187134503
+  },
+  "dealt": {
+   "blue": 404.67,
+   "red": 180.5425
+  },
+  "objectDamage": 53.76,
+  "strikes": 128.1525,
+  "moves": 43.0725,
+  "blocked": 48.51,
+  "planFails": 0,
+  "abilityUses": 139.105,
+  "energy": 87.5475,
+  "barricades": 4.1225,
+  "barricadesLost": 3.005,
+  "uses": {
+   "setPosition": 58.912499999999675,
+   "fieldWorks": 11.345000000000027,
+   "rally": 62.90250000000005,
+   "preparedPosition": 5.945000000000007
+  }
+ },
+ {
+  "label": "S-Prepared Shot (passive) skilled without Prepared Shot (passive)",
+  "budget": {
+   "blue": {
+    "supply": 9,
+    "pop": 6
+   },
+   "red": {
+    "supply": 18,
+    "pop": 15
+   }
+  },
+  "n": 400,
+  "blue": 0.76,
+  "red": 0,
+  "mutual": 0,
+  "none": 0.24,
+  "blueCI": [
+   0.7157987516945628,
+   0.7992546751936034
+  ],
+  "rounds": 35.02,
+  "decidedRounds": 33.44736842105263,
+  "surv": {
+   "blue": 3.7425,
+   "red": 0.3725
+  },
+  "startN": {
+   "blue": 6,
+   "red": 15
+  },
+  "hpLeft": {
+   "blue": 0.6733214285714267,
+   "red": 0.017105263157894752
+  },
+  "dealt": {
+   "blue": 403.1575,
+   "red": 188.3825
+  },
+  "objectDamage": 60.55,
+  "strikes": 140.4375,
+  "moves": 45.3325,
+  "blocked": 53.46,
+  "planFails": 0,
+  "abilityUses": 146.49,
+  "energy": 92.0925,
+  "barricades": 4.315,
+  "barricadesLost": 3.2925,
+  "uses": {
+   "setPosition": 62.09999999999969,
+   "fieldWorks": 12.057500000000003,
+   "rally": 66.45499999999997,
+   "preparedPosition": 5.877500000000012
+  }
+ },
+ {
+  "label": "P plain: the same formation with plain Pikemen and Archers, Hold, no League features, Rally only",
+  "budget": {
+   "blue": {
+    "supply": 8,
+    "pop": 6
+   },
+   "red": {
+    "supply": 18,
+    "pop": 15
+   }
+  },
+  "n": 400,
+  "blue": 0.8325,
+  "red": 0,
+  "mutual": 0,
+  "none": 0.1675,
+  "blueCI": [
+   0.7927791128508475,
+   0.8658949811503649
+  ],
+  "rounds": 33.695,
+  "decidedRounds": 32.426426426426424,
+  "surv": {
+   "blue": 3.1275,
+   "red": 0.3375
+  },
+  "startN": {
+   "blue": 6,
+   "red": 15
+  },
+  "hpLeft": {
+   "blue": 0.5179356060606061,
+   "red": 0.012580409356725143
+  },
+  "dealt": {
+   "blue": 421.195,
+   "red": 331.82
+  },
+  "objectDamage": 0,
+  "strikes": 143.06,
+  "moves": 54.555,
+  "blocked": 60.9525,
+  "planFails": 0.0275,
+  "abilityUses": 30.785,
+  "energy": 0,
+  "barricades": 0,
+  "barricadesLost": 0,
+  "uses": {
+   "rally": 30.784999999999986
+  }
+ }
+]

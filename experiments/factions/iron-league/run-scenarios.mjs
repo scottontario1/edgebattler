@@ -43,6 +43,7 @@ const delta = (s, ref) => {
   return `${d >= 0 ? '+' : ''}${Math.round(100 * d)}pp${Math.abs(d) > 1.96 * se ? '' : ' (ns)'}`;
 };
 
+const shortName = (label) => (label.includes(' skilled without ') ? label.split(' skilled without ')[0] : label.split(' ')[0]);
 const chosen = suiteArg === 'all' ? SUITES : SUITES.filter((s) => s.id === suiteArg);
 if (!chosen.length) throw new Error(`unknown suite ${suiteArg}`);
 await loadMaps(new Set(SUITES.flatMap((s) => s.variants.map((v) => v.def.map))));
@@ -63,7 +64,7 @@ for (const suite of chosen) {
       }
       if (seed === 1 && evidenceDir && (i === 0 || variant.evidence)) {
         mkdirSync(join(evidenceDir, suite.id), { recursive: true });
-        writeFileSync(join(evidenceDir, suite.id, `${variant.label.split(' ')[0]}-seed1.jsonl`), res.log.text());
+        writeFileSync(join(evidenceDir, suite.id, `${shortName(variant.label).replace(/[^A-Za-z0-9-]+/g, '_')}-seed1.jsonl`), res.log.text());
       }
       delete res.log;
       results.push(res);
@@ -80,8 +81,8 @@ for (const suite of chosen) {
   for (const { variant, s, blueBudget: bb, redBudget: rb, delta: d } of rows) {
     lines.push(`| ${variant.label} | ${bb.supply} / ${rb.supply} | ${s.startN.blue} / ${s.startN.red} | ${pct(s.blue)} (${pct(s.blueCI[0])}–${pct(s.blueCI[1])}) | ${pct(s.red)} | ${pct(s.none)} | ${f1(s.rounds)} | ${f1(s.surv.blue)} / ${f1(s.surv.red)} | ${pct(s.hpLeft.blue)} / ${pct(s.hpLeft.red)} | ${d} |`);
   }
-  lines.push('', '| variant | damage dealt b / r | strikes on barricades by Red | moves / game | ability uses | energy spent | barricades raised / destroyed | failed plan steps |', '|---|---|---|---|---|---|---|---|');
-  for (const { variant, s } of rows) lines.push(`| ${variant.label.split(' ')[0]} | ${f1(s.dealt.blue)} / ${f1(s.dealt.red)} | ${f1(s.objectDamage)} | ${f1(s.moves)} | ${f1(s.abilityUses)} | ${f1(s.energy)} | ${f1(s.barricades)} / ${f1(s.barricadesLost)} | ${f1(s.planFails)} |`);
+  lines.push('', '| variant | damage dealt b / r | damage to barricades by Red | moves / game | ability uses | energy spent | barricades raised / destroyed | failed plan steps |', '|---|---|---|---|---|---|---|---|');
+  for (const { variant, s } of rows) lines.push(`| ${shortName(variant.label)} | ${f1(s.dealt.blue)} / ${f1(s.dealt.red)} | ${f1(s.objectDamage)} | ${f1(s.moves)} | ${f1(s.abilityUses)} | ${f1(s.energy)} | ${f1(s.barricades)} / ${f1(s.barricadesLost)} | ${f1(s.planFails)} |`);
   lines.push('');
   report.push({ suite: suite.id, text: lines.join('\n'), data: rows.map((r) => ({ label: r.variant.label, budget: { blue: r.blueBudget, red: r.redBudget }, ...r.s })) });
   console.log(lines.join('\n'));

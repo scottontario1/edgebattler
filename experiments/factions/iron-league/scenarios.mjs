@@ -8,8 +8,9 @@
 //   P  plain          the same formation and Hold, with plain Pikemen and Archers and no League features
 // Run: node experiments/factions/iron-league/run-scenarios.mjs --seeds 400 --replay 10 --out docs/experiments/results/factions/iron-league
 //
-// Formations (blue, west bank): the "pocket". The one-tile lane exit is left empty; Pikemen stand on its flanks, the Pavise Guard
-// behind, Crossbowmen at range 2 from the exit tile, so a single enemy that steps out is shot by three and struck by three.
+// Formation (blue, west bank): the "plug". A Pavise Guard stands on the one-tile lane exit (River Ford 7,5), so only the enemy on the bridge tile
+// can strike it, while Crossbowmen at range 2 of the bridge tile (7,4 / 7,6 / 6,5, all beside the Pavise Guard) shoot that enemy. The alternative
+// "pocket" (exit left empty, Pikemen on its flanks) was tried first: enemy archers on the east bank out-ranged the flank Pikemen (see the doc).
 
 const u = (id, faction, cls, c, r, extra = {}) => ({ id, faction, cls, c, r, ...extra });
 const step = (tag, round, faction, extra) => ({ tag, round, faction, ...extra });
@@ -64,8 +65,8 @@ const HOLD_KIT = (cls, abilities) => step(null, 1, 'blue', { cls, abilities });
 const A_BLUE = [B('pv1', 'pavise', 7, 5), B('cx1', 'coil', 7, 4), B('cx2', 'coil', 7, 6), B('lp1', 'leaguePike', 6, 4, { sortie: true }), B('lp2', 'leaguePike', 6, 6, { sortie: true })];
 const A_RED = redColumn([7, 5], [[9, 5], [9, 4], [9, 6], [10, 5], [10, 4], [10, 6], [11, 5], [11, 4], [11, 6], [12, 5], [12, 4], [12, 6], [13, 5], [13, 4]], [[10, 3], [11, 3], [12, 3], [10, 7]]);
 const LA = level({
-  id: 'bridge', title: 'A. The Bridge (River Ford): the plug at the bridge exit', map: 'river_ford', maxRounds: 40, finish: 18,
-  teaches: 'holding the pocket with Set Position and Prepared Position',
+  id: 'bridge', title: 'A. The Bridge (River Ford): the plug on the bridge exit', map: 'river_ford', maxRounds: 40, finish: 18,
+  teaches: 'a Pavise plug on the bridge exit with Crossbowmen at range 2 of the bridge, Set Position and Prepared Position',
   blue: A_BLUE, red: A_RED,
   plan: [
     HOLD_KIT('pikeman', PIKE_PICKS),

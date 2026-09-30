@@ -531,3 +531,33 @@ test('ENGINE REQUEST: Set Shield should reduce only ranged damage, but damageTak
     assert.equal(strike.damage, expectDamage(match.byId('e'), match.byId('cx')), 'a melee strike on the covered Crossbowman should take no reduction');
   });
 });
+
+test('ENGINE BUG: withdrawing a variant unit keeps its variant identity on the bench (unitId), so cycling and combining see the uncommon Coil, not a common Archer', { todo: 'withdraw sets reserve.unitId to the base class; see docs/factions/IRON_LEAGUE.md' }, () => {
+  league(() => {
+    const m = createMatch({ seed: 2, roster: [rec('pikeman', 'r', 'red', 14, 2), rec('leaguePike', 'b', 'blue', 1, 1)], pools: { blue: ['coil'] } });
+    const card = m.summary('blue').handState.find((c) => c.unitId === 'coil');
+    assert.equal(m.apply({ type: 'recruit', faction: 'blue', cardId: card.instanceId }).ok, true);
+    const reserve = m.summary('blue').reserveState[0];
+    const tile = m.deploymentTiles('blue').find(([c, r]) => !m.unitAt(c, r));
+    const dep = m.apply({ type: 'deploy', faction: 'blue', reserveId: reserve.id, c: tile[0], r: tile[1] });
+    assert.equal(m.byId(dep.unitId).rarity, 'uncommon', 'a deployed Coil keeps its card rarity');
+    assert.equal(m.apply({ type: 'withdraw', faction: 'blue', unitId: dep.unitId }).ok, true);
+    assert.equal(m.summary('blue').reserveState[0].unitId, 'coil', 'the benched Coil is still a Coil');
+  });
+});
+
+test('ENGINE BUG: a variant unit placed in the starting roster gets its BASE class rarity (prepare() reads unitCardFor(cls), not the variant)', { todo: 'prepare() uses unitCardFor(u.cls); see docs/factions/IRON_LEAGUE.md' }, () => {
+  league(() => {
+    const m = createMatch({ seed: 2, roster: [rec('coil', 'c', 'blue', 2, 9), rec('pikeman', 'r', 'red', 14, 2)] });
+    assert.equal(m.byId('c').rarity, 'uncommon');
+  });
+});
+
+test('ENGINE OBSERVATION: an Advancing melee unit stalls when the nearest enemy by Manhattan distance is across the river (River Ford)', { todo: 'battle.js nearestOpponent uses Manhattan distance, not path cost; see docs/factions/IRON_LEAGUE.md' }, () => {
+  // Red Pikeman at 9,6 (east bank). The nearest Blue unit by air distance is the one at 7,6 (distance 2, across the river column 8), but the only way
+  // to it is the bridge at 8,5 and the bridge exit 7,5 is held by another Blue unit, so no reachable tile is closer to its target: the Red unit never moves.
+  const m = createMatch({ seed: 3, roster: [rec('pikeman', 'b', 'blue', 7, 6, { stance: 'hold' }), rec('pikeman', 'plug', 'blue', 7, 5, { stance: 'hold' }), rec('pikeman', 'r', 'red', 9, 6, { stance: 'advance' }), rec('pikeman', 'far-b', 'blue', 1, 1, { stance: 'hold' }), rec('pikeman', 'far-r', 'red', 14, 10, { stance: 'hold' })] });
+  let attacked = false;
+  for (let i = 0; i < 6 && !attacked; i += 1) attacked = combatOf(m.resolveRound()).some((e) => e.type === 'strike' && e.attackerId === 'r' && e.targetId === 'b');
+  assert.equal(attacked || m.byId('r').c < 9 || m.byId('r').r !== 6, true, 'the Red Pikeman should path toward the bridge within six rounds');
+});
