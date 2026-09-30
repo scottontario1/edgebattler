@@ -85,15 +85,15 @@ test('units: real classes (Reaver, Axeguard, Berserker) and the Fang Hunter vari
     assert.ok(kitFor(h).some((x) => x.id === 'focusedShot'));
     for (const u of [r, a, b, h]) assert.equal(u.culture, 'fang');
     // Weapons: the clan axes have the Iron Pike's numbers and a kind outside the weapon triangle.
-    for (const name of ['Fang Axe', 'Iron-Bound Axe', 'Twin Axes']) assert.deepEqual(WEAPONS[name], { mt: 8, hit: 75, crit: 0, rng: [1, 1], kind: 'fang' });
+    for (const name of ['Fang Axe', 'Wolf-Crest Axe', 'Scarred Great Axe']) assert.deepEqual(WEAPONS[name], { mt: 8, hit: 75, crit: 0, rng: [1, 1], kind: 'fang' });
     assert.equal(forecast(r, rec('pikeman', 'p', 'red', 5, 4), [4, 4]).atk.tri, 0, 'no triangle bonus against a Pikeman');
     // Movement, cards, sprites.
     assert.deepEqual(['fangReaver', 'fangAxeguard', 'fangBerserker'].map((k) => MOVE_TYPE[k]), ['foot', 'foot', 'foot']);
     assert.equal(unitCardFor('fangReaver').defaultStance, 'advance');
     assert.equal(unitCardFor('fangHunter').defaultStance, 'advance');
     assert.equal(unitCardFor('fangHunter').base, 'archer');
-    assert.deepEqual(SPRITE_FALLBACK.fangReaver, { base: 'pikeman', tint: '#9AA6B2', label: 'White Fang Reaver' });
-    assert.deepEqual(SPRITE_FALLBACK.fangHunter, { base: 'archer', tint: '#C9C3AD', label: 'Fang Hunter' });
+    assert.deepEqual(SPRITE_FALLBACK.fangReaver, { base: 'pikeman', tint: '#B4B2AC', label: 'White Fang Reaver' });
+    assert.deepEqual(SPRITE_FALLBACK.fangHunter, { base: 'archer', tint: '#8C6B4F', label: 'Fang Hunter' });
   });
   assert.deepEqual(SPRITE_FALLBACK, beforeSprite);
 });
@@ -533,4 +533,27 @@ test('ENGINE ISSUE 1 (documented, worked around): a variant card\'s defaultStanc
   } finally { resetCultures(); }
   registerCulture({ ...probe, variants: { probeArcher: { ...probe.variants.probeArcher, stats: { stance: 'advance' } } } });
   try { assert.equal(deploy().stance, 'advance', 'the workaround used by the Fang Hunter'); } finally { resetCultures(); }
+});
+
+test('Dreg fielded by the Blue side respawns as Blue Dreg (with his kit) two rounds after falling', () => {
+  withFang(() => {
+    let respawned = null;
+    for (let seed = 1; seed <= 40 && !respawned; seed += 1) {
+      const d = dreg('blue', 5, 5, { hp: 1, stance: 'hold' });
+      const killer = rec('pikeman', 'k', 'red', 6, 5, { stance: 'hold', str: 40, skl: 40 });
+      const m = createMatch({ seed, roster: [d, killer, rec('pikeman', 'b2', 'blue', 1, 1, { stance: 'hold' }), rec('pikeman', 'r2', 'red', 14, 10, { stance: 'hold' })], champions: { blue: 'dreg' } });
+      for (let i = 0; i < 5 && !m.over && !respawned; i += 1) {
+        const res = m.resolveRound();
+        respawned = res.batches.find((b) => b.type === 'results').events.find((e) => e.type === 'respawn') || null;
+        if (respawned) {
+          assert.equal(respawned.unitId, 'dreg');
+          assert.equal(m.byId('dreg').faction, 'blue');
+          assert.equal(m.byId('dreg').hp, m.byId('dreg').maxHp);
+          assert.deepEqual(kitFor(m.byId('dreg')).map((a) => a.id).sort(), ['bloodChallenge', 'warlordsRush']);
+          assert.deepEqual(m.byId('dreg').selectedAbilities, [], 'a respawned champion has no picks');
+        }
+      }
+    }
+    assert.ok(respawned, 'Dreg respawned in the seed sweep');
+  });
 });

@@ -87,7 +87,10 @@ export const POOL = Object.freeze([
   'mend', 'ward', 'fireburst',
 ]);
 
-const TINT = Object.freeze({ reaver: '#9AA6B2' /* iron grey */, axeguard: '#6E7A86' /* dark iron */, berserker: '#B5482F' /* blood rust */, hunter: '#C9C3AD' /* bone */ });
+// Placeholder tints multiplied onto the base sprite (the pikeman or archer sprite) until the supplied reference art (design_assets/factions/
+// white_fang/*_sprite.png on the root branch) becomes runtime sprites. Palette from that art: iron grey plate, off-white wolf fur, brown
+// leather, crimson only on the Berserker.
+const TINT = Object.freeze({ reaver: '#B4B2AC' /* iron grey and wolf fur */, axeguard: '#7A828C' /* full iron plate */, berserker: '#B5382C' /* crimson war paint */, hunter: '#8C6B4F' /* brown leather */ });
 
 /**
  * Build the culture definition. `options` exist only for sensitivity experiments; the default export uses the defaults.
@@ -101,18 +104,18 @@ export function buildWhiteFang({ weaponKind = NEUTRAL_WEAPON_KIND, reaverMovDelt
   return {
     id: CULTURE_ID,
     classes: {
-      fangReaver: { name: 'White Fang Reaver', title: 'Clan Raider', stats: stats(P, { ...REAVER, mov: reaverMovDelta }), ...axe('Fang Axe'), moveType: 'foot', spriteBase: 'pikeman', tint: TINT.reaver,
+      fangReaver: { name: 'White Fang Reaver', title: 'Wolf-Pelt Raider', stats: stats(P, { ...REAVER, mov: reaverMovDelta }), ...axe('Fang Axe'), moveType: 'foot', spriteBase: 'pikeman', tint: TINT.reaver,
         passives: [{ id: 'momentum', when: { moved: true }, effect: { damageDealt: MOMENTUM_DAMAGE } }],
         card: { rarity: 'common', cost: REAVER.cost, class: 'Foot', range: 1, defaultStance: 'advance' },
-        description: `Momentum: +${MOMENTUM_DAMAGE} damage if it moved before attacking. No Brace, no Rally.` },
-      fangAxeguard: { name: 'Axeguard', title: 'Iron Guard', stats: stats(P, AXEGUARD), ...axe('Iron-Bound Axe'), moveType: 'foot', spriteBase: 'pikeman', tint: TINT.axeguard,
+        description: `Wolf-pelt cloak over riveted plate, bearded axe. Momentum: +${MOMENTUM_DAMAGE} damage if it moved before attacking. No Brace, no Rally.` },
+      fangAxeguard: { name: 'Axeguard', title: 'Wolf Shield', stats: stats(P, AXEGUARD), ...axe('Wolf-Crest Axe'), moveType: 'foot', spriteBase: 'pikeman', tint: TINT.axeguard,
         passives: [{ id: 'bloodiedGrit', effect: { energyWhenStruck: GRIT_ENERGY } }],
         card: { rarity: 'uncommon', cost: AXEGUARD.cost, class: 'Foot', range: 1, defaultStance: 'advance' },
-        description: `Bloodied Grit: +${GRIT_ENERGY} energy in a battle where it takes damage. Iron Skin instead of Brace.` },
-      fangBerserker: { name: 'Berserker', title: 'Oath-Breaker', stats: stats(P, BERSERKER), ...axe('Twin Axes'), moveType: 'foot', spriteBase: 'pikeman', tint: TINT.berserker,
+        description: `Bloodied Grit: +${GRIT_ENERGY} energy in a battle where it takes damage. Braces behind the wolf shield (Iron Skin) instead of Brace.` },
+      fangBerserker: { name: 'Berserker', title: 'Scarred Veteran', stats: stats(P, BERSERKER), ...axe('Scarred Great Axe'), moveType: 'foot', spriteBase: 'pikeman', tint: TINT.berserker,
         passives: [{ id: 'lastFang', when: { hpBelow: LAST_FANG_BELOW }, effect: { damageDealt: LAST_FANG_DAMAGE } }],
         card: { rarity: 'rare', cost: BERSERKER.cost, class: 'Foot', range: 1, defaultStance: 'advance' },
-        description: `Last Fang: below ${LAST_FANG_BELOW * 100}% HP, +${LAST_FANG_DAMAGE} Str. Frenzy when hurt.` },
+        description: `Bare-chested glass cannon. Last Fang: below ${LAST_FANG_BELOW * 100}% HP, +${LAST_FANG_DAMAGE} Str. Frenzy when hurt.` },
     },
     variants: {
       fangHunter: { base: 'archer', name: 'Fang Hunter', title: 'Trophy Hunter', delta: { hp: HUNTER.hp, str: HUNTER.str, def: HUNTER.def }, tint: TINT.hunter,
@@ -121,7 +124,7 @@ export function buildWhiteFang({ weaponKind = NEUTRAL_WEAPON_KIND, reaverMovDelt
         stats: { stance: 'advance' },
         passives: [{ id: 'runningShot', when: { moved: true }, effect: { damageDealt: RUNNING_SHOT_DAMAGE, hitBonus: RUNNING_SHOT_HIT } }],
         card: { rarity: 'common', cost: HUNTER.cost, defaultStance: 'advance' },
-        description: `Running Shot: +${RUNNING_SHOT_DAMAGE} damage and +${RUNNING_SHOT_HIT} hit if it moved before shooting. Advances by default.` },
+        description: `Antler-and-bone bow (cosmetic: it shoots as a Longbow). Running Shot: +${RUNNING_SHOT_DAMAGE} damage and +${RUNNING_SHOT_HIT} hit if it moved before shooting. Advances by default.` },
     },
     abilities: [
       { id: 'reavingRush', name: 'Reaving Rush', classes: ['fangReaver'], cost: REAVING_RUSH.cost, cooldown: REAVING_RUSH.cooldown, phase: 'enhancement',
