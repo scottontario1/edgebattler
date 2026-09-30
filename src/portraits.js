@@ -1,3 +1,4 @@
+import { spriteArt, spriteAssetURL } from './sprite-art.js';
 // Procedural SVG bust portraits in a painted anime style.
 // viewBox is 100 x 120. The head is turned slightly to the viewer's right
 // (face midline x = 52), eyes sit at y = 57.5, shoulders fill y 86-120.
@@ -926,6 +927,13 @@ function front(c) {
 let uid = 0;
 export function portraitSVG(u, opts = {}) {
   const variant = opts.variant || 'full';
+  const art = spriteArt(u);
+  if (art) {
+    const path = art.portrait || art.files[u.faction] || art.files.blue;
+    const title = String(u.name || art.key).replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+    const border = u.faction === 'red' ? '#c0392b' : '#2f62c4';
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 120" role="img" aria-label="${title}" data-sprite-key="${art.key}">${variant==='bust'?'':`<rect width="100" height="120" rx="6" fill="#101827" stroke="${border}" stroke-width="3"/>`}<image href="${spriteAssetURL(path)}" x="3" y="3" width="94" height="114" preserveAspectRatio="xMidYMid meet"/></svg>`;
+  }
   const f = FACTION[u.faction] || FACTION.blue;
   const P = persona(u);
   const L = u.look;

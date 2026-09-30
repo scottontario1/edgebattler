@@ -60,7 +60,7 @@ export function replay(entries, { create } = {}) {
   const header = entries.find((e) => e.t === 'header');
   if (!header) return { ok: false, mismatches: [{ reason: 'no-header' }] };
   if(header.schema!==SCHEMA) return {ok:false,mismatches:[{reason:'unsupported-schema',schema:header.schema,expected:SCHEMA}]};
-  if (!create && header.campaign) create = (h,push) => createCampaignMatch(CAMPAIGN_BY_ID[h.campaign.id], { faction: h.campaign.faction, seed: h.seed, log: push });
+  if (!create && header.campaign) create = (h,push) => createCampaignMatch(CAMPAIGN_BY_ID[h.campaign.id], { faction: h.campaign.faction, seed: h.seed, log: push, enemyFactions: h.campaign.enemyFactions, encounters: h.campaign.stages });
   if (!create && header.map && header.map !== MAP.id) return { ok: false, mismatches: [{ reason: 'unsupported-map', map: header.map, active: MAP.id }] };
   const out = memoryLog();
   // Custom scenarios (other map, roster, candidate rules) pass create(header, log) to rebuild the same match.

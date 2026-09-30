@@ -36,7 +36,7 @@ export function showMenu(root = document.body) {
     <nav class="tabs" role="tablist"><button role="tab" data-tab="campaign" aria-selected="true">Campaign</button><button role="tab" data-tab="skirmish" aria-selected="false">Skirmish</button><button role="tab" data-tab="levels" aria-selected="false">Levels</button></nav>
     <section class="tab" data-panel="campaign">
       <h2>Choose your faction</h2><div class="fgrid">${factionCards('campaignFaction', 'crown')}</div>
-      <p class="note">March south to north. Enemies arrive in fixed encounters and waves; they never recruit. Clear a position, regroup at its village, then continue north. Each mission starts a fresh army.</p>
+      <p class="note">March south to north. Monsters and rival faction troops arrive in fixed encounters and waves; they never recruit. Clear a position, regroup at its village, then continue north. Each mission starts a fresh army.</p>
       ${CAMPAIGN_LEVELS.map(l => `<div class="lrow"><div><b>${l.number}. ${esc(l.title)}</b><p>${esc(l.teaches)}</p></div><a class="btn play campaign-play" data-campaign="${l.id}" href="${campaignURL(l.id,'crown',0x415348)}">Play</a></div>`).join('')}
     </section>
     <section class="tab" data-panel="skirmish" hidden>

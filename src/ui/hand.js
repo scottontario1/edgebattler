@@ -66,7 +66,7 @@ export function handHTML(m) {
  */
 export function reservesHTML(m) {
   return m.reserves.map((reserve) => {
-    const definition = m.definitions[reserve.unitId];
+    const definition = m.definitionFor?.(reserve.unitId) ?? m.definitions[reserve.unitId];
     const name = definition?.name || reserve.unitId;
     const selected = m.selectedReserveId === reserve.id;
     const stars = Math.max(1, Number(reserve.stars) || 1);

@@ -14,7 +14,7 @@ export function mountLevelPanel({ level = null, you = 'classic', foe = 'classic'
     eyebrow.textContent = `${FACTION_BY_ID[you].name} · Mission ${campaignLevel.number}`;
     goal.lastChild.textContent = campaignLevel.title;
     sub.textContent = '↑ North · clear encounters, rally at villages, reach the north exit';
-    panel.insertAdjacentHTML('beforeend', `<details class="lv-plan"><summary>Mission briefing</summary><p>${esc(campaignLevel.teaches)}</p><p>March sets your whole army to Advance toward the current checkpoint. Change individual stances to keep a screen or hold your archers. Rally restores up to 4 HP once per cleared village to survivors within 2 tiles. Enemy waves are fixed. After regrouping, Continue north opens the next encounter.</p></details>`);
+    panel.insertAdjacentHTML('beforeend', `<details class="lv-plan"><summary>Mission briefing</summary><p>${esc(campaignLevel.teaches)}</p><p>March sets your whole army to Advance toward the current checkpoint. Change individual stances to keep a screen or hold your archers. Rally restores up to 4 HP once per cleared village to survivors within 2 tiles. Enemy waves mix monsters with soldiers from other factions and never recruit. After regrouping, Continue north opens the next encounter.</p></details>`);
   } else if (level) {
     eyebrow.textContent = `${level.groupName} · Level ${level.number}`;
     goal.lastChild.textContent = level.title.replace(/^(Level \d+|[A-E]\.|Scenario \d+):\s*/, '');

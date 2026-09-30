@@ -160,10 +160,10 @@ function heroMaterial(name, faction, look) {
   return m;
 }
 
-async function buildHero(spec, id, faction) {
+async function buildHero(spec, unit, faction) {
   const gltf = await load(spec.hero);
   const root = gltf.scene.clone(true);
-  const look = UNITS.find((u) => u.id === id)?.look ?? {};
+  const look = unit.look ?? {};
   root.traverse((o) => {
     if (!o.isMesh) return;
     const name = o.material.name;
@@ -208,10 +208,10 @@ async function buildHero(spec, id, faction) {
   };
 }
 
-export async function buildModel(id, faction) {
-  const unit = UNITS.find((u) => u.id === id);
-  const spec = MODEL_SPECS[unit.cls] ?? MODEL_SPECS[SPRITE_FALLBACK[unit.cls]?.base];
-  const hero = await buildHero(spec, id, faction);
+export async function buildModel(value, faction) {
+  const unit = typeof value === 'string' ? UNITS.find((u) => u.id === value) : value;
+  const spec = unit.monster ? MODEL_SPECS.pikeman : (MODEL_SPECS[unit.cls] ?? MODEL_SPECS[SPRITE_FALLBACK[unit.cls]?.base] ?? MODEL_SPECS[unit.classId] ?? MODEL_SPECS.pikeman);
+  const hero = await buildHero(spec, unit, faction);
   if (!spec.mount) return hero;
   // Cavalry: seat the rider on the horse (crotch on the saddle) and animate both.
   const horse = await buildHorse(faction).catch((err) => {

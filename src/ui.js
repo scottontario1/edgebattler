@@ -7,7 +7,7 @@ import { W, H, TERRAIN, inBounds, terrainAt, toWorld, tileTop } from './map.js';
 import { portraitSVG } from './portraits.js';
 import { forecast, weaponOf } from './combat.js';
 import { MOVE_COST, MOVE_TYPE, key, unkey, computeRange } from './rules.js';
-import { CARD_LIMITS, UNIT_CARDS, SPELL_CARDS, SKILL_CARDS, canAfford, previewCycle } from './cards.js';
+import { CARD_LIMITS, UNIT_CARDS, SPELL_CARDS, SKILL_CARDS, canAfford, previewCycle, unitCardFor } from './cards.js';
 import { findUpgradeMatches, previewUpgrade } from './upgrades.js';
 import { RULES } from './match.js';
 import { stanceIcon, STANCE_LABEL, STANCE_HINT } from './ui/icons.js';
@@ -311,7 +311,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     });
     const groups = findUpgradeMatches(armyRecords()).map((ids) => {
       const first = armyRecords().find((item) => item.id === ids[0]);
-      return { ids, label: UNIT_CARDS[first?.unitId || first?.cls]?.name || 'matching units' };
+      return { ids, label: unitCardFor(first?.unitId || first?.variantId || first?.cls)?.name || 'matching units' };
     });
     let choice = null;
     if (state.upgradeChoice) {
@@ -341,9 +341,9 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
       cyclesRemaining:blue().cards.cyclesRemaining, locations: controlledCount, prompt, phase: state.phase, collapsed: state.trayCollapsed,
       hand: handHTML({
         hand: blue().cards.hand, selectedCardId: state.selectedCardId, canAfford: affordable,
-        portraitFor: (item) => portraitSVG(units.list.find((entry) => entry.data.cls === item.unitId)?.data || createRecruitUnit(item.unitId, `preview-${item.unitId}`, 'blue', 0, 0)),
+        portraitFor: (item) => portraitSVG(units.list.find((entry) => entry.data.faction === 'blue' && (entry.data.variantId ?? entry.data.cls) === item.unitId)?.data || createRecruitUnit(item.unitId, `preview-${item.unitId}`, 'blue', 0, 0)),
       }),
-      reserves: reservesHTML({ reserves: blue().cards.reserves, selectedReserveId: state.selectedReserveId, definitions: UNIT_CARDS }),
+      reserves: reservesHTML({ reserves: blue().cards.reserves, selectedReserveId: state.selectedReserveId, definitions: UNIT_CARDS, definitionFor: unitCardFor, portraitFor: (reserve) => portraitSVG({ ...createRecruitUnit(reserve.unitId,reserve.id,'blue',0,0), ...reserve, faction: 'blue' }) }),
       detail: detailHTML({ selectedCard, selectedReserve, cyclePreview: (selectedReserve||selectedCard)?previewCycle(blue().cards,{source:selectedReserve?'bench':'hand',id:selectedReserve?.id??selectedCard?.instanceId}):null, selectedSkillType: state.selectedSkillType, skillLoadouts: blue().loadouts, canAfford: affordable }),
       queued: queuedHTML({ queued }),
       upgrades: upgradePromptsHTML({ groups }),
@@ -688,7 +688,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     const res = act({ type: 'recruit', cardId: state.selectedCardId });
     if (res.ok) {
       state.selectedCardId = null;
-      state.notice = `${UNIT_CARDS[res.unitId].name} joined the reserve bench.`;
+      state.notice = `${unitCardFor(res.unitId).name} joined the reserve bench.`;
     }
     refresh();
   }

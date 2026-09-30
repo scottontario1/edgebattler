@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { isPortrait } from './camera.js';
 import { MASK_LAYER } from './painterly.js';
+import { spriteArt, spriteAssetURL } from './sprite-art.js';
 import { SPRITE_FALLBACK } from './cultures.js';
 
 // Illustrated 2D sprites standing on the 3D map (docs/asset-pipeline-plan.md, milestone 1).
@@ -78,16 +79,25 @@ function shadowTexture() {
   return shadowTex;
 }
 
-export const hasSprite = (cls) => Boolean(spriteName(cls));
+export const hasSprite = (unit) => Boolean(spriteChoice(unit).name);
 
 // Same interface as buildHero() in models.js: { root, setActive(bool), update(dt, t) }.
 // `flip` mirrors the drawing so it faces the other way (sprites face screen-right).
 // New culture classes borrow a base sprite (SPRITE_FALLBACK in src/cultures.js) until their own art exists; `tint` multiplies the colours.
-const spriteName = (cls) => SPRITE_FOR[cls] ?? SPRITE_FOR[SPRITE_FALLBACK[cls]?.base];
-export async function buildSprite(cls, faction, { flip = false, tint = null } = {}) {
+function spriteChoice(value) {
+  const unit = typeof value === 'string' ? { cls:value,variantId:value,id:value } : value;
+  const art = spriteArt(unit);
+  if (art) return { name:art.key, info:art, native:true };
+  const fallback = SPRITE_FALLBACK[unit?.variantId] ?? SPRITE_FALLBACK[unit?.id] ?? SPRITE_FALLBACK[unit?.cls];
+  const name = SPRITE_FOR[unit?.cls] ?? SPRITE_FOR[fallback?.base] ?? SPRITE_FOR[SPRITE_FALLBACK[fallback?.base]?.base];
+  return { name, tint:fallback?.tint, native:false };
+}
+export async function buildSprite(unit, faction, { flip = false, tint = null } = {}) {
+  const choice = spriteChoice(unit);
   const manifest = await manifestP;
-  const info = manifest[spriteName(cls)];
-  const tex = await texture(`${import.meta.env.BASE_URL}${info.files[faction] ?? info.files.blue}`);
+  const info = choice.info || manifest[choice.name];
+  if (!info) throw new Error(`No sprite art for ${choice.name}`);
+  const tex = await texture(spriteAssetURL(info.files[faction] ?? info.files.blue));
 
   // World size of the whole image: visibleHeight pixels correspond to the drawing's world height.
   const ppu = info.visibleHeight / info.height;
@@ -104,7 +114,8 @@ export async function buildSprite(cls, faction, { flip = false, tint = null } = 
   const mat = new THREE.MeshBasicMaterial({
     map: tex, alphaTest: 0.5, side: THREE.DoubleSide, color: new THREE.Color(GAIN, GAIN, GAIN),
   });
-  if (tint) mat.color.multiply(new THREE.Color(tint));
+  if (!choice.native && (tint || choice.tint)) mat.color.multiply(new THREE.Color(tint || choice.tint));
+  const nativeColor = mat.color.clone();
   const mesh = new THREE.Mesh(geo, mat);
   // Picking follows the drawing, not its rectangle: a hit on a transparent pixel is ignored so
   // clicks fall through to the unit or tile behind the cape.
@@ -141,9 +152,10 @@ export async function buildSprite(cls, faction, { flip = false, tint = null } = 
     root,
     billboard: true,
     mesh,
+    spriteKey: choice.name,
     setActive(a) { target = a ? 1 : 0; },
     // Units that have acted this turn are greyed out.
-    setDone(done) { const g = done ? 0.5 : GAIN; mat.color.setRGB(g, g, g); },
+    setDone(done) { mat.color.copy(nativeColor).multiplyScalar(done ? 0.5 : 1); },
     update(dt, t) {
       active += (target - active) * Math.min(1, dt * 8);
       const cos = Math.cos(isPortrait() ? TILT.portrait : TILT.landscape);

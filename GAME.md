@@ -276,3 +276,10 @@ The intended direction is fixed: random shared-pool cards, paid reserves, contro
 - Optional rerolls and longer-term campaign rewards.
 
 Evaluate these against a concrete goal: the player should spend a short planning turn making a handful of meaningful decisions, then understand how those decisions shaped the automatic battle.
+
+
+## Campaign creatures and supplied faction art (2026-09-30)
+
+Campaign encounters now mix enemy-only monsters with troops from three other factions, selected deterministically from the mission and seed. The selected player faction is excluded from enemy faction choices. The North Road introduces rats, spiders and goblins beside faction infantry; Rally in the Woods adds hunters and a golem; the Northern Pass combines larger creatures and ranged troops across six waves. Enemies still hold fixed engagements and never recruit. Regroup/rally and south-to-north objectives are unchanged.
+
+Seven neutral creatures and the Hollow Court Corpsehound use prototype stat envelopes in src/monsters.js, shared existing melee attack rules and no player ability kits or recruitment cards. This makes their visual and stat identities playable; unique creature abilities and balanced difficulty remain future playtest work. Source sheets map to 24 runtime sprites and matching portraits via docs/art/FACTION_SPRITES.md. Native colors are preserved; team rings and portrait borders identify allegiance. Missing character art retains existing fallbacks. The optional 3D comparison mode uses a generic infantry model for monsters.
