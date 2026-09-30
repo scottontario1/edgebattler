@@ -140,3 +140,101 @@ Their spells reward commitment rather than traditional wizardry. Names are from 
 - **Strategy questions for Scott:** whether "less willing to attack others" should be a hard target lock (strong, simple) or only a damage penalty (softer); whether Berserker Frenzy should be an ability or a passive; how much healing the White Fang should have (proposed: little).
 - **Interaction with pacing:** this faction is the natural counter to the stalemate problem in CORE-02 (it wants contact), but it must be tested in mirror and against the Crown with paired seeds before anyone treats it as a fix.
 - **Balance status:** nothing tuned. New classes wait until the roadmap allows them; units here could be trialled first as stat variants of the existing Pikeman and Cavalier classes.
+
+---
+
+## 3. The Iron League
+
+*Brass, bronze and rust. Free cities, merchant princes and mercenary companies who field salvaged ancient machines. The non-magical counterweight.*
+
+Revised from the original brief: the League keeps its payrolls, professional soldiers and preparation-based play, but its edge now comes from **artifacts**: the working remnants of an older, fallen technological age, in decrepit, patched-together, half-understood condition. The look is closer to a salvage yard than a sci-fi army: corroded plating riveted over pike-and-crossbow kit, coil guns with rope-wrapped grips, lanterns that hum, gears that stick. They are non-magical by their own insistence: their engineers say the old machines are craft, not sorcery.
+
+### Lore
+
+Beneath the League's free cities lie the ruins of the Foundry Age, a civilization that built engines, wires and automatic workshops before it vanished for reasons no one agrees on. The old works are everywhere: sealed vaults under river ports, tomb-like factories in the hills, half-buried walkers rusting beside trade roads. Most of it is dead. Some of it still moves. The merchant princes of the League discovered that a soldier who can be taught to operate one of these relics is worth ten who cannot, and that a company which can repair three of them is worth a small kingdom. They founded guilds to dig, catalogue and mend the salvage, and companies to carry it into battle.
+
+The League itself is a loose compact of free cities and hired companies, bound by contracts, not blood. Their soldiers do not care whether someone possesses royal blood or speaks to forest spirits; they care whether the payroll clears and whether their weapon fires. What they field is professional but improvised: pikes and crossbows are still the backbone, but they are backed by reloading rigs, deployable pavises made from plate that no smith alive can forge, surveying instruments turned into sights and sappers' tools that were once part of automatic builders. Nothing is new. Everything is repaired, rebuilt or borrowed from a dead machine, and every soldier knows that any piece might fail at the wrong time.
+
+Politically the League is a rebuke to the old order. It shows that disciplined common soldiers with increasingly effective weapons can defeat hereditary knights, and the Argent Crown's nobility has noticed. Some nobles want to buy the League, some to ban it, and some to steal its salvage. The League's answer is a contract: pay, and it will make your enemy's problem harder.
+
+### Personality and key traits
+
+**Pragmatic, methodical, mercantile, brittle.** The League is about creating a battlefield problem and forcing the opponent to solve it. Where the Argent Crown relies on complementary medieval arms, the League builds a killing ground and waits for the enemy to enter it.
+
+- **Preparation during planning.** Their central mechanic is investing in a position before the battle. A unit that holds still for a round converts its standing into something: a barricade, a Prepared Shot, an automatic Brace. Their bonuses need time and a chosen tile, so a League army that is rushed gets very little of them.
+- **A road or bridge is their home.** A typical formation is Pikemen in front, Pavise Guards behind them and Crossbowmen at the rear, on a road, bridge or ford, so the enemy has to come through the problem.
+- **Fantastic skills, mediocre spells.** Most of their power is in unit abilities (engines, rigs and tools). Their spell cards are weak and few: they are salvage tricks, not sorcery, and are expected to fail sometimes. The League beats casters by out-preparing them and loses to enemies who make it move.
+- **Decrepit tech.** Artifacts are powerful but unreliable. Proposed model: each artifact ability has a **Malfunction** chance, or needs a **Repair** turn after a heavy use (cooldown-based), never a random coin flip on the first use. Weak points are legible and can be exploited by the opponent.
+- **Champion:** none decided (see questions). A mercenary captain or a guild engineer are both natural choices.
+- **Play pattern:** hold a chokepoint or controlled location, prepare a killing ground, then let the enemy come. Strong on bridges, fords and fixed objectives. Weak against fast, flanking or magical opponents (Fireburst on a packed position, cavalry going round the ends) and against anything that forces them to move before they are prepared. The White Fang mirror is the archetype: momentum against preparation.
+
+### Unique units
+
+| Rarity | Unit | Class (proposed) | Role |
+|---|---|---|---|
+| Common | **Pavise Guard** | Shield infantry | Carries a deployable relic-plate shield wall. |
+| Uncommon | **Coil Crossbowman** | Ranged infantry | An archer with a salvaged spring-loaded crossbow that needs setup. |
+| Rare | **Relic Walker** | Artifact pilot / heavy | A pilot inside a patched-together ancient frame. |
+
+**Pavise Guard (common).** An infantryman behind a tall pavise shield made from salvaged alloy plate, with a short pike. He fills the middle of the League line. Suggested stats: HP 25, Str 6, Skl 5, Spd 3, Def 11, Mov 3, range 1. Passive **Set Shield**: if it did not move this round, adjacent ranged friends behind it take 3 less damage from ranged attacks. Pikemen still lead the line; the Pavise Guard is what makes their shooters survive.
+
+**Coil Crossbowman (uncommon).** A crossbowman with an ancient coil-driven bow that is powerful but slow to prepare. Suggested stats: HP 18, Str 6, Skl 8, Spd 5, Def 3, Mov 4, range 2. Passive **Prepared Shot**: if it is on Hold and did not move last round, its next ranged strike gains +4 damage and +20 hit. Hold and stillness are rewarded; a crossbowman that keeps moving is only a weaker Archer.
+
+**Relic Walker (rare).** A pilot in a dented, creaking ancient frame, half armour and half machine, with a repaired arm cannon and a rack of tools. Suggested stats: HP 30, Str 9, Skl 4, Spd 2, Def 13, Mov 2, range 2 (very slow and durable, with a short-range beam). Passive **Failing Systems**: the first time it drops below 50% HP it loses 1 Mov and its cannon gains a Malfunction chance (proposed: an attack has a 25% chance to fizzle). Rare because it is a strong anchor that ages during a fight and rewards the opponent for pressuring it early.
+
+### Unique skills
+
+Abilities use the existing energy and cooldown system and fixed phases. The **Sapper** is a support role that can appear on any League unit card (proposed to be a skill, not a class).
+
+| Rarity | Skill | Classes | Cost / cooldown (proposed) | Phase | Effect |
+|---|---|---|---|---|---|
+| Common | **Dig In** | Pikeman, Pavise Guard, Sapper | 1 / 2 | defense | Requires Hold and no movement this round. Creates a barricade on the adjacent tile in front (facing): an enemy that ends its move there is blocked and takes a hit from the barricade (3 damage). Lasts until destroyed (proposed 8 HP). |
+| Uncommon | **Prepared Position** | Crossbowman, Coil Crossbowman | 1 / 2 | enhancement | Hold only. Gain Prepared Shot immediately and treat the unit as having held for two rounds, so its next shot is +6 damage. Reduced if it moved this round. |
+| Rare | **Arc Lance** | Relic Walker | 3 / 3 | enhancement | Fire a piercing beam along the facing line up to range 3, hitting every enemy in line (4 damage each, ignores 2 Defense). 20% Malfunction chance; on Malfunction, take 4 damage and gain no cooldown. |
+
+Also proposed as a faction rule rather than a skill: **Garrison Doctrine.** Pikemen on a controlled location (keep or village) start each battle as though Brace were selected, for free. It gives the League a free defence exactly where it wants to fight, and its strength depends on holding villages.
+
+### Spells
+
+Deliberately mediocre, as in the brief. They are salvaged one-shot tricks:
+
+| Rarity | Spell | Effect |
+|---|---|---|
+| Common | **Field Repair** | Heal a chosen unit 4 HP and clear a Malfunction. |
+| Common | **Flare** | Reveal and mark one enemy: units with Prepared Shot gain +2 hit against it. |
+| Uncommon | **Static Discharge** | 3 damage to one enemy, ignoring Defense, with a 25% chance to fail. |
+
+The League has no rare spell (proposal); its rare cards are units and skills.
+
+### Design notes
+
+- **Art direction:** patina, dents, rope and rivets. Artifacts look ancient, unreliable and hand-repaired, not clean. The blue-and-silver Crown and crimson-and-fur Clans read against brass, bronze and oxidized green.
+- **Prepared state must be visible.** Holding still is the mechanic, so the UI has to show that a unit is prepared (a marker such as a raised sight or a barricade) or the player will not understand why a crossbowman is strong.
+- **AI:** the heuristic commander needs to hold positions and pick chokepoints for the League to exploit its mechanics.
+- **Balance status:** nothing tuned. Malfunction is deterministic under the seeded RNG so replays still match.
+
+---
+
+## Open questions to bring up later
+
+**All factions**
+1. Rarity: every card is currently common. Do these proposed rarities become a real system (drop rates, deck limits), or should they be labels for power level only? Rarity rates are not confirmed and were not invented.
+2. Are unique factional units new classes (roadmap says new classes wait until the three recruit classes support a complete match), or stat/skill variants of the existing Pikeman, Archer and Cavalier?
+3. Does a player pick one faction for the whole match (with faction-only pools), or can decks mix? "Different factions cannot combine" already exists for combination.
+4. Do factions have their own champions, and should champions get active kits (Brenna and Dreg currently have none)?
+5. How many spells and skills should each faction have, and are the spells all one-shot cards like Fireburst, Ward and Mend?
+
+**Argent Crown**
+6. Should Line Doctrine be a passive on every Crown unit, or a bonus on specific cards?
+7. Does Sworn Guard share damage (half to the guard) or redirect it (all damage to the guard)?
+
+**White Fang Clans**
+8. Should Blood Challenge be a hard target lock or a damage penalty on other targets?
+9. Is Berserker Frenzy an ability or a passive, and how much healing should the White Fang have?
+
+**Iron League**
+10. Who is the League's champion (mercenary captain, guild engineer, or none)?
+11. Malfunction: random chance, a repair cooldown, or both? It must stay legible and deterministic for replay.
+12. Is the Sapper a class, or a skill any League unit can carry?
+13. Is Garrison Doctrine (free Brace on controlled locations) a faction rule, or is it too strong with the village and deployment-radius experiments?
+14. Do the lore claims about the Foundry Age fit the wider setting (Ashvale, the Crown's magic and forest spirits), or should the ancient tech stay unexplained?
