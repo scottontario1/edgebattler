@@ -63,16 +63,3 @@ export function renderArmy(army) {
       <div class="ar-list">${rows}</div>
     </div>`;
 }
-
-.ar-skills { display: grid; gap: 4px; }
-.ar-skills-head { display: flex; align-items: baseline; justify-content: space-between; gap: 4px; }
-.ar-skills-head small { color: var(--muted); font-size: 9px; text-align: right; }
-.ar-skill-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; }
-.ar-skill-slot { display: grid; justify-items: center; gap: 2px; min-width: 0; min-height: 54px; padding: 4px 2px; border: 1px dashed var(--line-soft); border-radius: 3px; background: var(--panel-sunk); text-align: center; }
-.ar-skill-slot.filled { border-style: solid; border-color: var(--gold); }
-.ar-skill-slot.disabled { opacity: .55; }
-.ar-skill-slot > small { color: var(--muted); font: 600 8px/1.15 var(--font-ui); white-space: nowrap; }
-.ar-skill-icon { display: grid; place-items: center; width: 18px; height: 18px; color: var(--gold-bright); }
-.ar-skill-icon .hud-portrait-img, .ar-skill-icon .hud-portrait-svg, .ar-skill-icon .hud-portrait-glyph { width: 18px; height: 18px; padding: 0; }
-.ar-skill-slot > b { max-width: 100%; overflow: hidden; color: var(--ivory); font-size: 9px; line-height: 1.1; text-overflow: ellipsis; white-space: nowrap; }
-.ar-skill-detail { display: none; }
