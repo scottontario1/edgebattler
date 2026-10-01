@@ -156,34 +156,63 @@ export class GameApp {
   }
 
   async #playBatches(batches) {
+    const startedAt = performance.now();
+    const animations = new Map();
     let renderedSecond = -1;
+
     for (const batch of batches) {
       if (Number.isFinite(batch.time)) {
-        this.ui.playbackTime = Math.min(this.ui.playbackDuration, batch.time);
-        const second = Math.floor(this.ui.playbackTime);
+        const elapsed = Math.min(this.ui.playbackDuration, batch.time);
+        const targetTime = startedAt + elapsed * 1000;
+        const delay = targetTime - performance.now();
+        if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
+        this.ui.playbackTime = elapsed;
+        const second = Math.floor(elapsed);
         if (second !== renderedSecond) {
           renderedSecond = second;
           this.#render();
         }
       }
+
       for (const event of batch.events ?? []) {
-        const scene = this.scene;
-        if (!scene) continue;
-        if (event.type === 'move') {
-          const view = scene.unitView(event.unitId);
-          if (view) await view.moveAlong(event.path ?? [event.from, event.to].filter(Boolean));
-        } else if (event.type === 'strike') {
-          const attacker = scene.unitView(event.attackerId);
-          const target = scene.unitView(event.targetId);
-          if (attacker && target) {
-            await attacker.lunge(target, () => target.setHp(Math.max(0, target.hp - (event.damage ?? 0)), target.maxHp));
-            if (event.damage > 0) await target.hitFlash();
-          }
-        } else if (event.type === 'death') {
-          const view = scene.unitView(event.unitId);
-          if (view) await view.die();
-        }
+        const ids = this.#animationUnitIds(event);
+        if (ids.length === 0) continue;
+        const dependencies = ids.map((id) => animations.get(id) ?? Promise.resolve());
+        const task = Promise.all(dependencies).then(() => this.#playEvent(event));
+        for (const id of ids) animations.set(id, task);
       }
+    }
+
+    await Promise.all(animations.values());
+  }
+
+  #animationUnitIds(event) {
+    if (event.type === 'move' || event.type === 'death') return [event.unitId].filter(Boolean);
+    if (event.type === 'strike') return [event.attackerId, event.targetId].filter(Boolean);
+    return [];
+  }
+
+  async #playEvent(event) {
+    const scene = this.scene;
+    if (!scene) return;
+    if (event.type === 'move') {
+      const view = scene.unitView(event.unitId);
+      if (!view) return;
+      const path = event.path ?? [event.from, event.to]
+        .filter((point) => point && Number.isFinite(point.c) && Number.isFinite(point.r))
+        .map((point) => [point.c, point.r]);
+      await view.moveAlong(path);
+    } else if (event.type === 'strike') {
+      const attacker = scene.unitView(event.attackerId);
+      const target = scene.unitView(event.targetId);
+      if (!attacker || !target) return;
+      await attacker.lunge(target, () => target.setHp(
+        Math.max(0, target.hp - (event.damage ?? 0)), target.maxHp,
+      ));
+      if (event.damage > 0) await target.hitFlash();
+    } else if (event.type === 'death') {
+      const view = scene.unitView(event.unitId);
+      if (view) await view.die();
     }
   }
 
