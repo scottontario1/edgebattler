@@ -9,7 +9,7 @@ the culture kits) and the type-wide Barrier skill card. Shards replace them: pas
 ## Rules
 
 - Shard cards are a new card type `shard` in the draw pool. Buying one costs its Supply cost and moves it from the hand
-  into the side's **shard dock** (10 slots, `SHARD_RULES.dockSlots`). No free slot: the buy fails (`dock-full`).
+  into the side's **shard dock** (12 slots, `SHARD_RULES.dockSlots`). No free slot: the buy fails (`dock-full`).
 - The dock persists between rounds. Shards in it do nothing until applied.
 - **Apply**: during planning, a dock shard is applied to a unit class (`cls`, e.g. `pikeman`, `archer`, `cavalier`, a
   hero class). Every unit of that class on that side, on the field, on the bench and recruited or respawned later,
@@ -43,7 +43,7 @@ Modules: `src/shards.js` (tables and pure helpers), `src/cards.js` (shard cards,
 `src/battle.js` (thorns), `src/ai/commander.js` (heuristic buys/applies/combines), `src/log.js` (schema 4).
 
 ### `src/shards.js`
-`SHARD_RULES {dockSlots:10, classSlots:3, maxTier:3}`, `SHARDS[id] = {id, name, title, color, kind:'stat'|'effect', key, values:[I,II,III], label}`
+`SHARD_RULES {dockSlots:12, classSlots:3, maxTier:3}`, `SHARDS[id] = {id, name, title, color, kind:'stat'|'effect', key, values:[I,II,III], label}`
 (ids `ruby sapphire emerald topaz amethyst garnet pearl onyx`; `key` is the bonus key: str, def, maxHp, spd, skl, block, regen, thorns),
 `SHARD_IDS`, `SHARD_TIER_LABELS`, `shardValue(id, tier)`, `shardLabel(id, tier)` ("Ruby II"), `shardEffectText(id, tier)`,
 `SHARD_CARDS[id]` (tier I card: `{id:'shard-ruby', type:'shard', rarity:'common', shardId, tier:1, name:'Ruby Shard', title, cost:1, effect}`),

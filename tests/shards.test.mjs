@@ -20,7 +20,7 @@ const apply = (m, f, id, unitType) => m.apply({ type: 'applyShard', faction: f, 
 
 test('data: eight shards with three tier values, cards resolve, pool has each shard once and no skill cards', () => {
   assert.deepEqual(SHARD_IDS, ['ruby', 'sapphire', 'emerald', 'topaz', 'amethyst', 'garnet', 'pearl', 'onyx']);
-  assert.deepEqual(SHARD_RULES, { dockSlots: 10, classSlots: 3, maxTier: 3, poolTypes: 4 });
+  assert.deepEqual(SHARD_RULES, { dockSlots: 12, classSlots: 3, maxTier: 3, poolTypes: 4 });
   assert.deepEqual(SHARDS.emerald.values, [3, 6, 12]);
   assert.deepEqual(SHARDS.amethyst.values, [2, 4, 8]);
   for (const id of SHARD_IDS) {

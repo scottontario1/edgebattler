@@ -1,7 +1,7 @@
 // Shards (docs/SHARDS.md): passive class-wide boosts bought from the hand into a shard dock, then applied to a unit class.
 // Pure data and helpers, no Three.js. The match (src/match.js) owns state; this module owns the tables and the arithmetic.
 
-export const SHARD_RULES = Object.freeze({ dockSlots: 10, classSlots: 3, maxTier: 3 , poolTypes: 4});
+export const SHARD_RULES = Object.freeze({ dockSlots: 12, classSlots: 3, maxTier: 3 , poolTypes: 4});
 export const SHARD_TIER_LABELS = Object.freeze(['I', 'II', 'III']);
 /** Stat keys that change unit records directly (and are tracked per unit in `unit.shardBonus`). */
 export const SHARD_STAT_KEYS = Object.freeze(['str', 'def', 'maxHp', 'spd', 'skl']);
