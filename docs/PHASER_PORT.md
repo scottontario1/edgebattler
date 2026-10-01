@@ -126,16 +126,31 @@ log). Regenerate fixtures only from `legacy/` and only on purpose: `node legacy/
 
 ## Work plan
 
-Each system is ported on its own branch in its own worktree, branched from the baseline commit, then
-merged into `claude/project-thread-23j745` after its tests pass.
+Each system is ported on its own branch in its own worktree from the shared port baseline, reviewed, then
+cherry-picked into `claude/project-thread-23j745`. Keep gameplay/content, Phaser world, HUD and session
+logic on separate module boundaries.
 
-| Wave | Branch | System |
-|---|---|---|
-| 1 | `port/core-content` | util/rng, content (weapons, classes, heroes, monsters, shard and card catalogues, factions, missions), content context, movement/range, forecast, passives |
-| 1 | `port/world` | Phaser bootstrap, Boot scene, projection, terrain/props rendering, unit views, camera, picking, overlays |
-| 1 | `port/hud` | DOM HUD components and styles from view-model fixtures, start menu |
-| 2 | `port/battle` | target selection, strikes, occupancy contention, continuous battle simulation |
-| 2 | `port/economy` | cards, cycling, shards, upgrades |
-| 3 | `port/match` | match controller, campaign, objects, stats, log/replay, setup factories, golden parity |
-| 4 | `port/ai` | greedy and heuristic commanders, AI parity |
-| 4 | `port/integration` | session, view models, planning input, playback, end screens, logging |
+| Wave | Branch | System | Status |
+|---|---|---|---|
+| 1 | `port/core-content` | util/rng, content (weapons, classes, heroes, monsters, shard and card catalogues, factions, missions), content context, movement/range, forecast, passives | Integrated |
+| 1 | `port/world` | Phaser bootstrap, Boot scene, projection, terrain/props rendering, unit views, camera, picking, overlays | Integrated; demo launch only |
+| 1 | `port/hud` | DOM HUD components and styles from view-model fixtures, start menu | Integrated; requires app/session view models |
+| 2 | `port/economy` | cards, cycling, shards, upgrades | Integrated as pure helpers |
+| 2 | `port/battle` | target selection, strikes, occupancy contention, continuous battle simulation | In progress |
+| 3 | `port/match` | match controller, campaign, objects, stats, log/replay, setup factories, golden parity | Not started |
+| 4 | `port/ai` | greedy and heuristic commanders, AI parity | Not started |
+| 4 | `port/integration` | session, view models, planning input, playback, end screens, logging | Not started |
+
+## Progress snapshot
+
+- Phaser is pinned to 4.2.1. The root app no longer depends on Three.js; the old project and its own
+  dependency lock remain under `legacy/`.
+- Core content, board, movement, forecast, passives and economy use explicit context/state inputs. The
+  Phaser world slice renders maps and unit snapshots, and the HUD is a standalone DOM presentation layer.
+- **The port is not yet a playable game.** The entry currently starts the world demo. Match creation,
+  deployment/recruit actions, live combat, campaign progression, AI turns and end-to-end replay are later
+  dependencies in the table.
+- First Vite production build completed with Node 22.12 and Vite 6.4.3. It emitted one 1.74 MB JS chunk
+  (about 402 KB gzip) and the normal Vite large-chunk warning. No tests or browser playthrough have been
+  run on the new port in this pass; the existing fixture/test scaffolding remains available for later
+  parity and mobile verification.
