@@ -235,7 +235,13 @@ export function createMatch({ content, board, roster = content?.startingUnits, s
         if (!campaign || f !== 'blue' || campaign.phase !== 'regroup' || campaign.stage + 1 >= campaign.stages.length) return fail('encounter-not-cleared');
         const [c, r] = campaign.stages[campaign.stage].checkpoint;
         if (!alive(f).some((unit) => manhattan(unit, { c, r }) <= 2)) return fail('reach-rally-point');
-        campaign.stage += 1; campaign.wave = 0; campaign.rallied = false; spawnWave();
+        campaign.stage += 1; campaign.wave = 0; campaign.rallied = false;
+        const [nextC, nextR] = campaign.stages[campaign.stage].checkpoint;
+        for (const unit of alive('blue')) {
+          unit.stance = 'advance';
+          unit.objective = { type: 'tile', c: nextC, r: nextR };
+        }
+        spawnWave();
         result = { ok: true, stage: campaign.stage };
         break;
       }
@@ -489,6 +495,10 @@ export function createMatch({ content, board, roster = content?.startingUnits, s
         campaign.phase = 'regroup';
       } else {
         campaign.phase = 'exit';
+        for (const unit of alive('blue')) {
+          unit.stance = 'advance';
+          unit.objective = { type: 'tile', c: campaign.exit[0], r: campaign.exit[1] };
+        }
         if (alive('blue').some((unit) => unit.c === campaign.exit[0] && unit.r === campaign.exit[1])) {
           state.rewards = clone(campaign.rewards || []); end('blue', 'campaign-complete');
         }
