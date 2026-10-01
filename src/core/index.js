@@ -7,3 +7,4 @@ export { forecast, forecastAttackFor } from './rules/forecast.js';
 export { STATUS_EFFECT_KEYS, evaluatePassives, hasRevenant, objectsNear, passiveHolds } from './rules/passives.js';
 export { MAPS, RIVER_FORD, CAMPAIGN_MAPS } from './content/maps/index.js';
 export { TERRAIN } from './content/terrain.js';
+export * from './economy/index.js';
