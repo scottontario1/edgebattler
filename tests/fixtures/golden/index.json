@@ -1,0 +1,582 @@
+[
+ {
+  "name": "campaign-road-classic-7",
+  "rounds": 4,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "road",
+  "faction": "classic",
+  "seed": 7
+ },
+ {
+  "name": "campaign-road-classic-19",
+  "rounds": 4,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "road",
+  "faction": "classic",
+  "seed": 19
+ },
+ {
+  "name": "campaign-road-crown-7",
+  "rounds": 4,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "road",
+  "faction": "crown",
+  "seed": 7
+ },
+ {
+  "name": "campaign-road-crown-19",
+  "rounds": 4,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "road",
+  "faction": "crown",
+  "seed": 19
+ },
+ {
+  "name": "campaign-road-fang-7",
+  "rounds": 3,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "road",
+  "faction": "fang",
+  "seed": 7
+ },
+ {
+  "name": "campaign-road-fang-19",
+  "rounds": 4,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "road",
+  "faction": "fang",
+  "seed": 19
+ },
+ {
+  "name": "campaign-road-league-7",
+  "rounds": 4,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "road",
+  "faction": "league",
+  "seed": 7
+ },
+ {
+  "name": "campaign-road-league-19",
+  "rounds": 4,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "road",
+  "faction": "league",
+  "seed": 19
+ },
+ {
+  "name": "campaign-road-court-7",
+  "rounds": 4,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "road",
+  "faction": "court",
+  "seed": 7
+ },
+ {
+  "name": "campaign-road-court-19",
+  "rounds": 4,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "road",
+  "faction": "court",
+  "seed": 19
+ },
+ {
+  "name": "campaign-woods-classic-7",
+  "rounds": 6,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "woods",
+  "faction": "classic",
+  "seed": 7
+ },
+ {
+  "name": "campaign-woods-classic-19",
+  "rounds": 6,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "woods",
+  "faction": "classic",
+  "seed": 19
+ },
+ {
+  "name": "campaign-woods-crown-7",
+  "rounds": 6,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "woods",
+  "faction": "crown",
+  "seed": 7
+ },
+ {
+  "name": "campaign-woods-crown-19",
+  "rounds": 6,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "woods",
+  "faction": "crown",
+  "seed": 19
+ },
+ {
+  "name": "campaign-woods-fang-7",
+  "rounds": 6,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "woods",
+  "faction": "fang",
+  "seed": 7
+ },
+ {
+  "name": "campaign-woods-fang-19",
+  "rounds": 6,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "woods",
+  "faction": "fang",
+  "seed": 19
+ },
+ {
+  "name": "campaign-woods-league-7",
+  "rounds": 6,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "woods",
+  "faction": "league",
+  "seed": 7
+ },
+ {
+  "name": "campaign-woods-league-19",
+  "rounds": 6,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "woods",
+  "faction": "league",
+  "seed": 19
+ },
+ {
+  "name": "campaign-woods-court-7",
+  "rounds": 6,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "woods",
+  "faction": "court",
+  "seed": 7
+ },
+ {
+  "name": "campaign-woods-court-19",
+  "rounds": 6,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "woods",
+  "faction": "court",
+  "seed": 19
+ },
+ {
+  "name": "campaign-pass-classic-7",
+  "rounds": 8,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "pass",
+  "faction": "classic",
+  "seed": 7
+ },
+ {
+  "name": "campaign-pass-classic-19",
+  "rounds": 8,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "pass",
+  "faction": "classic",
+  "seed": 19
+ },
+ {
+  "name": "campaign-pass-crown-7",
+  "rounds": 10,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "pass",
+  "faction": "crown",
+  "seed": 7
+ },
+ {
+  "name": "campaign-pass-crown-19",
+  "rounds": 7,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "pass",
+  "faction": "crown",
+  "seed": 19
+ },
+ {
+  "name": "campaign-pass-fang-7",
+  "rounds": 7,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "pass",
+  "faction": "fang",
+  "seed": 7
+ },
+ {
+  "name": "campaign-pass-fang-19",
+  "rounds": 7,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "pass",
+  "faction": "fang",
+  "seed": 19
+ },
+ {
+  "name": "campaign-pass-league-7",
+  "rounds": 14,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "pass",
+  "faction": "league",
+  "seed": 7
+ },
+ {
+  "name": "campaign-pass-league-19",
+  "rounds": 8,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "pass",
+  "faction": "league",
+  "seed": 19
+ },
+ {
+  "name": "campaign-pass-court-7",
+  "rounds": 7,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "pass",
+  "faction": "court",
+  "seed": 7
+ },
+ {
+  "name": "campaign-pass-court-19",
+  "rounds": 7,
+  "winner": "blue",
+  "reason": "campaign-complete",
+  "kind": "campaign",
+  "level": "pass",
+  "faction": "court",
+  "seed": 19
+ },
+ {
+  "name": "skirmish-classic-classic-3-heuristic-greedy",
+  "rounds": 31,
+  "winner": null,
+  "reason": "round-limit",
+  "kind": "skirmish",
+  "blue": "classic",
+  "red": "classic",
+  "seed": 3,
+  "policies": [
+   "heuristic",
+   "greedy"
+  ]
+ },
+ {
+  "name": "skirmish-classic-classic-3-heuristic-heuristic",
+  "rounds": 31,
+  "winner": null,
+  "reason": "round-limit",
+  "kind": "skirmish",
+  "blue": "classic",
+  "red": "classic",
+  "seed": 3,
+  "policies": [
+   "heuristic",
+   "heuristic"
+  ]
+ },
+ {
+  "name": "skirmish-classic-classic-11-heuristic-greedy",
+  "rounds": 12,
+  "winner": "blue",
+  "reason": "keep-captured",
+  "kind": "skirmish",
+  "blue": "classic",
+  "red": "classic",
+  "seed": 11,
+  "policies": [
+   "heuristic",
+   "greedy"
+  ]
+ },
+ {
+  "name": "skirmish-classic-classic-11-heuristic-heuristic",
+  "rounds": 31,
+  "winner": null,
+  "reason": "round-limit",
+  "kind": "skirmish",
+  "blue": "classic",
+  "red": "classic",
+  "seed": 11,
+  "policies": [
+   "heuristic",
+   "heuristic"
+  ]
+ },
+ {
+  "name": "skirmish-crown-fang-3-heuristic-greedy",
+  "rounds": 10,
+  "winner": "blue",
+  "reason": "keep-captured",
+  "kind": "skirmish",
+  "blue": "crown",
+  "red": "fang",
+  "seed": 3,
+  "policies": [
+   "heuristic",
+   "greedy"
+  ]
+ },
+ {
+  "name": "skirmish-crown-fang-3-heuristic-heuristic",
+  "rounds": 31,
+  "winner": null,
+  "reason": "round-limit",
+  "kind": "skirmish",
+  "blue": "crown",
+  "red": "fang",
+  "seed": 3,
+  "policies": [
+   "heuristic",
+   "heuristic"
+  ]
+ },
+ {
+  "name": "skirmish-crown-fang-11-heuristic-greedy",
+  "rounds": 16,
+  "winner": "blue",
+  "reason": "keep-captured",
+  "kind": "skirmish",
+  "blue": "crown",
+  "red": "fang",
+  "seed": 11,
+  "policies": [
+   "heuristic",
+   "greedy"
+  ]
+ },
+ {
+  "name": "skirmish-crown-fang-11-heuristic-heuristic",
+  "rounds": 31,
+  "winner": null,
+  "reason": "round-limit",
+  "kind": "skirmish",
+  "blue": "crown",
+  "red": "fang",
+  "seed": 11,
+  "policies": [
+   "heuristic",
+   "heuristic"
+  ]
+ },
+ {
+  "name": "skirmish-league-court-3-heuristic-greedy",
+  "rounds": 5,
+  "winner": "blue",
+  "reason": "keep-captured",
+  "kind": "skirmish",
+  "blue": "league",
+  "red": "court",
+  "seed": 3,
+  "policies": [
+   "heuristic",
+   "greedy"
+  ]
+ },
+ {
+  "name": "skirmish-league-court-3-heuristic-heuristic",
+  "rounds": 15,
+  "winner": "red",
+  "reason": "keep-captured",
+  "kind": "skirmish",
+  "blue": "league",
+  "red": "court",
+  "seed": 3,
+  "policies": [
+   "heuristic",
+   "heuristic"
+  ]
+ },
+ {
+  "name": "skirmish-league-court-11-heuristic-greedy",
+  "rounds": 15,
+  "winner": "blue",
+  "reason": "keep-captured",
+  "kind": "skirmish",
+  "blue": "league",
+  "red": "court",
+  "seed": 11,
+  "policies": [
+   "heuristic",
+   "greedy"
+  ]
+ },
+ {
+  "name": "skirmish-league-court-11-heuristic-heuristic",
+  "rounds": 31,
+  "winner": null,
+  "reason": "round-limit",
+  "kind": "skirmish",
+  "blue": "league",
+  "red": "court",
+  "seed": 11,
+  "policies": [
+   "heuristic",
+   "heuristic"
+  ]
+ },
+ {
+  "name": "skirmish-fang-league-3-heuristic-greedy",
+  "rounds": 7,
+  "winner": "blue",
+  "reason": "keep-captured",
+  "kind": "skirmish",
+  "blue": "fang",
+  "red": "league",
+  "seed": 3,
+  "policies": [
+   "heuristic",
+   "greedy"
+  ]
+ },
+ {
+  "name": "skirmish-fang-league-3-heuristic-heuristic",
+  "rounds": 6,
+  "winner": "blue",
+  "reason": "keep-captured",
+  "kind": "skirmish",
+  "blue": "fang",
+  "red": "league",
+  "seed": 3,
+  "policies": [
+   "heuristic",
+   "heuristic"
+  ]
+ },
+ {
+  "name": "skirmish-fang-league-11-heuristic-greedy",
+  "rounds": 4,
+  "winner": "blue",
+  "reason": "keep-captured",
+  "kind": "skirmish",
+  "blue": "fang",
+  "red": "league",
+  "seed": 11,
+  "policies": [
+   "heuristic",
+   "greedy"
+  ]
+ },
+ {
+  "name": "skirmish-fang-league-11-heuristic-heuristic",
+  "rounds": 31,
+  "winner": null,
+  "reason": "round-limit",
+  "kind": "skirmish",
+  "blue": "fang",
+  "red": "league",
+  "seed": 11,
+  "policies": [
+   "heuristic",
+   "heuristic"
+  ]
+ },
+ {
+  "name": "skirmish-court-crown-3-heuristic-greedy",
+  "rounds": 31,
+  "winner": null,
+  "reason": "round-limit",
+  "kind": "skirmish",
+  "blue": "court",
+  "red": "crown",
+  "seed": 3,
+  "policies": [
+   "heuristic",
+   "greedy"
+  ]
+ },
+ {
+  "name": "skirmish-court-crown-3-heuristic-heuristic",
+  "rounds": 31,
+  "winner": null,
+  "reason": "round-limit",
+  "kind": "skirmish",
+  "blue": "court",
+  "red": "crown",
+  "seed": 3,
+  "policies": [
+   "heuristic",
+   "heuristic"
+  ]
+ },
+ {
+  "name": "skirmish-court-crown-11-heuristic-greedy",
+  "rounds": 4,
+  "winner": "blue",
+  "reason": "keep-captured",
+  "kind": "skirmish",
+  "blue": "court",
+  "red": "crown",
+  "seed": 11,
+  "policies": [
+   "heuristic",
+   "greedy"
+  ]
+ },
+ {
+  "name": "skirmish-court-crown-11-heuristic-heuristic",
+  "rounds": 31,
+  "winner": null,
+  "reason": "round-limit",
+  "kind": "skirmish",
+  "blue": "court",
+  "red": "crown",
+  "seed": 11,
+  "policies": [
+   "heuristic",
+   "heuristic"
+  ]
+ }
+]
