@@ -371,7 +371,7 @@ test('spell Flare: costs 1, gives one friendly unit +20 hit for the upcoming bat
     const build = (flare) => (seed) => {
       // a plain Archer: a held Coil Crossbowman is already near the 100 hit cap with Prepared Shot, so Flare adds little to it
       const m = createMatch({ seed, roster: [rec('archer', 'cx', 'blue', 5, 5, { stance: 'hold' }), rec('pikeman', 'e', 'red', 7, 5, { stance: 'hold' }), ...far()], pools: { blue: ['flare'] } });
-      if (flare) m.apply({ type: 'spell', faction: 'blue', cardId: m.summary('blue').handState[0].instanceId, unitId: 'cx' });
+      if (flare) m.apply({ type: 'spell', faction: 'blue', cardId: m.summary('blue').handState.find((c) => c.type === 'spell').instanceId, unitId: 'cx' });
       return m;
     };
     const m = build(true)(1);

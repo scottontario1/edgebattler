@@ -28,7 +28,7 @@ export function campaignEnemyFactions(level, faction, seed) {
   return [0,1,2].map(stage => choices[(offset+stage)%choices.length]);
 }
 
-export function createCampaignMatch(level, { faction = 'classic', seed = 0x415348, log = null, meta = {}, enemyFactions = null, encounters = null, combat = null, abilities } = {}) {
+export function createCampaignMatch(level, { faction = 'classic', seed = 0x415348, log = null, meta = {}, enemyFactions = null, encounters = null, combat = null, abilities, spells, shardSubset } = {}) {
   if (!level || !FACTION_BY_ID[faction]) throw new Error('Unknown campaign or faction');
   disableCandidates();
   setExperimentRules();
@@ -53,7 +53,7 @@ export function createCampaignMatch(level, { faction = 'classic', seed = 0x41534
     })),
   }));
   const culture = FACTION_BY_ID[faction].culture;
-  return createMatch({ seed, maxRounds: 90, log, roster, combat, ...(abilities!==undefined?{abilities}:{}),
+  return createMatch({ seed, maxRounds: 90, log, roster, combat, ...(spells!==undefined?{spells}:{}), ...(shardSubset?{shardSubset}:{}), ...(abilities!==undefined?{abilities}:{}),
     champions: { blue: championFor(faction,'blue'), red: null },
     pools: culture ? { blue: culturePool(culture) } : null,
     campaign: { id: level.id, faction, enemyFactions: foes, exit: [5,1], stages },

@@ -13,6 +13,8 @@ export const DEFAULT_CARD_LIMITS = Object.freeze({
   maxSupply: 30,
   reserveCapacity: 8,
   populationCap: 10,
+  shardsMin: 2,
+  shardsMax: 3,
 });
 // The values the rules read. Always the defaults in the game; economy experiments (experiments/economy) override
 // them per process with setCardLimits() and put the result in the log header.
@@ -39,11 +41,10 @@ export const SKILL_CARDS = Object.freeze({
 });
 
 // Repeated entries represent relative weights in the shared pool. Shards (src/shards.js) replaced the Barrier skill card:
-// unit and spell weights doubled, each of the eight shard types once (shards are about a third of draws).
+// normal unit weights and the Shards offer system remain; spell cards are archived by default.
 // SKILL_CARDS stays exported for old level scripts and experiments, but no skill card is drawable.
 export const RECRUITMENT_POOL = Object.freeze([
   'pikeman', 'pikeman', 'pikeman', 'pikeman', 'pikeman', 'pikeman', 'archer', 'archer', 'archer', 'archer', 'cavalier', 'cavalier',
-  'mend', 'mend', 'ward', 'ward', 'fireburst', 'fireburst',
   ...SHARD_IDS,
 ]);
 
@@ -70,6 +71,7 @@ const rarityOpen = (rarity, round) => !(RARITY_GATE[rarity ?? 'common'] > (round
 const CANDIDATE_CARDS = {};
 let ACTIVE_POOL = RECRUITMENT_POOL;
 export const registerCandidateCards = (cards) => Object.assign(CANDIDATE_CARDS, cards);
+export const activePool = () => ACTIVE_POOL;
 export const setRecruitmentPool = (keys) => { ACTIVE_POOL = keys ? Object.freeze([...keys]) : RECRUITMENT_POOL; };
 export const unregisterCandidateCards = (keys) => { for (const k of keys) delete CANDIDATE_CARDS[k]; };
 export const resetCandidateCards = () => { for (const k of Object.keys(CANDIDATE_CARDS)) delete CANDIDATE_CARDS[k]; ACTIVE_POOL = RECRUITMENT_POOL; };
@@ -79,9 +81,9 @@ export const unitCardFor = (key) => UNIT_CARDS[key] ?? (CANDIDATE_CARDS[key]?.ty
 export const skillCardFor = (skillId) => SKILL_CARDS[skillId] ?? Object.values(CANDIDATE_CARDS).find((c) => c.skillId === skillId) ?? null;
 
 /** Create a fresh match inventory. `cards` defaults to an empty hand. */
-export function createCardState({ cyclesRemaining = CARD_LIMITS.cyclesPerRound, supply = CARD_LIMITS.initialSupply, hand = [], reserves = [], population = 0, pool = null, round } = {}) {
+export function createCardState({ shardPool = null, cyclesRemaining = CARD_LIMITS.cyclesPerRound, supply = CARD_LIMITS.initialSupply, hand = [], reserves = [], population = 0, pool = null, round } = {}) {
   // `pool`: optional per-side draw pool of card keys (cultures); absent = the shared pool.
-  return { ...(pool ? { pool: [...pool] } : {}), ...(round !== undefined ? { round } : {}), cyclesRemaining, supply: Math.max(0, Math.min(CARD_LIMITS.maxSupply, supply)), hand: copy(hand), reserves: copy(reserves), population, cardSequence: hand.length };
+  return { ...(pool ? { pool: [...pool] } : {}), ...(shardPool ? { shardPool: [...shardPool] } : {}), ...(round !== undefined ? { round } : {}), cyclesRemaining, supply: Math.max(0, Math.min(CARD_LIMITS.maxSupply, supply)), hand: copy(hand), reserves: copy(reserves), population, cardSequence: hand.length };
 }
 
 /** Draw into free hand slots without removing retained cards; opening draw defaults to five. */
@@ -89,7 +91,7 @@ export function drawCards(state, rng = seededRandom(1), count = CARD_LIMITS.open
   const next = copy(state);
   const requested = Math.max(0, Math.floor(count));
   const slots = Math.max(0, CARD_LIMITS.hand - next.hand.length);
-  let POOL = next.pool ?? ACTIVE_POOL;
+  let POOL = (next.pool ?? ACTIVE_POOL).filter((key) => cardFor(key)?.type !== 'shard'); // shards are dealt by dealShards
   if (rarityGateActive()) {
     const open = POOL.filter((key) => rarityOpen(cardFor(key)?.rarity, next.round));
     if (open.length) POOL = open;
@@ -108,10 +110,36 @@ export function drawCards(state, rng = seededRandom(1), count = CARD_LIMITS.open
 }
 
 /** Opening draw helper (five); later round helper grants Supply and requests three draws. */
-export function drawOpeningHand(state, rng = seededRandom(1)) { return drawCards(state, rng, CARD_LIMITS.openingHand); }
+export function drawOpeningHand(state, rng = seededRandom(1)) {
+  const res = drawCards(state, rng, CARD_LIMITS.openingHand);
+  return { ...res, state: dealShards(res.state, rng).state };
+}
+/** The shard shop: every round the hand gets 2-3 fresh shard cards on top of the normal draw (they ignore the hand cap, so
+ * hand size varies) and last round's unbought shard cards are replaced. Shard types come from `state.shardPool` (the match's
+ * seeded subset) or the shard keys in the draw pool. */
+export function dealShards(state, rng = seededRandom(1), min = CARD_LIMITS.shardsMin, max = CARD_LIMITS.shardsMax) {
+  const next = copy(state);
+  const keys = [...new Set(next.shardPool ?? (next.pool ?? ACTIVE_POOL).filter((key) => cardFor(key)?.type === 'shard'))];
+  next.hand = next.hand.filter((c) => c.type !== 'shard');
+  const dealt = [];
+  if (keys.length) {
+    const count = min + Math.floor(rng() * (max - min + 1));
+    for (let i = 0; i < count; i += 1) {
+      const index = Math.min(keys.length - 1, Math.floor(rng() * keys.length));
+      const card = copy(cardFor(keys[index]));
+      next.cardSequence = (next.cardSequence ?? next.hand.length) + 1;
+      card.instanceId = `card-${next.cardSequence}-shard`;
+      dealt.push(card);
+    }
+  }
+  next.hand.unshift(...dealt); // the shard shop sits at the left of the hand row
+  return { state: next, dealt };
+}
 export function refreshRound(state, rng = seededRandom(1)) {
   const refreshed = { ...copy(state), cyclesRemaining: CARD_LIMITS.cyclesPerRound, supply: state.supply + Math.max(0,Math.min(CARD_LIMITS.supplyPerRound,CARD_LIMITS.maxSupply-state.supply)) };
-  return { ...drawCards(refreshed, rng, CARD_LIMITS.laterDraw), supplyGranted: refreshed.supply - state.supply };
+  refreshed.hand = refreshed.hand.filter((c) => c.type !== 'shard'); // unsold shards leave the shop before units draw
+  const res = drawCards(refreshed, rng, CARD_LIMITS.laterDraw);
+  return { ...res, state: dealShards(res.state, rng).state, supplyGranted: refreshed.supply - state.supply };
 }
 
 export function canAfford(state, cardOrCost) {

@@ -2,7 +2,7 @@ import {createCampaignMatch,CAMPAIGN_LEVELS} from '../src/campaign.js';
 import {FACTIONS} from '../src/setup.js';
 import {memoryLog,replay} from '../src/log.js';
 for(const level of CAMPAIGN_LEVELS)for(const f of FACTIONS){
- const log=memoryLog(),m=createCampaignMatch(level,{faction:f.id,seed:7,combat:{duration:18},log:log.push});
+ const log=memoryLog(),m=createCampaignMatch(level,{faction:f.id,seed:7,abilities:process.argv.includes("--skills"),spells:process.argv.includes("--spells"),combat:{duration:18},log:log.push});
  let rounds=0,strikes=0,abilities=0;
  while(!m.over&&rounds++<40){
   m.apply({type:'campaignOrder',faction:'blue'});

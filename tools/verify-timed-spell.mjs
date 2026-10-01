@@ -12,4 +12,4 @@ const expression=`(async()=>{
  if(!__ui.state.busy)throw Error('Fixture ended before death could be checked');
  return {spellDeathAnimated:true,combatStillRunning:true};
 })()`;
-const r=spawnSync(process.execPath,['tools/shot.mjs','docs/campaign/evidence/timed-spell-death.png','1280','800','campaign=road&you=crown','5000'],{env:{...process.env,STEPS:JSON.stringify([['eval',expression]])},stdio:'inherit',timeout:90000});process.exit(r.status??1);
+const r=spawnSync(process.execPath,['tools/shot.mjs','docs/campaign/evidence/timed-spell-death.png','1280','800','skills=1&spells=1&campaign=road&you=crown','5000'],{env:{...process.env,STEPS:JSON.stringify([['eval',expression]])},stdio:'inherit',timeout:90000});process.exit(r.status??1);

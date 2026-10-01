@@ -42,7 +42,7 @@ test('every faction pairing builds, plays to the round limit with the shipped AI
       if (cultureOf(id)) {
         assert.ok(m.units.filter((u) => u.faction === side && u.id !== champ.id).every((u) => u.culture === cultureOf(id) || u.cls === 'cavalier'), `${id} ${side} units belong to the faction`);
         assert.ok(m.summary(side).hand.length > 0);
-        assert.ok(m.summary(side).hand.every((h) => culturePool(cultureOf(id)).some((k) => h.endsWith(k))), `${id} ${side} draws its pool: ${m.summary(side).hand}`);
+        assert.ok(m.summary(side).hand.filter((h) => !h.startsWith('shard-')).every((h) => culturePool(cultureOf(id)).some((k) => h.endsWith(k))), `${id} ${side} draws its pool: ${m.summary(side).hand}`);
       }
     }
     while (!m.over) { runCommander(m, 'blue', 'heuristic'); runCommander(m, 'red', 'greedy'); m.resolveRound(); }

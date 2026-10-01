@@ -606,12 +606,13 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     const u=selected();skillPanel.hidden=!match.combat||!state.unitSkillsOpen||!u||state.busy;
     document.body.classList.toggle('type-skills-open',!skillPanel.hidden);
     if(skillPanel.hidden)return;
-    const editable=u.faction==='blue'&&!state.over;
+    const editable=uiFlags.abilities&&u.faction==='blue'&&!state.over;
+    skillPanel.classList.toggle('stats-only',!editable);
     if(editable&&state.abilityDraft?.unitId!==u.id){state.abilityDraft={unitId:u.id,ids:[...(u.selectedAbilities||[])],slots:defaultSkillSlots(u),selectedSkill:null};state.abilityNotice='';}
     if(editable)state.abilityTargets=match.alive('blue').filter(o=>unitType(o)===unitType(u)).map(o=>o.id);
     const st=match.unitStats(u.id),stat=(label,value)=>`<span>${label}<b>${value??0}</b></span>`;
-    const statsHTML=`<div class="type-unit-stats">${stat('HP',u.hp+'/'+u.maxHp)}${stat('Energy',u.energy+'/'+u.maxEnergy)}${stat('Attack / sec',(1/attackInterval(u,match.combat)).toFixed(2))}${stat('STR',u.str)}${stat('DEF',u.def)}${stat('SPD',u.spd)}${stat('MAG',u.mag)}${stat('SKL',u.skl)}${stat('RES',u.res)}${stat('Damage dealt',st?.damageDealt)}${stat('Damage taken',st?.damageTaken)}${stat('Ability uses',Object.values(st?.abilityUses||{}).reduce((a,b)=>a+b,0))}</div>`;
-    skillPanel.innerHTML=`<button class="type-skills-close" data-skill-close aria-label="Close unit panel">×</button><header><span class="army-face">${portraitSVG(u)}</span><div><small>${editable?'Shared type timeline':'Unit inspection'}</small><h3>${esc(u.name)}</h3><p>${esc(unitType(u))} · ${editable?state.abilityTargets.length+' field units':''}</p></div></header>`;
+    const statsHTML=`<div class="type-unit-stats">${stat('HP',u.hp+'/'+u.maxHp)}${uiFlags.abilities?stat('Energy',u.energy+'/'+u.maxEnergy):stat('MOV',u.mov)}${stat('Attack / sec',(1/attackInterval(u,match.combat)).toFixed(2))}${stat('STR',u.str)}${stat('DEF',u.def)}${stat('SPD',u.spd)}${stat('MAG',u.mag)}${stat('SKL',u.skl)}${stat('RES',u.res)}${stat('Damage dealt',st?.damageDealt)}${stat('Damage taken',st?.damageTaken)}${uiFlags.abilities?stat('Ability uses',Object.values(st?.abilityUses||{}).reduce((a,b)=>a+b,0)):stat('Range',weaponOf(u).rng.join('–'))}</div>`;
+    skillPanel.innerHTML=`<button class="type-skills-close" data-skill-close aria-label="Close unit panel">×</button><header><span class="army-face">${portraitSVG(u)}</span><div><small>${editable?'Shared type timeline':'Unit stats'}</small><h3>${esc(u.name)}</h3><p>${esc(u.title||unitType(u))}${editable?' · '+state.abilityTargets.length+' field units':''}</p></div></header>`;
     if(editable)skillPanel.insertAdjacentHTML('beforeend',abilityEditorHTML(u,{draft:state.abilityDraft.ids,slots:state.abilityDraft.slots,skillTimes:match.combat.skillTimes,selectedSkill:state.abilityDraft.selectedSkill,targets:state.abilityTargets,units:match.alive(),notice:state.abilityNotice||'Changes save immediately for this type, including bench units and future recruits.',groupOpen:false,typeShared:true,lastResults:state.lastAbilityResults[u.id]||[]}));
     const slots=skillPanel.querySelector('.skill-slots');if(slots)slots.insertAdjacentHTML('afterend',statsHTML);else skillPanel.insertAdjacentHTML('beforeend',statsHTML);
   }
@@ -975,7 +976,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     const activeAnimations=new Map();
     const animate=(id,fn)=>{const task=(activeAnimations.get(id)||Promise.resolve()).then(fn);activeAnimations.set(id,task);return task;};
     let elapsed=0,last=performance.now();state.combatElapsed=0;
-    combatClock.start(match.combat);
+    combatClock.start({...match.combat,skillTimes:match.abilitiesEnabled?match.combat.skillTimes:[]});
     const timer=setInterval(()=>{const now=performance.now();if(!document.hidden)elapsed=Math.min(end,elapsed+(now-last)/1000*speed);last=now;state.combatElapsed=elapsed;combatClock.update(elapsed);},30);
     try{
       for(const batch of batches){

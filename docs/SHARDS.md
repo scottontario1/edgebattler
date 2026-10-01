@@ -1,6 +1,6 @@
 # Shards (replaces skills)
 
-Requested 2026-09-30 by Tisha. Branch `claude/project-thread-coieoe`.
+Requested 2026-09-30 by Tisha. Merged from `feature/shards` into main, 2026-09-30.
 
 Skills leave the gameplay: the planning-selected ability kits (energy, Rally/Brace/Focused Shot/Charge/Second Wind and
 the culture kits) and the type-wide Barrier skill card. Shards replace them: passive stat boosts bought from the shop
@@ -9,7 +9,7 @@ the culture kits) and the type-wide Barrier skill card. Shards replace them: pas
 ## Rules
 
 - Shard cards are a new card type `shard` in the draw pool. Buying one costs its Supply cost and moves it from the hand
-  into the side's **shard dock** (10 slots, `SHARD_RULES.dockSlots`). No free slot: the buy fails (`dock-full`).
+  into the side's **shard dock** (12 slots, `SHARD_RULES.dockSlots`). No free slot: the buy fails (`dock-full`).
 - The dock persists between rounds. Shards in it do nothing until applied.
 - **Apply**: during planning, a dock shard is applied to a unit class (`cls`, e.g. `pikeman`, `archer`, `cavalier`, a
   hero class). Every unit of that class on that side, on the field, on the bench and recruited or respawned later,
@@ -34,8 +34,7 @@ the culture kits) and the type-wide Barrier skill card. Shards replace them: pas
 | Pearl (Renewal) | Heals at the start of each round | 2 | 4 | 8 |
 | Onyx (Thorns) | Damage back to a melee attacker per hit taken | 1 | 2 | 4 |
 
-A tier I shard card costs 1 Supply. Pool weights: each shard type appears once in the recruitment pool; unit and spell
-weights are doubled so shards are roughly a third of draws.
+A tier I shard card costs 1 Supply. Pool weights: each shard type appears once in the recruitment pool; normal unit draws retain their weights; the active shop offers 2–3 shard cards each round outside the normal hand cap. Spells are archived by default.
 
 ## Engine API (SHARD-01, implemented)
 
@@ -43,7 +42,7 @@ Modules: `src/shards.js` (tables and pure helpers), `src/cards.js` (shard cards,
 `src/battle.js` (thorns), `src/ai/commander.js` (heuristic buys/applies/combines), `src/log.js` (schema 4).
 
 ### `src/shards.js`
-`SHARD_RULES {dockSlots:10, classSlots:3, maxTier:3}`, `SHARDS[id] = {id, name, title, color, kind:'stat'|'effect', key, values:[I,II,III], label}`
+`SHARD_RULES {dockSlots:12, classSlots:3, maxTier:3}`, `SHARDS[id] = {id, name, title, color, kind:'stat'|'effect', key, values:[I,II,III], label}`
 (ids `ruby sapphire emerald topaz amethyst garnet pearl onyx`; `key` is the bonus key: str, def, maxHp, spd, skl, block, regen, thorns),
 `SHARD_IDS`, `SHARD_TIER_LABELS`, `shardValue(id, tier)`, `shardLabel(id, tier)` ("Ruby II"), `shardEffectText(id, tier)`,
 `SHARD_CARDS[id]` (tier I card: `{id:'shard-ruby', type:'shard', rarity:'common', shardId, tier:1, name:'Ruby Shard', title, cost:1, effect}`),
@@ -97,3 +96,7 @@ Weights in `DEFAULT_PARAMS`: `shards` (true), `shardKeepSupply` (0), `shardDockR
 
 ### Log schema 4
 Header `schema: 4`, `abilitiesEnabled`, `shardRules`. Schema 1-3 logs are rejected by `replay()`.
+
+## Current integrated default
+
+The continuous combat merge retains these Shards rules. Skills and spells are archived, not deleted. All faction pools are filtered at match creation so a culture's older spell entries cannot leak into normal hands; spell actions are also rejected while disabled. The engine records `abilitiesEnabled`, `spellsEnabled`, `combat` and `shardSubset` for deterministic replay. Archived skills/spells can be restored independently through documented flags in ARCHIVED_COMBAT.md. Unit identity passives and monster kits remain active; Shards replaces the selectable active-skill/spell systems.

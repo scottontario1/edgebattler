@@ -114,7 +114,7 @@ export const redScriptPolicy = (level) => (m) => {
 };
 
 /** Build the match for a level. Registers the level's faction and rules in this process (call before the scene is built). */
-export function createLevelMatch(level, { seed, log = null, meta = {}, combat = null, abilities } = {}) {
+export function createLevelMatch(level, { seed, log = null, meta = {}, combat = null, abilities, spells } = {}) {
   const def = level.def;
   const map = MAPS[def.map || 'river_ford'];
   if (!map) throw new Error(`map ${def.map} is not registered (registerMaps)`);
@@ -127,7 +127,7 @@ export function createLevelMatch(level, { seed, log = null, meta = {}, combat = 
   setRarityGate({});
   const champions = {};
   for (const u of def.units) if (isChampionKey(u.key ?? u.cls)) champions[u.faction] = u.key ?? u.cls;
-  const m = createMatch({ ...(seed !== undefined ? { seed } : {}), maxRounds: def.maxRounds ?? 14, log, combat, ...(abilities!==undefined?{abilities}:{}), roster: def.units.map(rosterUnit),
+  const m = createMatch({ ...(seed !== undefined ? { seed } : {}), maxRounds: def.maxRounds ?? 14, log, combat, ...(spells!==undefined?{spells}:{}), ...(abilities!==undefined?{abilities}:{}), roster: def.units.map(rosterUnit),
     ...(Object.keys(champions).length ? { champions } : {}), meta: { ...meta, source: 'level', level: level.id, scenario: def } });
   for (const u of def.units) {
     const rec = m.byId(isChampionKey(u.key ?? u.cls) ? (u.key ?? u.cls) : u.id);

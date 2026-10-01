@@ -30,6 +30,7 @@ export const DEFAULT_PARAMS = Object.freeze({
   archerHoldRange: 5,   // archers hold while a foe is within this many tiles
   shards: true,         // buy, apply and combine shards (false isolates unit/spell behaviour)
   shardKeepSupply: 0,   // Supply left untouched after unit recruiting before shards are bought
+  shardHold: 4,         // dock size up to which tier I shards wait for a matching set instead of being applied
   shardDockReserve: 1,  // free dock slots kept open when buying (room for removals and combine results)
 });
 
@@ -73,7 +74,10 @@ function manageShards(m, f, act, P) {
   for (const u of m.armyRecords(f)) { const cls = m.classOf(u); counts[cls] = (counts[cls] || 0) + 1; }
   const classes = Object.keys(counts).sort((a, b) => counts[b] - counts[a] || a.localeCompare(b));
   const free = (cls) => (side().shards[cls] || []).length < SHARD_RULES.classSlots;
-  for (const shard of [...side().shardDock].sort((a, b) => b.tier - a.tier || String(a.id).localeCompare(String(b.id)))) {
+  const dupes = (x) => side().shardDock.filter((y) => y.shardId === x.shardId && y.tier === x.tier).length;
+  for (const shard of [...side().shardDock].sort((a, b) => b.tier - a.tier || dupes(a) - dupes(b) || String(a.id).localeCompare(String(b.id)))) {
+    if (shard.tier === 1 && dupes(shard) > 1 && side().shardDock.length <= P.shardHold + 3) continue;
+    if (shard.tier === 1 && side().shardDock.length <= P.shardHold) continue;
     const want = (cls) => (SHARD_PREFERENCE[cls] || DEFAULT_SHARD_PREFERENCE).includes(shard.shardId);
     const cls = classes.find((c) => free(c) && want(c)) || classes.find(free);
     if (cls) act({ type: 'applyShard', faction: f, shardInstanceId: shard.id, unitType: cls });

@@ -62,6 +62,7 @@ scene.add(sun);
 // The menu (src/menu.js) starts a game through the URL: ?level=<id> plays a level as Blue (Red follows the level's script), and
 // ?you=<faction>&foe=<faction> starts a skirmish with those factions (crown, fang, league, court; default classic).
 const params = new URLSearchParams(location.search);
+const archived={abilities:params.get('skills')==='1',spells:params.get('spells')==='1'};
 const combat=params.get('combat')==='classic'?null:{duration:18};
 const policies = { red: params.get('red') || 'greedy', blue: params.get('blue') || params.get('auto') || null, speed: params.get('speed') };
 // Dev builds stream every game to logs/play/ through the vite.config.js /__log endpoint.
@@ -74,19 +75,19 @@ const foe = isFaction(params.get('foe')) ? params.get('foe') : 'classic';
 const campaignLevel = CAMPAIGN_BY_ID[params.get('campaign')] || null;
 let match;
 if (campaignLevel) {
-  match = createCampaignMatch(campaignLevel, { faction: you, seed, combat, log: gameLog?.push, meta: { commit } });
+  match = createCampaignMatch(campaignLevel, { faction: you, seed, combat, ...archived, log: gameLog?.push, meta: { commit } });
   policies.red = () => {};
   policies.blue = null;
 } else if (level) {
-  match = createLevelMatch(level, { seed, combat, log: gameLog?.push, meta: { source: 'browser', blue: 'human', red: 'level-script', commit } });
+  match = createLevelMatch(level, { seed, combat, ...archived, log: gameLog?.push, meta: { source: 'browser', blue: 'human', red: 'level-script', commit } });
   policies.red = redScriptPolicy(level); // Red has no commander in a level: only its scripted picks
   policies.blue = null;
 } else if (you !== 'classic' || foe !== 'classic') {
-  match = createSkirmish({ blue: you, red: foe === you ? 'classic' : foe, seed, combat, log: gameLog?.push,
+  match = createSkirmish({ blue: you, red: foe === you ? 'classic' : foe, seed, combat, ...archived, log: gameLog?.push,
     meta: { source: 'browser', blue: policies.blue ? `ai:${policies.blue}` : 'human', red: `ai:${policies.red}`, commit } });
 } else {
   match = createMatch({
-    seed, combat,
+    seed, combat, ...archived,
     log: gameLog?.push,
     meta: { source: 'browser', blue: policies.blue ? `ai:${policies.blue}` : 'human', red: `ai:${policies.red}`, commit },
   });

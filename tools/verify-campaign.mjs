@@ -18,7 +18,7 @@ const expression=`(async()=>{
       const go=document.querySelector('[data-act=campaignContinue]');
       if(!go.disabled) { regroupSeen++;rally.click();document.querySelector('[data-act=campaignContinue]').click(); }
     }
-    for(const u of m.alive('blue')) {
+    for(const u of m.abilitiesEnabled?m.alive('blue'):[]) {
       let ids=[];
       for(const a of kitFor(u).filter(a=>!['brace','setSpears','preparedShot','fieldWorks'].includes(a.id)))
         if(validateAbilitySelection(u,[...ids,a.id]).ok)ids.push(a.id);

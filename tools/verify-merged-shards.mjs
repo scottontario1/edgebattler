@@ -1,0 +1,27 @@
+import {spawnSync} from 'node:child_process';
+const mobile=process.argv.includes('--mobile');
+const expression=`(async()=>{
+ const wait=ms=>new Promise(r=>setTimeout(r,ms));while(__ui.state.busy)await wait(100);
+ const m=__game.match,click=s=>{const n=document.querySelector(s);if(!n||n.disabled)throw Error('Unavailable '+s);n.click();};
+ if(m.abilitiesEnabled||m.spellsEnabled)throw Error('Archive flags on by default');
+ if(m.sides.blue.cards.hand.some(c=>['spell','skill'].includes(c.type)))throw Error('Archived cards drawn');
+ if(document.querySelectorAll('.shard-slot').length!==12)throw Error('Wrong dock size');
+ const card=m.sides.blue.cards.hand.find(c=>c.type==='shard');if(!card)throw Error('No shard offer');
+ click('[data-card-id="'+card.instanceId+'"]');click('[data-act="buyShard"]');
+ const u=m.alive('blue').find(u=>u.variantId==='crownPike'),cls=u.cls;
+ click('[data-apply-shard-class="'+cls+'"]');if(m.sides.blue.shards[cls].length!==1)throw Error('Shard not applied');
+ click('[data-remove-shard="'+cls+':0"]');if(m.sides.blue.shards[cls]?.length)throw Error('Shard not removed');
+ for(let i=0;i<2;i++)if(!m.apply({type:'grantShard',faction:'blue',shardId:card.shardId,tier:1},'verification').ok)throw Error('Fixture grant failed');
+ __ui.refresh();click('[data-combine-shard="'+card.shardId+':1"]');
+ if(!m.sides.blue.shardDock.some(s=>s.shardId===card.shardId&&s.tier===2))throw Error('Shard combine failed');
+ click('[data-army-select="crownPike"]');
+ if(document.querySelector('.type-skills').hidden||!document.querySelector('.type-unit-stats').textContent.includes('Damage dealt'))throw Error('Missing selected-unit stats');
+ if(document.querySelector('.type-skills [data-skill-slot]'))throw Error('Archived skill editor shown');
+ click('[data-skill-close]');click('[data-act="campaignOrder"]');click('[data-act="resolve"]');
+ while(__ui.state.busy)await wait(100);
+ if(document.querySelector('.combat-mark'))throw Error('Archived skill markers shown');
+ const {replay}=await import('/src/log.js');if(!replay(__game.log.entries).ok)throw Error('Merged replay mismatch');
+ await wait(1500);click('[data-army-select="crownPike"]');
+ return {shardsOnly:true,dockSlots:12,buyApplyRemoveCombine:true,selectedStats:true,timedCombat:true,replay:true};
+})()`;
+const r=spawnSync(process.execPath,['tools/shot.mjs','docs/campaign/evidence/merged-shards-'+(mobile?'portrait':'desktop')+'.png',mobile?'390':'1280',mobile?'844':'800','campaign=road&you=crown&speed=40','5000'],{env:{...process.env,STEPS:JSON.stringify([['eval',expression]])},stdio:'inherit',timeout:90000});process.exit(r.status??1);

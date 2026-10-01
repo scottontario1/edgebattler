@@ -24,4 +24,4 @@ const expression=`(async()=>{
  if(innerWidth>820){const actions=document.querySelector('#actions').getBoundingClientRect();if(actions.left<pane.right&&actions.bottom>pane.top&&actions.top<pane.bottom)throw Error('Panel hides action menu');}
  return {savedSlots:slots,dragDrop:true,selectThenPlace:true,typeShared:true,unitStats:true,replay:true};
 })()`;
-const r=spawnSync(process.execPath,['tools/shot.mjs',`docs/campaign/evidence/skill-slots-${mobile?'portrait':short?'short':'desktop'}.png`,mobile?'390':short?'960':'1280',mobile?'844':short?'480':'800','campaign=road&you=crown&speed=40','5000'],{env:{...process.env,STEPS:JSON.stringify([['eval',expression]])},stdio:'inherit',timeout:90000});process.exit(r.status??1);
+const r=spawnSync(process.execPath,['tools/shot.mjs',`docs/campaign/evidence/skill-slots-${mobile?'portrait':short?'short':'desktop'}.png`,mobile?'390':short?'960':'1280',mobile?'844':short?'480':'800','skills=1&spells=1&campaign=road&you=crown&speed=40','5000'],{env:{...process.env,STEPS:JSON.stringify([['eval',expression]])},stdio:'inherit',timeout:90000});process.exit(r.status??1);

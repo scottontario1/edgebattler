@@ -1,3 +1,5 @@
+import {setAbilitiesEnabled} from '../src/abilities.js';
+setAbilitiesEnabled(true);
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createMatch} from '../src/match.js';

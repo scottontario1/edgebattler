@@ -44,3 +44,6 @@
 @media(max-width:820px){.type-skills{bottom:64px}}
 
 @media(min-width:821px){.type-skills-open #actions .lbl,.type-skills-open #actions .key{display:none}.type-skills-open #actions .btn{min-width:42px;padding:8px}}
+
+.type-skills.stats-only{bottom:auto;max-height:calc(100vh - 175px)}
+@media(max-width:820px){.type-skills.stats-only{max-height:calc(100vh - 310px)}}

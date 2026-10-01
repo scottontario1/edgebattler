@@ -8,7 +8,7 @@ const seeds=Math.max(1,Number(process.argv[2])||10),runs=[];
 const type=u=>u.variantId||u.unitId||u.cls;
 const profiles=[{name:'steady',acceleration:0,damageScale:0.35},{name:'accelerating',acceleration:0.3,damageScale:0.30}];
 for(const profile of profiles)for(const policy of ['default','reversed','empty'])for(const level of CAMPAIGN_LEVELS)for(const faction of FACTIONS)for(let seed=1;seed<=seeds;seed++){
- const log=memoryLog(),m=createCampaignMatch(level,{faction:faction.id,seed,combat:{duration:18,acceleration:profile.acceleration,damageScale:profile.damageScale},log:log.push});
+ const log=memoryLog(),m=createCampaignMatch(level,{faction:faction.id,seed,abilities:true,spells:true,combat:{duration:18,acceleration:profile.acceleration,damageScale:profile.damageScale},log:log.push});
  const initialTypes=new Set();
  for(const u of m.alive('blue'))if(!initialTypes.has(type(u))){initialTypes.add(type(u));const slots=policy==='empty'?[null,null,null]:policy==='reversed'?[...u.skillSlots].reverse():[...u.skillSlots];const edit=m.apply({type:'abilities',faction:'blue',unitId:u.id,skillSlots:slots});if(!edit.ok)throw Error(edit.reason);}
  const row={profile:profile.name,policy,level:level.id,faction:faction.id,seed,rounds:0,combatSeconds:0,attacks:0,damage:0,activations:0,skips:0,skipReasons:{},slots:{3:{used:0,skipped:0},9:{used:0,skipped:0},15:{used:0,skipped:0}},firstHitSeconds:null,firstDeathSeconds:null,zeroStrikeContestedPhases:0};

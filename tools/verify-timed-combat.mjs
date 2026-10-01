@@ -32,5 +32,5 @@ const finish=`(async()=>{
  if(end.time!==18)throw Error('Wrong combat duration');
  return {duration:end.time,skillTimes,strikes:combat.flatMap(b=>b.events).filter(e=>e.type==='strike').length,planningResumed:true};
 })()`;
-const r=spawnSync(process.execPath,['tools/shot.mjs',`docs/campaign/evidence/timed-combat-${mobile?'portrait':'planning'}.png`,mobile?'390':'1280',mobile?'844':'800','campaign=road&you=crown','5000'],{env:{...process.env,STEPS:JSON.stringify([['eval',expression],['shot',`docs/campaign/evidence/timed-combat-${mobile?'portrait-active':'active'}.png`],['eval',finish]])},stdio:'inherit',timeout:90000});
+const r=spawnSync(process.execPath,['tools/shot.mjs',`docs/campaign/evidence/timed-combat-${mobile?'portrait':'planning'}.png`,mobile?'390':'1280',mobile?'844':'800','skills=1&spells=1&campaign=road&you=crown','5000'],{env:{...process.env,STEPS:JSON.stringify([['eval',expression],['shot',`docs/campaign/evidence/timed-combat-${mobile?'portrait-active':'active'}.png`],['eval',finish]])},stdio:'inherit',timeout:90000});
 process.exit(r.status??1);

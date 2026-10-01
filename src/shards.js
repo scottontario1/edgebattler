@@ -1,7 +1,7 @@
 // Shards (docs/SHARDS.md): passive class-wide boosts bought from the hand into a shard dock, then applied to a unit class.
 // Pure data and helpers, no Three.js. The match (src/match.js) owns state; this module owns the tables and the arithmetic.
 
-export const SHARD_RULES = Object.freeze({ dockSlots: 10, classSlots: 3, maxTier: 3 });
+export const SHARD_RULES = Object.freeze({ dockSlots: 12, classSlots: 3, maxTier: 3 , poolTypes: 4});
 export const SHARD_TIER_LABELS = Object.freeze(['I', 'II', 'III']);
 /** Stat keys that change unit records directly (and are tracked per unit in `unit.shardBonus`). */
 export const SHARD_STAT_KEYS = Object.freeze(['str', 'def', 'maxHp', 'spd', 'skl']);
@@ -75,4 +75,17 @@ export function combineShards(dock, shardId, tier, newId) {
   const consumed = matching.slice(0, 3).map((s) => s.id);
   const shard = { id: newId, shardId, tier: tier + 1 };
   return { ok: true, dock: [...dock.filter((s) => !consumed.includes(s.id)), shard], consumed, shard };
+}
+
+/** Seeded random subset of `count` shard ids (sorted by catalogue order). Both sides draw from the same subset, so a match
+ * only ever offers a few shard types and three of a kind actually happens. `count >= 8` (or 0) means every shard. */
+export function pickShardSubset(seed, count = SHARD_RULES.poolTypes) {
+  if (!count || count >= SHARD_IDS.length) return [...SHARD_IDS];
+  let x = (Number(seed) ^ 0x9e3779b9) >>> 0 || 1;
+  const rand = () => { x ^= x << 13; x >>>= 0; x ^= x >>> 17; x ^= x << 5; x >>>= 0; return x / 0x100000000; };
+  for (let i = 0; i < 4; i += 1) rand();
+  const ids = [...SHARD_IDS];
+  for (let i = ids.length - 1; i > 0; i -= 1) { const j = Math.floor(rand() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
+  const keep = new Set(ids.slice(0, count));
+  return SHARD_IDS.filter((id) => keep.has(id));
 }
