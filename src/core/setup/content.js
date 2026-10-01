@@ -105,11 +105,7 @@ export function createContent({ cultures = [], rarityGate = {}, cardLimits = {} 
     // Unit constructors and rosters
     ...constructors,
   };
-  return deepFreezeContext(context);
-}
-
-/** Freeze the data tables; functions and the shared module constants are already immutable. */
-function deepFreezeContext(context) {
+  // Freeze everything (tables, cards, culture records, rosters) so no rule can mutate content.
   return deepFreeze(context);
 }
 
