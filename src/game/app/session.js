@@ -124,6 +124,8 @@ export class GameApp {
     if (!state.campaign) this.#runAiPlanning();
     this.playing = true;
     this.ui.playback = true;
+    this.ui.playbackTime = 0;
+    this.ui.playbackDuration = this.match.context.combat?.duration ?? 18;
     this.#render();
     try {
       const result = this.match.resolveRound();
@@ -132,6 +134,7 @@ export class GameApp {
     } finally {
       this.playing = false;
       this.ui.playback = false;
+      this.ui.playbackTime = null;
       this.#syncWorld();
       this.#render();
     }
@@ -153,7 +156,16 @@ export class GameApp {
   }
 
   async #playBatches(batches) {
+    let renderedSecond = -1;
     for (const batch of batches) {
+      if (Number.isFinite(batch.time)) {
+        this.ui.playbackTime = Math.min(this.ui.playbackDuration, batch.time);
+        const second = Math.floor(this.ui.playbackTime);
+        if (second !== renderedSecond) {
+          renderedSecond = second;
+          this.#render();
+        }
+      }
       for (const event of batch.events ?? []) {
         const scene = this.scene;
         if (!scene) continue;

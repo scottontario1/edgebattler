@@ -164,7 +164,8 @@ export function buildGameViewModel(match, ui = {}) {
       shards: { slots: content.shardRules.dockSlots, items: [], combos: [], apply: null },
     },
     resolve: { state: over ? 'over' : battle ? 'playback' : 'planning',
-      label: 'Start combat', enabled: !battle && !over },
+      label: 'Start combat', enabled: !battle && !over,
+      ...(battle ? { clock: { elapsed: ui.playbackTime ?? 0, duration: ui.playbackDuration ?? 18 } } : {}) },
   };
 
   if (campaign) {
