@@ -198,7 +198,8 @@ export function buildGameViewModel(match, ui = {}) {
       orders: campaign.phase === 'regroup'
         ? [{ intent: 'campaignRally', label: campaign.rallied ? 'Rallied' : 'Rally', icon: 'rally', enabled: !campaign.rallied && rallyReady, reason: rallyReady ? undefined : 'Move an ally within 2 tiles of the checkpoint first' },
           { intent: 'campaignContinue', label: 'Continue north', icon: 'continue', primary: true, enabled: rallyReady, reason: rallyReady ? undefined : 'Move an ally within 2 tiles of the checkpoint first' }]
-        : [{ intent: 'campaignOrder', label: 'March north', icon: 'march', enabled: true }],
+        : [{ intent: 'campaignOrder', label: campaign.phase === 'exit' ? 'March to exit' : 'March north',
+          icon: 'march', enabled: true }],
     };
   }
   if (ui.selection?.unitId) {

@@ -213,7 +213,8 @@ export function createMatch({ content, board, roster = content?.startingUnits, s
       }
       case 'campaignOrder': {
         if (!state.campaign || f !== 'blue') return fail('not-campaign');
-        const tile = state.campaign.stages[state.campaign.stage].checkpoint;
+        const tile = state.campaign.phase === 'exit' ? state.campaign.exit
+          : state.campaign.stages[state.campaign.stage].checkpoint;
         for (const unit of alive(f)) { unit.stance = 'advance'; unit.objective = { type: 'tile', c: tile[0], r: tile[1] }; }
         result = { ok: true, tile: [...tile] };
         break;
