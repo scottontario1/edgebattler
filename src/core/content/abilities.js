@@ -19,3 +19,15 @@ export const SHIPPED_SPELLS = Object.freeze({
   ward: { id: 'ward', name: 'Ward', type: 'spell', cost: 1, target: 'friendly-unit', duration: 'upcoming-battle', effect: { type: 'status', status: 'ward', duration: 'upcoming-battle' } },
   fireburst: { id: 'fireburst', name: 'Fireburst', type: 'spell', cost: 2, target: 'enemy-area', duration: 'instant', radius: 1, effect: { type: 'damage', amount: 6 } },
 });
+
+/**
+ * Does a catalogue ability belong to this unit's kit? An ability applies to a class (`classes`) and/or
+ * to named units such as champions (`units`). A culture ability (`culture` set) that targets shipped
+ * classes only applies to that culture's own units, so the League's Set Position never reaches a plain
+ * Pikeman. Named `units` always apply.
+ */
+export function abilityApplies(ability, unit) {
+  const byUnit = ability.units?.includes(unit.id);
+  const byClass = ability.classes?.includes(unit.cls) && (!ability.culture || unit.culture === ability.culture);
+  return Boolean(byUnit || byClass);
+}

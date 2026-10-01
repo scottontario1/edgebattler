@@ -16,6 +16,54 @@ export const MOVE_COST = Object.freeze({
 
 const DIRECTIONS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
+// Stable min-heap: lower path cost first, then insertion order. This preserves the legacy
+// cost-sorted frontier's deterministic tie-breaking without repeatedly sorting the whole frontier.
+class Frontier {
+  #nodes = [];
+  #nextOrder = 0;
+
+  get length() { return this.#nodes.length; }
+
+  push(c, r, cost) {
+    const node = { c, r, cost, order: this.#nextOrder++ };
+    let index = this.#nodes.length;
+    this.#nodes.push(node);
+    while (index > 0) {
+      const parent = Math.floor((index - 1) / 2);
+      if (this.#before(this.#nodes[parent], node)) break;
+      this.#nodes[index] = this.#nodes[parent];
+      index = parent;
+    }
+    this.#nodes[index] = node;
+  }
+
+  pop() {
+    const first = this.#nodes[0];
+    const last = this.#nodes.pop();
+    if (this.#nodes.length) {
+      let index = 0;
+      while (true) {
+        const left = index * 2 + 1;
+        const right = left + 1;
+        if (left >= this.#nodes.length) break;
+        let child = left;
+        if (right < this.#nodes.length && this.#before(this.#nodes[right], this.#nodes[left])) child = right;
+        if (this.#before(last, this.#nodes[child])) break;
+        this.#nodes[index] = this.#nodes[child];
+        index = child;
+      }
+      this.#nodes[index] = last;
+    }
+    return first;
+  }
+
+  #before(a, b) { return a.cost < b.cost || (a.cost === b.cost && a.order < b.order); }
+}
+
+function isTileObject(record) {
+  return record.kind === 'object' || typeof record.objectKind === 'string';
+}
+
 /**
  * @typedef {Object} Occupancy
  * @property {(c: number, r: number) => (object|null|undefined)} unitAt  the living record or object on a tile
@@ -32,7 +80,8 @@ export function occupancyFromRecords(records) {
   const list = [...records];
   return {
     list,
-    unitAt: (c, r) => list.find((record) => record.hp > 0 && record.c === c && record.r === r),
+    unitAt: (c, r) => list.find((record) => record.hp > 0 && record.c === c && record.r === r
+      && (!isTileObject(record) || record.blocks === true)),
   };
 }
 
@@ -60,17 +109,19 @@ export function moveCostsFor(unit, content) {
 export function computeRange(unit, board, occupancy, { content, mov = unit.mov, blockAllies = false } = {}) {
   if (!content) throw new Error('computeRange needs options.content');
   const costs = moveCostsFor(unit, content);
+  if (!costs) throw new Error(`No movement costs for ${content.moveTypeOf(unit)} movement`);
+  if (!board.inBounds(unit.c, unit.r)) throw new Error(`Unit ${unit.id ?? '?'} starts outside board at (${unit.c}, ${unit.r})`);
   const width = board.width;
   const key = (c, r) => r * width + c;
   const unkey = (k) => [k % width, Math.floor(k / width)];
 
   const bestCost = new Map([[key(unit.c, unit.r), 0]]);
   const cameFrom = new Map();
-  const frontier = [[unit.c, unit.r, 0]];
+  const frontier = new Frontier();
+  frontier.push(unit.c, unit.r, 0);
 
   while (frontier.length) {
-    frontier.sort((a, b) => a[2] - b[2]);
-    const [c, r, spent] = frontier.shift();
+    const { c, r, cost: spent } = frontier.pop();
     for (const [dc, dr] of DIRECTIONS) {
       const nc = c + dc;
       const nr = r + dr;
@@ -85,7 +136,7 @@ export function computeRange(unit, board, occupancy, { content, mov = unit.mov, 
       if (bestCost.has(k) && bestCost.get(k) <= total) continue;
       bestCost.set(k, total);
       cameFrom.set(k, key(c, r));
-      frontier.push([nc, nr, total]);
+      frontier.push(nc, nr, total);
     }
   }
 
@@ -116,7 +167,7 @@ export function computeRange(unit, board, occupancy, { content, mov = unit.mov, 
   const targets = new Map();
   const origin = [unit.c, unit.r];
   for (const other of occupancy.list) {
-    if (other.faction === unit.faction || other.hp <= 0 || other.kind === 'object') continue;
+    if (other.faction === unit.faction || other.hp <= 0 || isTileObject(other)) continue;
     const position = [other.c, other.r];
     const from = stand
       .filter((tile) => {

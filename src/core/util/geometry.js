@@ -24,8 +24,11 @@ export function clone(value) {
 }
 
 /** Recursively freeze plain data (objects, arrays) and return it. Functions are left alone. */
-export function deepFreeze(value) {
-  if (value === null || typeof value !== 'object' || Object.isFrozen(value)) return value;
-  for (const key of Object.keys(value)) deepFreeze(value[key]);
-  return Object.freeze(value);
+export function deepFreeze(value, seen = new WeakSet()) {
+  if (value === null || typeof value !== 'object' || seen.has(value)) return value;
+  seen.add(value);
+  // Frozen containers can still contain mutable descendants. Walk them before returning so callers
+  // may safely compose shallow-frozen catalogues into a single immutable content context.
+  for (const key of Object.keys(value)) deepFreeze(value[key], seen);
+  return Object.isFrozen(value) ? value : Object.freeze(value);
 }

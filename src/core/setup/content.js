@@ -11,6 +11,7 @@ import { DEFAULT_CARD_LIMITS, RECRUITMENT_POOL, UNIT_CARDS, SPELL_CARDS, SKILL_C
 import { SHARD_CARDS } from '../content/shards.js';
 import { CAMPAIGN_LEVELS, CAMPAIGN_BY_ID, CAMPAIGN_SETUP, campaignEnemyFactions } from '../content/missions.js';
 import { FACTIONS, FACTION_BY_ID, FACTION_IDS, RARITY_GATE } from '../content/factions/index.js';
+import { abilityApplies } from '../content/abilities.js';
 import { buildCultureTables, lookupCard } from './cultures.js';
 import { createUnitConstructors } from './units.js';
 
@@ -98,6 +99,8 @@ export function createContent({ cultures = [], rarityGate = {}, cardLimits = {} 
     cultures: tables.cultures,
     abilities: tables.abilities,
     spells: tables.spells,
+    /** Catalogue abilities that belong to a unit's kit (inert in this pass: nothing activates them). */
+    kitFor: (unit) => Object.values(tables.abilities).filter((ability) => abilityApplies(ability, unit)),
 
     // Unit constructors and rosters
     ...constructors,
@@ -107,11 +110,7 @@ export function createContent({ cultures = [], rarityGate = {}, cardLimits = {} 
 
 /** Freeze the data tables; functions and the shared module constants are already immutable. */
 function deepFreezeContext(context) {
-  for (const key of ['weapons', 'recruitClasses', 'variants', 'championTemplates', 'moveTypes', 'spriteFallback', 'classMeta',
-    'cultureCards', 'cultures', 'abilities', 'spells']) {
-    deepFreeze(context[key]);
-  }
-  return Object.freeze(context);
+  return deepFreeze(context);
 }
 
 /**
