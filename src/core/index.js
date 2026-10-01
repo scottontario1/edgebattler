@@ -14,3 +14,6 @@ export { BATTLE_TUNING, resolveBattleRound } from './battle/round.js';
 export { FLANK_DAMAGE, resolveStrikes } from './battle/strikes.js';
 export { resolveMovement, selectAttackTarget, legalMovesFor } from './battle/targeting.js';
 export { TIMED_COMBAT_DEFAULTS, attackInterval, timedCombatConfig, resolveTimedBattle } from './battle/timed.js';
+
+// Framework-independent commanders plan ordinary actions against match snapshots.
+export { COMMANDERS, passiveCommander, greedyCommander, heuristicCommander, planCommander, runCommander } from './ai/commanders.js';
