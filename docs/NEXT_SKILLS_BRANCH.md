@@ -2,6 +2,8 @@
 
 User direction recorded 2026-10-01: add skills back after integrating Shards/continuous combat. Start a new branch from updated main. This document prepares work; it does not enable skills or create a branch.
 
+The next branch also includes rewards, higher Supply income and purchasable early population capacity. [branch.next.md](../branch.next.md) owns those TBD decisions; run skill comparisons with economy held constant before evaluating the combined progression.
+
 ## Accepted design
 
 The army sidebar is the primary editor. Selecting a unit reveals stats and three slots to the right with card icons. Dragging a skill into a slot chooses trigger time. All friendly units of a type share the order, including reserves, later recruits and respawns. Retained implementation uses 3/9/15-second windows in an up-to-18-second phase, with individual energy/cooldowns and failed casts skipped. Keep this starting prototype unless testing supports a recorded change.

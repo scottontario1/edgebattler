@@ -6,6 +6,10 @@ Reviewed 2026-10-01 against merged main `d1f7c64`. [Superseded status history](a
 
 Active kits are retained but disabled by default. Restore through the army sidebar: three shared type slots at 3/9/15 seconds and selected-unit stats. Preserve Shards and separate spell gating. [Acceptance criteria](NEXT_SKILLS_BRANCH.md) covers inheritance, failure feedback, boundaries, phone layout and experiments.
 
+## Rewards and economy — next branch
+
+Increase recurring Supply, add enemy-defeat rewards (Supply/cards), test early population caps around 2–3 and paid capacity upgrades. Values, level mapping, reward delivery/overflow and cross-mission persistence remain TBD in [branch.next.md](../branch.next.md). Current main still uses +3 Supply/round and population 10.
+
 ## Gameplay and correctness
 
 - **Campaign pressure / CORE-02:** integration completes all 15 faction/mission combinations, but earlier skill experiments also won with empty player plans. Add harder controlled encounters where timing matters. Earlier discrete skirmish draw rates of roughly 89–96% were unresolved at that revision; remeasure timed/Shards skirmishes before claiming they persist or are fixed.

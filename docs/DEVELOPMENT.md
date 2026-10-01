@@ -4,7 +4,7 @@ Updated 2026-10-01 after integrating continuous combat and Shards into main. [Ga
 
 ## Next work sequence
 
-1. Start a new branch from updated main to restore skills. Keep Shards and identity passives while implementing the accepted sidebar/type-wide three-slot design. [Requirements](NEXT_SKILLS_BRANCH.md).
+1. Start a new branch from updated main to restore skills and prototype rewards/economy from [branch.next.md](../branch.next.md). Higher recurring Supply, enemy-defeat rewards and lower early population with paid upgrades are requested; exact values remain TBD. Keep Shards and identity passives while implementing the accepted sidebar/type-wide three-slot design. [Requirements](NEXT_SKILLS_BRANCH.md).
 2. Fix integration blockers: timing, target validity, reserve/recruit/respawn inheritance, panel overlap, playback locking and replay.
 3. Run controlled encounter/order experiments with explicit flags and parameters. Strengthen challenges where empty plans remain equally successful; historical all-win suites do not prove good balance.
 4. Verify desktop/phone, build, rule tests and replay before merging. Keep spells separately archived until restoration is requested.
