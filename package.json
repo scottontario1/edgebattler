@@ -13,8 +13,7 @@
     "legacy:test": "cd legacy && node --test tests/*.test.mjs"
   },
   "dependencies": {
-    "phaser": "^4.2.1",
-    "three": "^0.170.0"
+    "phaser": "^4.2.1"
   },
   "devDependencies": {
     "vite": "^6.0.0"

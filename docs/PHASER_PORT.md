@@ -4,6 +4,16 @@ Status: in progress on branch `claude/project-thread-23j745` (base: local `main`
 contains the merged Shards work). The Three.js game is frozen in `legacy/` as the behavioural reference;
 `PROJECT_KNOWLEDGE.md` describes it system by system and is the spec for this port.
 
+## Framework research (checked 2026-10-01)
+
+Phaser is an open-source, MIT-licensed JavaScript/TypeScript HTML5 **2D** framework; its own docs explicitly say it is not a built-in 3D engine. The project is currently pinned by the lockfile to Phaser 4.2.1. The port therefore uses the authored 2D character sprites and a hand-authored oblique 2D board view, not a Three.js-compatible 3D scene. This is a product/presentation change to keep in mind during playtests.
+
+The Phaser v4 scene model provides lifecycle, display list, cameras, scene-local input, loader, clock and tweens. We'll use scenes for boot/battle transitions, the Scene Input Plugin for pointer interaction, Scale Manager for responsive canvases, and ordinary image/sprite/tilemap game objects for the field. Core simulation stays outside Phaser. Phaser's built-in Tilemap supports orthogonal, isometric, hexagonal and staggered maps with camera culling; our current grid has custom terrain/object rules, so a direct Tiled conversion is optional rather than a prerequisite.
+
+Phaser 4 is a major renderer/API change from v3: it replaces pipelines with render nodes, unifies FX and masks into filters, and changes camera and tint APIs. Use v4.2.1 documentation/examples and avoid copy-pasting v3 tutorials without checking the migration guide. Avoid pixel-perfect hit testing for every unit because Phaser documents that it is expensive; use explicit hit areas unless sprite-alpha selection is needed.
+
+Official sources: [Phaser overview](https://docs.phaser.io/), [v4.2.1 release](https://phaser.io/download/release/v4.2.1), [scene concepts](https://docs.phaser.io/phaser/concepts/scenes), [scale manager](https://docs.phaser.io/phaser/concepts/scale-manager), [input concepts](https://docs.phaser.io/phaser/concepts/input), [tilemaps](https://docs.phaser.io/api-documentation/class/tilemaps-tilemaplayer), [v3→v4 migration guide](https://github.com/phaserjs/phaser/blob/master/changelog/v4/4.0/MIGRATION-GUIDE.md).
+
 ## Goals
 
 1. Same game, new engine: Phaser 4 (4.2.x) renders the battlefield; game rules stay pure JavaScript.
