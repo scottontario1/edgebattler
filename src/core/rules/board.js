@@ -2,7 +2,7 @@
 // argument; there is no "active map" global, so several matches (or a replay next to a live game)
 // can coexist in one process.
 import { TERRAIN } from '../content/terrain.js';
-import { deepFreeze } from '../util/geometry.js';
+import { clone, deepFreeze } from '../util/geometry.js';
 
 /**
  * Validate a map definition ({ id, name?, layout: string[], hills? }) and build its board.
@@ -24,7 +24,7 @@ export function createBoard(map, terrain = TERRAIN) {
     }
   });
   const height = rows.length;
-  const terrainRules = deepFreeze(Object.fromEntries(Object.entries(terrain).map(([key, rule]) => [key, { ...rule }])));
+  const terrainRules = deepFreeze(Object.fromEntries(Object.entries(terrain).map(([key, rule]) => [key, clone(rule)])));
   const inBounds = (c, r) => c >= 0 && r >= 0 && c < width && r < height;
   const terrainAt = (c, r) => (inBounds(c, r) ? rows[r][c] : undefined);
   const hills = (map.hills ?? []).map((position, index) => {
