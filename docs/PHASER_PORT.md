@@ -133,24 +133,32 @@ logic on separate module boundaries.
 | Wave | Branch | System | Status |
 |---|---|---|---|
 | 1 | `port/core-content` | util/rng, content (weapons, classes, heroes, monsters, shard and card catalogues, factions, missions), content context, movement/range, forecast, passives | Integrated |
-| 1 | `port/world` | Phaser bootstrap, Boot scene, projection, terrain/props rendering, unit views, camera, picking, overlays | Integrated; demo launch only |
-| 1 | `port/hud` | DOM HUD components and styles from view-model fixtures, start menu | Integrated; requires app/session view models |
-| 2 | `port/economy` | cards, cycling, shards, upgrades | Integrated as pure helpers |
-| 2 | `port/battle` | target selection, strikes, occupancy contention, continuous battle simulation | In progress |
-| 3 | `port/match` | match controller, campaign, objects, stats, log/replay, setup factories, golden parity | Not started |
-| 4 | `port/ai` | greedy and heuristic commanders, AI parity | Not started |
-| 4 | `port/integration` | session, view models, planning input, playback, end screens, logging | Not started |
+| 1 | `port/world` | Phaser bootstrap, Boot scene, projection, terrain/props rendering, unit views, camera, picking, overlays | Integrated; demo remains available |
+| 1 | `port/hud` | DOM HUD components and styles from view-model fixtures, start menu | Integrated and connected to app view models |
+| 2 | `port/economy` | cards, cycling, shards, upgrades | Integrated as pure helpers; archived spells are filtered from match draft pools |
+| 2 | `port/battle` | target selection, strikes, occupancy contention, continuous battle simulation | Integrated; fixed 0.25s simulation ticks |
+| 3 | `port/match` | match controller, campaign waves/checkpoints, objects, stats, replay adapter, setup factories | Integrated; fixture parity remains incomplete |
+| 4 | `port/ai` | passive, greedy and heuristic commanders | Integrated; campaign enemies use fixed encounters |
+| 4 | `port/integration` | session, view models, planning input, playback, end screens, logging | Integrated; first playable flow |
 
 ## Progress snapshot
 
-- Phaser is pinned to 4.2.1. The root app no longer depends on Three.js; the old project and its own
-  dependency lock remain under `legacy/`.
-- Core content, board, movement, forecast, passives and economy use explicit context/state inputs. The
-  Phaser world slice renders maps and unit snapshots, and the HUD is a standalone DOM presentation layer.
-- **The port is not yet a playable game.** The entry currently starts the world demo. Match creation,
-  deployment/recruit actions, live combat, campaign progression, AI turns and end-to-end replay are later
-  dependencies in the table.
-- First Vite production build completed with Node 22.12 and Vite 6.4.3. It emitted one 1.74 MB JS chunk
-  (about 402 KB gzip) and the normal Vite large-chunk warning. No tests or browser playthrough have been
-  run on the new port in this pass; the existing fixture/test scaffolding remains available for later
-  parity and mobile verification.
+- Phaser 4.2.1 is pinned. The root app no longer depends on Three.js; the old game and its lockfile remain in
+  `legacy/`. The change from an angled Three.js scene to authored sprites on an oblique 2D board is a
+  deliberate presentation change required by Phaser's 2D renderer.
+- The app opens on faction selection and starts any of the three campaign missions or a River Ford skirmish
+  against an AI commander. The planning HUD supports recruitment, cycling, deployment, movement, stances,
+  campaign orders, rallying, and continuation. Campaign opponents arrive in authored waves and cannot recruit.
+- Combat resolves as a deterministic 18-second simulation with fixed 0.25-second ticks, attack-speed-based
+  strikes, movement, mitigation, passive hooks, and three reserved skill windows. The HUD clock follows the
+  event timeline while Phaser animates concurrent unit actions. Unit inspections and the battle report show
+  stats; archived skill slots remain visible but inactive.
+- Build and browser smoke are successful: Vite 6.4.3 builds all 106 modules. Headless Chromium showed no
+  page exceptions at 1280x800 or 390x844; a first mission started, a unit was recruited, and combat advanced
+  to the next planning round. The automated test suite and full-campaign playthrough have not been run.
+- The 50 legacy golden fixtures are not yet reproduced exactly. They use limited shard subsets and legacy
+  action-result/rejection shapes that the new factories do not fully reconstruct. The adapter reports these
+  parity limits. Skills/spells remain archived, campaign kill rewards are still an empty hook, and the older
+  discrete duel mode is not exact-parity.
+- The current production build emits a 1.96 MB JavaScript chunk (about 473 KB gzip) and Vite reports its
+  large-chunk warning. Consider code splitting after gameplay is settled.
