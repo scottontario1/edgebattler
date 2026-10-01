@@ -30,3 +30,17 @@
 .skill-slot.drag-over{outline:2px solid var(--gold-bright);background:#51482e}
 .ability-pick[draggable=true]{cursor:grab}
 @media(pointer:coarse){.skill-slot .slot-clear{min-height:32px;width:32px}.skill-slot>button:first-child{padding-top:34px}}
+
+.skill-art{display:grid;place-items:center;width:34px;height:34px;margin:0 auto;color:#f4d482;background:#192537;border:1px solid #b39354;border-radius:5px}.skill-art svg{width:24px;height:24px}
+.type-skills[hidden]{display:none}.type-skills{position:fixed;z-index:25;left:158px;top:154px;bottom:calc(var(--tray-h,150px) + 18px);width:350px;padding:12px;overflow:auto;background:var(--panel-solid);font:12px var(--font-ui)}
+.type-skills header{display:flex;gap:10px;padding-right:25px}.type-skills header h3{margin:2px 0;font-size:17px}.type-skills header p{margin:4px 0;color:var(--muted)}.type-skills header small{color:var(--gold)}
+.type-skills-close{position:absolute;right:8px;top:8px;color:var(--ivory);background:#192537;border:1px solid #7c745f;width:32px;height:32px;cursor:pointer}
+.type-unit-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:10px}.type-unit-stats span{display:flex;flex-direction:column;font-size:10px;color:var(--muted);background:#1b2733;padding:5px}.type-unit-stats b{color:var(--ivory);font-size:13px;margin-top:2px}
+.type-skills .ability-pick{display:grid;grid-template-columns:34px 1fr;column-gap:8px}.type-skills .ability-pick .skill-art{grid-row:1/4}.type-skills .ability-pick span:not(.skill-art),.type-skills .ability-pick em{grid-column:2}.type-skills .ability-pick b small{display:block}.type-skills .skill-slot>button:first-child{padding-top:30px;min-height:118px}.type-skills .plan-summary{font-size:11px}
+@media(max-width:820px){.type-skills{left:70px;right:8px;top:238px;bottom:calc(var(--tray-h,142px) + 60px);width:auto;padding:8px}.type-skills header h3{font-size:14px}.type-skills .skill-slot b{font-size:11px}.type-skills .ability-editor{font-size:11px}}
+@media(min-width:821px) and (max-height:500px){.type-skills{left:128px;top:93px;width:340px}}
+
+.type-skills{bottom:18px}.type-skills .type-unit-stats{margin-bottom:12px}.type-skills .ability-editor{margin-top:6px;padding-top:4px}
+@media(max-width:820px){.type-skills{bottom:64px}}
+
+@media(min-width:821px){.type-skills-open #actions .lbl,.type-skills-open #actions .key{display:none}.type-skills-open #actions .btn{min-width:42px;padding:8px}}

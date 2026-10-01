@@ -239,6 +239,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
   document.body.appendChild(sheet);
   const army = document.createElement('nav'); army.className='panel army-rail'; army.setAttribute('aria-label','Your recruited army'); document.body.appendChild(army);
   const armyPopover=document.createElement('div');armyPopover.className='panel army-popover';armyPopover.hidden=true;document.body.appendChild(armyPopover);
+  const skillPanel=document.createElement('section');skillPanel.className='panel type-skills';skillPanel.hidden=true;skillPanel.setAttribute('aria-label','Unit stats and type skill timeline');document.body.appendChild(skillPanel);
   const reportBackdrop=document.createElement('div');reportBackdrop.className='battle-report-backdrop';reportBackdrop.hidden=true;document.body.appendChild(reportBackdrop);
   const reportPanel = document.createElement('section'); reportPanel.className='panel battle-report'; reportPanel.hidden=true;reportPanel.setAttribute('role','dialog');reportPanel.setAttribute('aria-modal','true');reportPanel.setAttribute('aria-label','Battle statistics');document.body.appendChild(reportPanel);
 
@@ -277,7 +278,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     targetId: null,
     danger: false,
     sheet: false, managedType:null, reportOpen:false, reportSide:'blue', previousReport:false,
-    abilityDraft:null, abilityTargets:[], abilityNotice:'', abilityGroupOpen:false, lastAbilityResults:{},
+    unitSkillsOpen:false, abilityDraft:null, abilityTargets:[], abilityNotice:'', abilityGroupOpen:false, lastAbilityResults:{},
     selectedAt: 0,
     phase: 'player', // 'player' | 'enemy'
     turn: 1,
@@ -435,7 +436,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
       const fl={north:'↑ North',east:'→ East',south:'↓ South',west:'← West'};
       sheet.insertAdjacentHTML('beforeend',`<div class="sheet-facing"><span>Facing</span>${Object.keys(FACING).map(k=>`<button type="button" data-facing="${k}" aria-pressed="${u.facing===k}">${fl[k]}</button>`).join('')}</div>`);
     }
-    if(uiFlags.abilities&&u.faction==='blue'&&!state.busy&&!state.over) {
+    if(uiFlags.abilities&&!match.combat&&u.faction==='blue'&&!state.busy&&!state.over) {
       if(state.abilityDraft?.unitId!==u.id) {
         state.abilityDraft={unitId:u.id,ids:[...(u.selectedAbilities||[])],slots:defaultSkillSlots(u),selectedSkill:null};state.abilityTargets=[u.id];state.abilityNotice='';state.abilityGroupOpen=false;
       }
@@ -597,9 +598,29 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
   function renderArmy() {
     army.innerHTML=armyHTML(groupsNow(),{portraitFor:u=>portraitSVG(u),activeType:selected()?unitType(selected()):null,managedType:state.managedType});
     army.classList.toggle('locked',state.busy);
+    renderTypeSkills();
     armyPopover.replaceChildren();armyPopover.hidden=true;
-    if(innerWidth<=820){const options=army.querySelector('.army-options');if(options){armyPopover.hidden=false;armyPopover.appendChild(options);}}
+    if(innerWidth<=820&&!state.unitSkillsOpen){const options=army.querySelector('.army-options');if(options){armyPopover.hidden=false;armyPopover.appendChild(options);}}
   }
+  function renderTypeSkills(){
+    const u=selected();skillPanel.hidden=!match.combat||!state.unitSkillsOpen||!u||state.busy;
+    document.body.classList.toggle('type-skills-open',!skillPanel.hidden);
+    if(skillPanel.hidden)return;
+    const editable=u.faction==='blue'&&!state.over;
+    if(editable&&state.abilityDraft?.unitId!==u.id){state.abilityDraft={unitId:u.id,ids:[...(u.selectedAbilities||[])],slots:defaultSkillSlots(u),selectedSkill:null};state.abilityNotice='';}
+    if(editable)state.abilityTargets=match.alive('blue').filter(o=>unitType(o)===unitType(u)).map(o=>o.id);
+    const st=match.unitStats(u.id),stat=(label,value)=>`<span>${label}<b>${value??0}</b></span>`;
+    const statsHTML=`<div class="type-unit-stats">${stat('HP',u.hp+'/'+u.maxHp)}${stat('Energy',u.energy+'/'+u.maxEnergy)}${stat('Attack / sec',(1/attackInterval(u,match.combat)).toFixed(2))}${stat('STR',u.str)}${stat('DEF',u.def)}${stat('SPD',u.spd)}${stat('MAG',u.mag)}${stat('SKL',u.skl)}${stat('RES',u.res)}${stat('Damage dealt',st?.damageDealt)}${stat('Damage taken',st?.damageTaken)}${stat('Ability uses',Object.values(st?.abilityUses||{}).reduce((a,b)=>a+b,0))}</div>`;
+    skillPanel.innerHTML=`<button class="type-skills-close" data-skill-close aria-label="Close unit panel">×</button><header><span class="army-face">${portraitSVG(u)}</span><div><small>${editable?'Shared type timeline':'Unit inspection'}</small><h3>${esc(u.name)}</h3><p>${esc(unitType(u))} · ${editable?state.abilityTargets.length+' field units':''}</p></div></header>`;
+    if(editable)skillPanel.insertAdjacentHTML('beforeend',abilityEditorHTML(u,{draft:state.abilityDraft.ids,slots:state.abilityDraft.slots,skillTimes:match.combat.skillTimes,selectedSkill:state.abilityDraft.selectedSkill,targets:state.abilityTargets,units:match.alive(),notice:state.abilityNotice||'Changes save immediately for this type, including bench units and future recruits.',groupOpen:false,typeShared:true,lastResults:state.lastAbilityResults[u.id]||[]}));
+    const slots=skillPanel.querySelector('.skill-slots');if(slots)slots.insertAdjacentHTML('afterend',statsHTML);else skillPanel.insertAdjacentHTML('beforeend',statsHTML);
+  }
+  function saveTypeTimeline(){
+    const result=act({type:'abilities',unitId:selected().id,skillSlots:state.abilityDraft.slots});
+    state.abilityNotice=result.ok?'Saved for all '+selected().name+' units, including future recruits.':'Cannot save: '+result.reason;
+    state.abilityDraft.slots=defaultSkillSlots(selected());state.abilityDraft.ids=state.abilityDraft.slots.filter(Boolean);
+  }
+  skillPanel.addEventListener('click',e=>{if(e.target.closest('[data-skill-close]')){state.unitSkillsOpen=false;refresh();}});
   function renderReport() {
     reportPanel.hidden=!state.reportOpen;reportBackdrop.hidden=!state.reportOpen;if(!state.reportOpen)return;
     let report=match.battleStats(),title='Battle statistics';
@@ -612,10 +633,10 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     if(innerWidth<=820||innerHeight>innerWidth){actions.style.left='';actions.style.top='';return;}
     const u=selected(),entry=u?units.byId.get(u.id):null;
     const p=entry?entry.group.position.clone().add(new THREE.Vector3(0,1.5,0)).project(camera):null;
-    const half=actions.offsetWidth/2,topMargin=match.campaign?142:85;
+    const half=actions.offsetWidth/2,railEdge=!skillPanel.hidden?skillPanel.getBoundingClientRect().right+8:150,topMargin=match.campaign?142:85;
     const x=p?(p.x+1)*innerWidth/2:innerWidth/2;
     const y=p?(1-p.y)*innerHeight/2-12:innerHeight-(planning.offsetHeight||145)-20;
-    actions.style.left=Math.round(Math.max(half+150,Math.min(innerWidth-half-12,x)))+'px';
+    actions.style.left=Math.round(Math.max(half+railEdge,Math.min(innerWidth-half-12,x)))+'px';
     actions.style.top=Math.round(Math.max(topMargin+actions.offsetHeight,Math.min(innerHeight-100,y)))+'px';
   }
   function handleArmyClick(e) {
@@ -630,7 +651,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     if(action==='stats'){commands.battleStats();return;}
     if(!g)return;
     if(action==='next'&&g.field.length){const i=g.field.findIndex(u=>u.id===state.selectedId);select(g.field[(i+1)%g.field.length].id);}
-    if(action==='plan'&&g.field.length){select(g.field[0].id);state.sheet=true;state.abilityDraft={unitId:g.field[0].id,ids:[...(g.field[0].selectedAbilities||[])],slots:defaultSkillSlots(g.field[0]),selectedSkill:null};state.abilityTargets=g.field.map(u=>u.id);state.abilityGroupOpen=true;refresh();}
+    if(action==='plan'&&g.field.length){select(g.field[0].id);if(!match.combat){state.sheet=true;refresh();}}
     if(['advance','hold'].includes(action)){for(const u of g.field)act({type:'stance',unitId:u.id,stance:action});refresh();}
   }
   army.addEventListener('click',handleArmyClick);armyPopover.addEventListener('click',handleArmyClick);
@@ -676,6 +697,8 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
   function select(id) {
     if (state.selectedId !== id) state.selectedAt = performance.now();
     state.selectedId = id;
+    state.unitSkillsOpen=Boolean(id&&match.combat);
+    if(match.combat)state.sheet=false;
     if (id && state.selectedCardId) state.selectedCardId = null;
     if (id && state.selectedReserveId) state.selectedReserveId = null;
     state.mode = 'idle';
@@ -1063,7 +1086,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
       state.targetId = range.targets.size === 1 ? [...range.targets.keys()][0] : null;
       refresh();
     },
-    inspect() { if (selected()) { state.sheet = true; refresh(); } },
+    inspect() { if (selected()) { if(match.combat)state.unitSkillsOpen=true;else state.sheet=true;refresh(); } },
     close() { state.sheet = false; state.abilityDraft=null; refresh(); },
     cancel() { state.mode = 'idle'; state.targetId = null; refresh(); },
     danger() { state.danger = !state.danger; refresh(); },
@@ -1170,7 +1193,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
   };
   actions.addEventListener('click', onAction);
   sheet.addEventListener('click', onAction);
-  sheet.addEventListener('click',e=>{
+  const handleSkillClick=e=>{
     if(state.busy||state.over||selected()?.faction!=='blue') return;
     const pick=e.target.closest('[data-ability]');
     if(pick&&match.combat){state.abilityDraft.selectedSkill=pick.dataset.ability;state.abilityNotice='Choose a timing slot for this skill.';refresh();}
@@ -1180,7 +1203,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     }
     const slot=e.target.closest('[data-skill-slot]'),clear=e.target.closest('[data-clear-slot]');
     if(slot&&match.combat&&state.abilityDraft.selectedSkill){assignSkill(state.abilityDraft.selectedSkill,Number(slot.dataset.skillSlot));}
-    if(clear&&match.combat){state.abilityDraft.slots[Number(clear.dataset.clearSlot)]=null;state.abilityDraft.ids=state.abilityDraft.slots.filter(Boolean);state.abilityNotice='Timeline changed. Save to apply.';refresh();}
+    if(clear&&match.combat){state.abilityDraft.slots[Number(clear.dataset.clearSlot)]=null;state.abilityDraft.ids=state.abilityDraft.slots.filter(Boolean);state.abilityNotice='Timeline changed. Save to apply.';if(e.currentTarget===skillPanel)saveTypeTimeline();refresh();}
     if(e.target.closest('[data-plan-class]')) {state.abilityTargets=match.alive('blue').filter(u=>unitType(u)===unitType(selected())).map(u=>u.id);refresh();}
     if(e.target.closest('[data-plan-apply]')) {
       const result=act({type:'abilities',unitIds:state.abilityTargets,abilityIds:state.abilityDraft.ids,...(match.combat?{skillSlots:state.abilityDraft.slots}:{})});
@@ -1188,15 +1211,18 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     }
     const facing=e.target.closest('[data-facing]');
     if(facing) {act({type:'facing',unitId:selected().id,facing:facing.dataset.facing});refresh();}
-  });
+  };
+  sheet.addEventListener('click',handleSkillClick);skillPanel.addEventListener('click',handleSkillClick);
   function assignSkill(id,index){
     if(state.busy||state.over||!match.combat||!state.abilityDraft||index<0||index>2)return;
-    state.abilityDraft.slots=placeSkill(state.abilityDraft.slots,id,index);state.abilityDraft.ids=state.abilityDraft.slots.filter(Boolean);state.abilityDraft.selectedSkill=null;state.abilityNotice='Timeline changed. Save to apply.';refresh();
+    state.abilityDraft.slots=placeSkill(state.abilityDraft.slots,id,index);state.abilityDraft.ids=state.abilityDraft.slots.filter(Boolean);state.abilityDraft.selectedSkill=null;state.abilityNotice='Timeline changed. Save to apply.';if(state.unitSkillsOpen)saveTypeTimeline();refresh();
   }
-  sheet.addEventListener('dragstart',e=>{const skill=e.target.closest('[data-drag-skill]');if(!skill||state.busy)return;e.dataTransfer.setData('text/plain',skill.dataset.dragSkill);e.dataTransfer.effectAllowed='move';});
-  sheet.addEventListener('dragover',e=>{const slot=e.target.closest('[data-drop-slot]');if(slot&&!state.busy){e.preventDefault();slot.classList.add('drag-over');e.dataTransfer.dropEffect='move';}});
-  sheet.addEventListener('dragleave',e=>e.target.closest('[data-drop-slot]')?.classList.remove('drag-over'));
-  sheet.addEventListener('drop',e=>{const slot=e.target.closest('[data-drop-slot]');if(!slot)return;e.preventDefault();const id=e.dataTransfer.getData('text/plain');if(selected()&&kitFor(selected()).some(a=>a.id===id))assignSkill(id,Number(slot.dataset.dropSlot));});
+  for(const editor of [sheet,skillPanel]){
+  editor.addEventListener('dragstart',e=>{const skill=e.target.closest('[data-drag-skill]');if(!skill||state.busy)return;e.dataTransfer.setData('text/plain',skill.dataset.dragSkill);e.dataTransfer.effectAllowed='move';});
+  editor.addEventListener('dragover',e=>{const slot=e.target.closest('[data-drop-slot]');if(slot&&!state.busy){e.preventDefault();slot.classList.add('drag-over');e.dataTransfer.dropEffect='move';}});
+  editor.addEventListener('dragleave',e=>e.target.closest('[data-drop-slot]')?.classList.remove('drag-over'));
+  editor.addEventListener('drop',e=>{const slot=e.target.closest('[data-drop-slot]');if(!slot)return;e.preventDefault();const id=e.dataTransfer.getData('text/plain');if(selected()&&kitFor(selected()).some(a=>a.id===id))assignSkill(id,Number(slot.dataset.dropSlot));});
+  }
   sheet.addEventListener('toggle',e=>{if(e.target.matches('.plan-group')) state.abilityGroupOpen=e.target.open;},true);
   sheet.addEventListener('change',e=>{
     if(e.target.matches('[data-plan-unit]')) {

@@ -36,3 +36,25 @@ test('timeline edits reject duplicates and incompatible group members atomically
 test('moving a skill empties its previous slot and replaces the destination',()=>{
  assert.deepEqual(placeSkill(['brace','rally',null],'brace',1),[null,'brace',null]);
 });
+
+test('one-unit edit applies to its whole type, reserves and later recruits, but not enemy types',()=>{
+ const roster=fixture();roster.push({...roster[0],id:'a2',c:3});roster[1]={...roster[0],id:'enemy',faction:'red',c:6};
+ const m=createMatch({roster,combat:{duration:18}}),slots=[null,null,'focusedShot'];
+ assert.equal(m.apply({type:'abilities',faction:'blue',unitId:'a',skillSlots:slots}).ok,true);
+ assert.deepEqual(m.byId('a2').skillSlots,slots);assert.notDeepEqual(m.byId('enemy').skillSlots,slots);
+ m.sides.blue.cards.supply=30;
+ m.sides.blue.cards.hand=[{id:'unit-archer',instanceId:'test-archer',type:'unit',unitId:'archer',classId:'archer',cost:2,stars:1,rarity:'common'}];
+ const bought=m.apply({type:'recruit',faction:'blue',cardId:'test-archer'});assert.equal(bought.ok,true);
+ const reserve=m.sides.blue.cards.reserves.find(u=>u.id===bought.reserveId);assert.deepEqual(reserve.skillSlots,slots);
+ assert.equal(m.apply({type:'abilities',faction:'blue',unitId:'a',skillSlots:[null,null,null]}).ok,true);
+ assert.deepEqual(reserve.skillSlots,[null,null,null]);
+ const deployed=m.apply({type:'deploy',faction:'blue',reserveId:reserve.id,c:4,r:6,free:true});assert.equal(deployed.ok,true);
+ assert.deepEqual(m.alive('blue').find(u=>u.id===reserve.id)?.skillSlots||m.alive('blue').find(u=>u.c===4&&u.r===6)?.skillSlots,[null,null,null]);
+});
+
+test('legacy unit-scoped timelines keep independent choices',()=>{
+ const roster=fixture();roster.push({...roster[0],id:'a2',c:3});
+ const m=createMatch({roster,combat:{duration:18,timelineScope:'unit'}}),old=[...m.byId('a2').skillSlots];
+ m.apply({type:'abilities',faction:'blue',unitId:'a',skillSlots:[null,null,'focusedShot']});
+ assert.deepEqual(m.byId('a2').skillSlots,old);
+});

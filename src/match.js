@@ -70,6 +70,15 @@ const clone = (v) => structuredClone(v);
 export function createMatch({ seed = 0x415348, maxRounds = null, log = null, meta = {}, roster = UNITS, pools = null, champions = null, campaign = null, combat = null, abilities = combat ? true : ABILITY_SWITCH.enabled } = {}) {
   const abilitiesOn = Boolean(abilities);
   const combatConfig = combat ? timedCombatConfig(combat) : null;
+  const skillTimelines={blue:{},red:{}};
+  const timelineType=u=>u.variantId||u.unitId||u.cls;
+  function configureTimeline(u){
+    if(combatConfig?.skillMode!=='slots'||!abilitiesOn)return;
+    const key=timelineType(u),shared=combatConfig.timelineScope==='type';
+    const slots=shared?(skillTimelines[u.faction][key]??defaultSkillSlots(u)):defaultSkillSlots(u);
+    if(shared)skillTimelines[u.faction][key]=[...slots];
+    u.skillSlots=[...slots];u.selectedAbilities=slots.filter(Boolean);
+  }
   const CHAMPION = { ...DEFAULT_CHAMPION, ...(champions || {}) };
   const emit = (entry) => { if (log) log(entry); };
   const units = clone(roster).map((u) => {const next=prepare(u);next.energy=Math.min(next.maxEnergy,next.energy+1);return next;});
@@ -144,7 +153,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       stance: u.stance || unitCardFor(u.cls)?.defaultStance || (u.cls === 'archer' ? 'hold' : 'advance'),
       selectedAbilities: abilitiesOn ? ((u.selectedAbilities?.length||!combatConfig)?(u.selectedAbilities||[]):kitFor(u).map(a=>a.id)) : [],
     }));
-    if(combatConfig?.skillMode==='slots'&&abilitiesOn){u.skillSlots=defaultSkillSlots(u);u.selectedAbilities=u.skillSlots.filter(Boolean);}
+    configureTimeline(u);
     u.costPaid=u.costPaid??0;
     u.rarity=u.rarity??unitCardFor(u.variantId ?? u.cls)?.rarity??'common';
     u.state = 'field';
@@ -277,6 +286,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       const id=`${f}-r${++m.seq}-${res.reserve.unitId}`;
       const graded=createGradedRecruitUnit(res.reserve.unitId,id,f,res.reserve.stars);
       const reserve={...graded,...res.reserve,id,faction:f,state:'reserve',hp:graded.maxHp,maxHp:graded.maxHp};delete reserve.c;delete reserve.r;
+      configureTimeline(reserve);
       syncShards(reserve);
       side.cards = { ...res.state, reserves: [...res.state.reserves.slice(0, -1), reserve] };
       side.stats.recruited[reserve.unitId] = (side.stats.recruited[reserve.unitId] || 0) + 1;
@@ -304,7 +314,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       const carried = Object.fromEntries(Object.entries(reserve).filter(([k, v]) => v != null && !['id', 'fieldId', 'state', 'faction', 'c', 'r', 'unitId'].includes(k)));
       Object.assign(unit, carried);
       Object.assign(unit, initializeAbilityState(unit));
-      if(combatConfig?.skillMode==='slots'&&abilitiesOn){unit.skillSlots=defaultSkillSlots(unit);unit.selectedAbilities=unit.skillSlots.filter(Boolean);}
+      unit.faction=f;configureTimeline(unit);
       unit.id = id; unit.faction = f; unit.c = c; unit.r = r; unit.state = 'field'; unit.planningMoved = false;
       syncShards(unit);
       side.cards = { ...side.cards, reserves: side.cards.reserves.filter((u) => u.id !== reserveId) };
@@ -368,18 +378,25 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       if(!abilitiesOn) return fail('abilities-disabled');
       const ids=unitIds??[unitId];
       if(!Array.isArray(ids)||!ids.length||new Set(ids).size!==ids.length) return fail('invalid-group');
-      const targets=ids.map(byId);
+      let targets=ids.map(byId);
       for(const u of targets) {
         if(!u||u.hp<=0||u.faction!==f) return fail('unit-not-found');
         const slots=skillSlots??Array.from({length:3},(_,i)=>abilityIds?.[i]||null);
         const check=combatConfig?.skillMode==='slots'?validateSkillSlots(u,slots):validateAbilitySelection(u,abilityIds);
         if(!check.ok) return {...check,unitId:u.id};
       }
+      if(combatConfig?.skillMode==='slots'&&combatConfig.timelineScope==='type'){
+        const keys=new Set(targets.map(timelineType));
+        const slots=skillSlots??Array.from({length:3},(_,i)=>abilityIds?.[i]||null);
+        targets=[...m.units.filter(u=>u.faction===f&&keys.has(timelineType(u))),...sides[f].cards.reserves.filter(u=>keys.has(timelineType(u)))];
+        for(const u of targets){const check=validateSkillSlots(u,slots);if(!check.ok)return {...check,unitId:u.id};}
+        for(const key of keys)skillTimelines[f][key]=[...slots];
+      }
       for(const u of targets){
         if(combatConfig?.skillMode==='slots'){u.skillSlots=[...(skillSlots??Array.from({length:3},(_,i)=>abilityIds?.[i]||null))];u.selectedAbilities=u.skillSlots.filter(Boolean);}
         else u.selectedAbilities=[...new Set(abilityIds)];
       }
-      return {ok:true,unitIds:ids};
+      return {ok:true,unitIds:targets.map(u=>u.id)};
     },
     facing({faction:f,unitId,facing}) {
       const u=byId(unitId);
@@ -966,6 +983,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       championDown: side.heroRespawnAt !== null,
       unitState:field.map(u=>({id:u.id,c:u.c,r:u.r,hp:u.hp,energy:u.energy,facing:u.facing,stance:u.stance,objective:u.objective,
         selectedAbilities:u.selectedAbilities,...(combatConfig?.skillMode==='slots'?{skillSlots:u.skillSlots}:{}),cooldowns:u.cooldowns,energyGainNextTurn:u.energyGainNextTurn})),
+      ...(combatConfig?.timelineScope==='type'?{skillTimelines:clone(skillTimelines[f])}:{}),
       reserveState:clone(side.cards.reserves),
       shardDock:clone(side.shardDock), shards:clone(side.shards),
     };
