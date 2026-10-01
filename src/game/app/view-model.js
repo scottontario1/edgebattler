@@ -119,7 +119,9 @@ export function buildGameViewModel(match, ui = {}) {
 
   const campaign = state.campaign;
   const stage = campaign?.stages[campaign.stage];
-  const battle = state.phase === 'battle' || ui.playback === true;
+  const rallyReady = Boolean(stage?.checkpoint && units.some((unit) => unit.faction === 'blue'
+    && unit.hp > 0 && Math.abs(unit.c - stage.checkpoint[0]) + Math.abs(unit.r - stage.checkpoint[1]) <= 2));
+  const battle = state.phase === 'battle' || ui.playback;
   const over = state.over;
   const report = summaryReport(match, state);
   const outcome = state.winner === 'blue' ? 'victory' : state.winner === 'red' ? 'defeat' : 'draw';
@@ -177,8 +179,8 @@ export function buildGameViewModel(match, ui = {}) {
       wave: campaign.wave + 1, waves: stage?.waves.length ?? 1,
       enemies: units.filter((unit) => unit.faction === 'red' && unit.hp > 0).length,
       orders: campaign.phase === 'regroup'
-        ? [{ intent: 'campaignRally', label: campaign.rallied ? 'Rallied' : 'Rally', icon: 'rally', enabled: !campaign.rallied },
-          { intent: 'campaignContinue', label: 'Continue north', icon: 'continue', primary: true, enabled: true }]
+        ? [{ intent: 'campaignRally', label: campaign.rallied ? 'Rallied' : 'Rally', icon: 'rally', enabled: !campaign.rallied && rallyReady, reason: rallyReady ? undefined : 'Move an ally within 2 tiles of the checkpoint first' },
+          { intent: 'campaignContinue', label: 'Continue north', icon: 'continue', primary: true, enabled: rallyReady, reason: rallyReady ? undefined : 'Move an ally within 2 tiles of the checkpoint first' }]
         : [{ intent: 'campaignOrder', label: 'March north', icon: 'march', enabled: true }],
     };
   }
