@@ -78,6 +78,22 @@ export function buildGameViewModel(match, ui = {}) {
     group.maxHp += unit.maxHp ?? 0;
   }
 
+  for (const group of groups.values()) {
+    if (!group.selected) continue;
+    const unit = [...units, ...reserves].find((candidate) => typeOf(candidate) === group.type);
+    if (!unit) continue;
+    const weapon = content.weaponOf(unit);
+    group.stats = [
+      ['STR', unit.str], ['MAG', unit.mag], ['SKL', unit.skl], ['SPD', unit.spd],
+      ['DEF', unit.def], ['RES', unit.res], ['MOV', unit.mov],
+    ].map(([label, value]) => ({ label, value: value ?? 0 }));
+    group.weapon = { name: unit.weapon ?? 'Unarmed',
+      detail: `Might ${weapon.mt} · Hit ${weapon.hit}% · Range ${weapon.rng.join('-')}` };
+    group.skillTimeline = { enabled: false, status: 'Skills archived', slots: [
+      { time: 3 }, { time: 9 }, { time: 15 },
+    ] };
+  }
+
   const hand = (cards.hand ?? []).map((card) => {
     const unit = Boolean(card.unitId);
     const shard = Boolean(card.shardId);
@@ -204,6 +220,30 @@ export function buildGameViewModel(match, ui = {}) {
         ] }],
       };
     }
+  }
+  const selectedUnit = units.find((unit) => unit.id === ui.selection?.unitId);
+  if (selectedUnit) {
+    const weapon = content.weaponOf(selectedUnit);
+    const combat = match.unitStats?.(selectedUnit.id) ?? {};
+    const className = displayName(selectedUnit.cls ?? selectedUnit.classId);
+    vm.inspect = {
+      unitId: selectedUnit.id, portrait: portrait(selectedUnit, ui.manifests),
+      name: selectedUnit.name ?? className, side: selectedUnit.faction,
+      title: `${className} · ${content.moveTypeOf(selectedUnit)} · Lv ${selectedUnit.level ?? 1}`,
+      hp: Math.max(0, selectedUnit.hp ?? 0), maxHp: selectedUnit.maxHp ?? 1, stars: selectedUnit.stars ?? 0,
+      stats: [['STR', selectedUnit.str], ['MAG', selectedUnit.mag], ['SKL', selectedUnit.skl],
+        ['SPD', selectedUnit.spd], ['DEF', selectedUnit.def], ['RES', selectedUnit.res], ['MOV', selectedUnit.mov]]
+        .map(([label, value]) => ({ label, value: value ?? 0 })),
+      weapon: { name: selectedUnit.weapon ?? 'Unarmed',
+        detail: `Might ${weapon.mt} · Hit ${weapon.hit}% · Range ${weapon.rng.join('-')}` },
+      rows: [
+        { label: 'Position', chips: [{ text: `Column ${selectedUnit.c} · Row ${selectedUnit.r}`, tone: 'info' }] },
+        { label: 'Combat', chips: [{ text: `Dealt ${combat.damageDealt ?? 0}`, tone: 'good' },
+          { text: `Taken ${combat.damageTaken ?? 0}`, tone: 'bad' },
+          { text: `${combat.hits ?? 0}/${combat.attacks ?? 0} hits`, tone: 'info' }] },
+        { label: 'Stance', chips: [{ text: selectedUnit.stance ?? 'advance', tone: 'gold' }] },
+      ],
+    };
   }
   if (ui.showStats) vm.report = report;
   if (end) vm.end = end;
