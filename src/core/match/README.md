@@ -5,6 +5,8 @@ createMatch({ content, board, roster, seed, maxRounds, combat, champions, pools,
 - createSkirmish({ blue, red, seed, maxRounds, combat, meta, log })
 - createCampaign({ level, faction, seed, combat, meta, log, enemyFactions, encounters }) (also exported as createCampaignMatch)
 
+Current campaign/skirmish factories remove archived spell and skill entries from the normal recruitment draw pool; they remain in the content catalogue. The Shards economy offers shards through its own offer path.
+
 The returned object is { context, getState, apply, resolveRound, summary, stats, unitStats, deploymentTiles, canDeploy, alive, byId, objectsNear, addObject, consumeObject }. getState() returns a detached snapshot with round, phase, over, winner, reason, units, territory, sides, objects, meta, rewards, and optional campaign. context contains immutable content and board plus normalized combat settings. Queries return copies; the match retains ownership of every mutable record.
 
 Actions are plain objects and include a faction field:

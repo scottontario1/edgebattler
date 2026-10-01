@@ -11,6 +11,12 @@ function requireFaction(content, id) {
   return faction;
 }
 
+// Spells and skill cards remain in the catalogue for a later reactivation pass, but the
+// current Shards economy drafts recruitable units only. Preserve repeated ids as pool weights.
+function playableUnitPool(content, cultureId) {
+  return content.poolFor(cultureId).filter((cardId) => Boolean(content.unitCardFor(cardId)));
+}
+
 /** Create a seeded two-faction match on River Ford. Same-faction culture mirrors remain unsupported. */
 export function createSkirmish({ blue = 'classic', red = 'classic', seed = 0x415348,
   maxRounds = 30, combat, meta = {}, log = null } = {}) {
@@ -19,8 +25,8 @@ export function createSkirmish({ blue = 'classic', red = 'classic', seed = 0x415
   if (blue === red && blue !== 'classic') throw new Error('both sides cannot use the same faction yet (mirror matches need a second champion)');
   const roster = [...content.armyRoster(blue, 'blue'), ...content.armyRoster(red, 'red')];
   const pools = {};
-  if (blueData.culture) pools.blue = content.poolFor(blueData.culture);
-  if (redData.culture) pools.red = content.poolFor(redData.culture);
+  if (blueData.culture) pools.blue = playableUnitPool(content, blueData.culture);
+  if (redData.culture) pools.red = playableUnitPool(content, redData.culture);
   return createMatch({
     content, board: createBoard(RIVER_FORD), roster, seed, maxRounds, combat,
     champions: { blue: content.championFor(blue, 'blue'), red: content.championFor(red, 'red') },
@@ -66,7 +72,7 @@ export function createCampaign({ level = 'road', faction = 'classic', seed = 0x4
     content: enemyContent, board: createBoard(CAMPAIGN_MAPS[mission.number - 1]), roster,
     seed, maxRounds: setup.maxRounds, combat,
     champions: { blue: enemyContent.championFor(faction, 'blue'), red: null },
-    pools: player.culture ? { blue: enemyContent.poolFor(player.culture) } : {},
+    pools: player.culture ? { blue: playableUnitPool(enemyContent, player.culture) } : {},
     campaign: { id: mission.id, faction, enemyFactions: [...foes], exit: [...setup.exit], stages },
     meta: { ...meta, source: 'campaign', campaignLevel: mission.id, playerFaction: faction }, log,
   });
