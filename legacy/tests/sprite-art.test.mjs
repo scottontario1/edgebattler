@@ -7,11 +7,11 @@ import { CAMPAIGN_LEVELS, createCampaignMatch } from '../src/campaign.js';
 import { FACTIONS } from '../src/setup.js';
 test('character identity overrides shared combat class and generated files exist', () => {
  assert.equal(Object.keys(FACTION_ART).length,24);
- assert.deepEqual(FACTION_ART,JSON.parse(readFileSync(new URL('../public/sprites/factions-manifest.json',import.meta.url))).units);
+ assert.deepEqual(FACTION_ART,JSON.parse(readFileSync(new URL('../../public/sprites/factions-manifest.json',import.meta.url))).units);
  for(const [key,info] of Object.entries(FACTION_ART)) {
  const u={id:'recruit-42',variantId:key,cls:'pikeman',faction:'red',name:key};
  assert.equal(spriteArt(u).key,key);
- for(const path of [info.file,info.portrait]) assert.ok(existsSync(new URL('../public/'+path,import.meta.url)));
+ for(const path of [info.file,info.portrait]) assert.ok(existsSync(new URL('../../public/'+path,import.meta.url)));
  assert.ok(portraitSVG(u).includes(`data-sprite-key="${key}"`));
  assert.equal(spriteArt(u).files.blue,spriteArt(u).files.red);
  }

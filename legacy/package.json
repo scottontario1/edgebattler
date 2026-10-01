@@ -1,0 +1,22 @@
+{
+  "name": "fantasy-tactics-demo",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "sim": "node tools/sim/run.mjs",
+    "sim:report": "node tools/sim/report.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "exp:cases": "node experiments/combat/run.mjs --suite all --seeds 400 --replay 10",
+    "exp:maps": "node experiments/maps/run-maps.mjs --games 50"
+  },
+  "dependencies": {
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}

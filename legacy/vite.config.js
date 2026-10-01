@@ -1,14 +1,17 @@
 import { defineConfig } from 'vite';
 import { execSync } from 'node:child_process';
 import { appendFileSync, mkdirSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const here = dirname(fileURLToPath(import.meta.url));
 
 const commit = (() => { try { return execSync('git rev-parse --short HEAD').toString().trim(); } catch { return null; } })();
 
 // Dev only: the browser game POSTs its JSON Lines game log (src/log.js playLog) here, and each game
 // is appended to logs/play/<file>.jsonl. Not part of production builds.
 function gameLogPlugin() {
-  const dir = resolve('logs/play');
+  const dir = resolve(here, 'logs/play');
   return {
     name: 'game-log',
     apply: 'serve',
@@ -34,7 +37,11 @@ function gameLogPlugin() {
   };
 }
 
+// The legacy Three.js game lives in legacy/; art stays shared in the repository's public/.
 export default defineConfig({
+  root: here,
+  publicDir: resolve(here, '../public'),
+  server: { port: 5174 },
   define: { __COMMIT__: JSON.stringify(commit) },
   plugins: [gameLogPlugin()],
 });
