@@ -24,3 +24,4 @@ export { createSkirmish, createCampaign, createCampaignMatch } from './setup/mat
 
 // Schema-4 action logs and callback-based replay stay independent of the renderer.
 export { createLogEntry, createLogCollector, toJSONL, fromJSONL, normalizeLogValue, firstDifference, replayLog, replayJSONL } from './log/index.js';
+export { createMatchReplayAdapter, createFromSchema4Header, getReplayParityGaps, replayMatchLog } from './log/adapter.js';
