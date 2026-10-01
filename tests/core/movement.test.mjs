@@ -54,7 +54,8 @@ function buildScenario(random, board, content) {
   const objects = [];
   for (let i = 0; i < random.int(4); i += 1) {
     const [c, r] = freeTile();
-    objects.push({ id: `o${i}`, kind: 'object', objectKind: 'barricade', faction: 'blue', c, r, hp: 10 });
+    const blocks = random.next() < 0.6;
+    objects.push({ id: `o${i}`, kind: 'object', objectKind: blocks ? 'barricade' : 'corpse', blocks, faction: 'blue', c, r, hp: 10 });
   }
   return { units, objects };
 }
@@ -83,7 +84,8 @@ test('computeRange equals legacy on every map, movement type and occupancy', () 
         for (let round = 0; round < 6; round += 1) {
           const { units, objects } = buildScenario(random, board, content);
           const occupancy = occupancyFromRecords([...units, ...objects]);
-          const legacyList = [...units, ...objects].map((data) => ({ data }));
+          // The legacy match board only ever contained the blocking objects.
+          const legacyList = [...units, ...objects.filter((o) => o.blocks)].map((data) => ({ data }));
           const legacyBoard = {
             list: legacyList,
             unitAt: (c, r) => legacyList.find((e) => e.data.hp > 0 && e.data.c === c && e.data.r === r),
@@ -130,4 +132,28 @@ test('computeRange: terrain rules, blocking and paths', () => {
   assert.ok(!has(blocked.move, 0, 1), 'enemies block movement');
   assert.deepEqual(blocked.targets.get('f'), [0, 0], 'an adjacent foe is struck from the unit\'s own tile');
   assert.throws(() => computeRange(pike, board, noOne), /needs options.content/);
+});
+
+test('occupancy: only living blocking objects stop movement; corpses are passable and never targets', () => {
+  const content = withFactions([], (c) => c);
+  const board = createBoard({ id: 't', layout: ['GGGGG'] });
+  const pike = content.createRecruitUnit('pikeman', 'p', 'blue', 0, 0);
+  const object = (id, objectKind, c, blocks, hp = 1) => ({ id, kind: 'object', objectKind, blocks, faction: 'red', c, r: 0, hp });
+  const reach = (records) => computeRange(pike, board, occupancyFromRecords([pike, ...records]), { content });
+  assert.equal(reach([object('c', 'corpse', 1, false)]).move.length, 5, 'a corpse does not block');
+  assert.equal(reach([object('b', 'barricade', 1, true)]).move.length, 1, 'an enemy barricade blocks');
+  assert.equal(reach([object('b', 'barricade', 1, true, 0)]).move.length, 5, 'a destroyed barricade does not');
+  assert.equal(reach([object('b', 'barricade', 1, true)]).targets.size, 0, 'objects are never forecast targets');
+  const ownBarricade = { ...object('b', 'barricade', 1, true), faction: 'blue' };
+  assert.equal(reach([ownBarricade]).move.length, 5, 'allies transit a friendly barricade');
+});
+
+test('computeRange rejects a movement type without costs and units placed outside the board', () => {
+  const content = withFactions([], (c) => c);
+  const board = createBoard({ id: 't', layout: ['GGG'] });
+  const stray = content.createRecruitUnit('pikeman', 'p', 'blue', 9, 9);
+  assert.throws(() => computeRange(stray, board, occupancyFromRecords([stray]), { content }), /starts outside board/);
+  const odd = { ...content.createRecruitUnit('pikeman', 'q', 'blue', 0, 0) };
+  const brokenContent = { ...content, moveTypeOf: () => 'hovercraft' };
+  assert.throws(() => computeRange(odd, board, occupancyFromRecords([odd]), { content: brokenContent }), /No movement costs/);
 });
