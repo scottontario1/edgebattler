@@ -1,0 +1,42 @@
+.ar-panel { display: flex; flex-direction: column; max-height: 100%; padding: 8px; width: 188px; }
+.ar-head { display: flex; align-items: center; justify-content: space-between; margin: 0 2px 6px; }
+.ar-list { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; min-height: 0; }
+.ar-empty { margin: 6px 4px; font-size: 12px; color: var(--muted); line-height: 1.4; }
+.ar-group { border: 1px solid transparent; border-radius: var(--radius); background: rgba(255, 255, 255, 0.03); padding: 3px; }
+.ar-group.selected { border-color: var(--gold); background: rgba(201, 162, 74, 0.08); }
+.ar-select { display: flex; align-items: center; gap: 8px; width: 100%; padding: 0; text-align: left; background: none; border: 0; color: inherit; cursor: pointer; border-radius: 3px; }
+.ar-select:focus-visible { outline: 2px solid var(--cyan); }
+.ar-select .hud-face { width: 40px; height: 40px; }
+.ar-label { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ar-label b { font: 700 13px/1.15 var(--font-ui); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ar-label small { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
+.ar-select { position: relative; }
+.ar-details { margin: 6px 2px 2px; display: grid; gap: 6px; }
+.ar-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; }
+.ar-stats div { display: flex; flex-direction: column; align-items: center; padding: 3px 0; background: var(--panel-sunk); border-radius: 3px; }
+.ar-stats span { font: 600 10px/1.2 var(--font-ui); color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+.ar-stats b { font-size: 13px; }
+.ar-weapon { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; font-size: 11px; color: var(--muted); }
+.ar-weapon .hud-ico { color: var(--gold); align-self: center; }
+.ar-weapon b { color: var(--ivory); }
+.ar-shards { display: grid; gap: 4px; }
+.ar-shard-row { display: flex; flex-wrap: wrap; gap: 4px; }
+.ar-shard { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px 2px 4px; min-height: 22px; font: 600 11px/1 var(--font-ui); color: var(--ivory); background: rgba(255, 255, 255, 0.06); border: 1px solid color-mix(in srgb, var(--gem) 70%, transparent); border-radius: 999px; cursor: pointer; }
+.ar-shard:hover:not(:disabled) { background: rgba(255, 90, 74, 0.18); }
+.ar-shard i { font-style: normal; color: var(--muted); }
+.ar-shard.empty { width: 24px; padding: 0; border: 1px dashed var(--line-soft); background: none; cursor: default; }
+.ar-combine { width: 100%; margin-top: 5px; gap: 6px; border-color: var(--gold); color: var(--gold-bright); }
+.ar-combine .hud-ico { color: var(--gold-bright); }
+.ar-panel.locked .ar-group { opacity: 0.6; }
+.ar-toggle { display: none; gap: 6px; margin-bottom: var(--gap); }
+.ar-toggle b { font-size: 12px; color: var(--gold-bright); }
+
+/* Narrow screens: the rail is a drawer behind a toggle. */
+@media (max-width: 560px), (max-aspect-ratio: 1/1) and (max-width: 820px), (max-height: 500px) and (orientation: landscape) {
+  .ar-panel { width: min(230px, calc(100vw - 2 * var(--edge))); }
+}
+
+@media (max-width: 560px), (max-aspect-ratio: 1/1) and (max-width: 820px), (max-height: 500px) and (orientation: landscape) {
+  .ar-toggle { display: inline-flex; }
+  #hud:not(.army-open) .ar-panel { display: none; }
+}

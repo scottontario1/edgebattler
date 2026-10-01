@@ -1,0 +1,57 @@
+#hud .slot-top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--gap); }
+.tb-objective { padding: 7px 12px 8px; max-width: 360px; min-width: 0; }
+.tb-objective .hud-eyebrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.tb-menu { background: none; border: 0; padding: 2px; color: var(--muted); cursor: pointer; border-radius: 3px; }
+.tb-menu:hover { color: var(--gold-bright); }
+.tb-goal { display: flex; align-items: center; gap: 8px; margin-top: 4px; font: 700 14px/1.2 var(--font-display); }
+.tb-gem { flex: none; width: 8px; height: 8px; transform: rotate(45deg); background: var(--gold-bright); box-shadow: 0 0 6px rgba(242, 207, 107, 0.7); }
+
+.tb-turn { display: flex; align-items: center; gap: 10px; padding: 7px 10px; margin-left: auto; }
+.tb-round { display: flex; align-items: baseline; gap: 6px; font-family: var(--font-display); color: var(--muted); }
+.tb-round small { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+.tb-round b { font-size: 20px; color: var(--ivory); }
+.tb-round b small { font-size: 12px; color: var(--muted); letter-spacing: 0; }
+.tb-phase { padding: 3px 10px; border-radius: 999px; font: 700 11px/1.5 var(--font-ui); letter-spacing: 0.08em; text-transform: uppercase; border: 1px solid; }
+.tb-phase.blue { color: #bcd5ff; border-color: rgba(79, 141, 255, 0.7); background: rgba(79, 141, 255, 0.14); }
+.tb-phase.red { color: #ffc4bc; border-color: rgba(255, 90, 74, 0.7); background: rgba(255, 90, 74, 0.14); }
+.tb-phase.gold { color: var(--gold-bright); border-color: var(--gold); background: rgba(242, 207, 107, 0.12); }
+.tb-phase.muted { color: var(--muted); border-color: var(--line-soft); }
+
+.tb-ledger { display: flex; align-items: stretch; padding: 4px 4px; }
+.tb-cell { display: flex; flex-direction: column; justify-content: center; gap: 1px; padding: 2px 11px; border-left: 1px solid var(--line-soft); }
+.tb-cell:first-child { border-left: 0; }
+.tb-label { font: 600 10px/1.2 var(--font-ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.tb-value { display: flex; align-items: center; gap: 5px; font-family: var(--font-ui); }
+.tb-value b { font-size: 16px; line-height: 1; }
+.tb-value small { font-size: 12px; color: var(--muted); margin-left: -2px; }
+.tb-value em { font-style: normal; font-size: 11px; color: var(--green); font-weight: 600; }
+.tb-meter { width: 34px; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.tb-meter i { display: block; height: 100%; background: var(--hp-blue); }
+.tb-pop.warn .tb-meter i { background: var(--warm); }
+.tb-pop.warn b, .tb-bench.warn b { color: var(--warm); }
+.tb-pop.full .tb-meter i { background: var(--red); }
+.tb-pop.full b { color: var(--red); }
+.tb-cycle.spent b { color: var(--muted); }
+.tb-cycle .hud-ico { color: var(--cyan); }
+
+/* Portrait phone: the ledger drops under the objective as a full-width strip. */
+@media (max-width: 560px), (max-aspect-ratio: 1/1) and (max-width: 820px) {
+  #hud .slot-top { flex-wrap: wrap; }
+  .tb-objective { flex: 1 1 0; max-width: none; padding: 6px 10px; }
+  .tb-goal { font-size: 13px; }
+  .tb-turn { padding: 6px 8px; gap: 6px; flex-direction: column; align-items: stretch; text-align: center; }
+  .tb-round { justify-content: center; }
+  .tb-ledger { flex: 1 0 100%; justify-content: space-between; }
+  .tb-cell { padding: 2px 8px; flex: 1; align-items: center; }
+  .tb-meter { display: none; }
+}
+/* Short landscape: one row, small type. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .tb-objective { padding: 4px 9px; max-width: 220px; }
+  .tb-goal { font-size: 12px; margin-top: 1px; }
+  .tb-turn { padding: 4px 8px; }
+  .tb-round b { font-size: 16px; }
+  .tb-cell { padding: 0 8px; }
+  .tb-value b { font-size: 14px; }
+  .tb-meter { display: none; }
+}

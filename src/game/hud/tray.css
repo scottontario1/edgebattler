@@ -1,0 +1,27 @@
+.tr-panel { padding: 8px 12px 10px; max-height: calc(100dvh - 120px); display: flex; flex-direction: column; }
+.tr-head { display: flex; align-items: center; gap: 12px; min-height: 28px; }
+.tr-prompt { flex: 1; min-width: 0; font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tr-prompt.battle { color: #ffc4bc; }
+.tr-toggle .hud-ico { transition: transform 0.15s; }
+#hud.tray-collapsed .tr-toggle .hud-ico { transform: rotate(180deg); }
+.tr-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; margin-top: 6px; overflow-y: auto; min-height: 0; }
+.tr-panel.locked .tr-body { opacity: 0.55; pointer-events: none; }
+#hud.tray-collapsed .tr-body { display: none; }
+#hud.tray-collapsed .tr-panel { padding-bottom: 6px; }
+
+@media (max-width: 560px), (max-aspect-ratio: 1/1) and (max-width: 820px) {
+  .tr-panel { padding: 6px 8px 8px; max-height: 58dvh; }
+  .tr-head { gap: 8px; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .tr-panel { max-height: 62dvh; padding: 4px 10px 6px; }
+  .tr-body { gap: 4px; margin-top: 2px; }
+}
+
+.tr-lower { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+@media (max-width: 560px), (max-aspect-ratio: 1/1) and (max-width: 820px) {
+  .tr-lower { grid-template-columns: 1fr; gap: 6px; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .tr-lower { gap: 8px; }
+}

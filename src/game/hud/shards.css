@@ -1,0 +1,28 @@
+.sh-dock { display: grid; gap: 4px; }
+.sh-dock header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-height: 18px; }
+.sh-count { font: 600 11px/1 var(--font-ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); white-space: nowrap; }
+.sh-count b { color: var(--ivory); letter-spacing: 0; }
+.sh-slots { display: flex; gap: 4px; flex-wrap: wrap; }
+.sh-slot {
+  position: relative; width: 32px; height: 32px; display: grid; place-items: center; padding: 0;
+  border-radius: var(--radius); border: 1px solid var(--line-soft); background: var(--panel-sunk);
+}
+.sh-slot.empty { border-style: dashed; opacity: 0.55; }
+.sh-slot.filled { cursor: pointer; border-color: color-mix(in srgb, var(--gem) 65%, #000); background: color-mix(in srgb, var(--gem) 16%, var(--panel-sunk)); }
+.sh-slot.filled:hover { border-color: var(--gold-bright); }
+.sh-slot.selected { border-color: var(--gold-bright); box-shadow: 0 0 0 1px var(--gold-bright), 0 0 10px rgba(242, 207, 107, 0.4); }
+.sh-slot:focus-visible { outline: 2px solid var(--cyan); }
+.sh-tier { position: absolute; right: 1px; bottom: 0; font: 700 9px/1 var(--font-display); color: #fff; text-shadow: 0 1px 2px #000, 0 0 3px #000; font-style: normal; }
+.sh-combos { display: flex; gap: 4px; flex-wrap: wrap; }
+.sh-combine { border-color: var(--gold); color: var(--gold-bright); min-height: 22px; padding: 0 8px; }
+.sh-combos { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+.sh-apply-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; margin-top: 6px; padding: 6px 8px; font-size: 12px; background: rgba(242, 207, 107, 0.07); border: 1px solid rgba(242, 207, 107, 0.35); border-radius: var(--radius); }
+.sh-apply-label { margin-left: auto; font: 600 10px/1 var(--font-ui); letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); }
+.sh-apply-row { display: flex; gap: 4px; flex-wrap: wrap; }
+.sh-apply span { color: var(--muted); font-weight: 500; }
+@media (max-width: 560px), (max-aspect-ratio: 1/1) and (max-width: 820px) {
+  .sh-slot { width: 26px; height: 30px; }
+  .sh-slot .hud-gem { width: 20px; height: 20px; }
+  .sh-slots { gap: 3px; }
+  .sh-apply-label { margin-left: 0; }
+}

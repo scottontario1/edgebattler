@@ -1,0 +1,33 @@
+/* Gallery-only styling: a dark placeholder standing in for the Phaser battlefield. */
+html, body { margin: 0; height: 100%; background: #0b1222; font-family: 'Inter', system-ui, sans-serif; }
+.gallery-battlefield {
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 55%, rgba(60, 90, 70, 0.55), transparent 70%),
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px) 0 0 / 96px 72px,
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px) 0 0 / 96px 72px,
+    #17261f;
+}
+#intent-log { position: fixed; left: 8px; bottom: 8px; z-index: 99; margin: 0; padding: 6px 8px; font: 11px/1.4 ui-monospace, monospace; color: #bdeaff; background: rgba(0, 0, 0, 0.7); border-radius: 4px; pointer-events: none; }
+
+/* Component sheet */
+body.hud-gallery { height: auto; overflow: auto; color: #f3ead6; background: #0d1426; }
+.gallery-sheet { padding: 20px; max-width: 1500px; margin: 0 auto; }
+.gallery-sheet h1 { font: 900 24px 'Cinzel', serif; color: #f2cf6b; margin: 0 0 16px; }
+.gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; align-items: start; }
+.gallery-cell { min-width: 0; padding: 10px; background: #111c33; border: 1px dashed rgba(154, 166, 189, 0.25); border-radius: 6px; }
+.gallery-cell h3 { margin: 0 0 8px; font: 600 11px 'Inter', sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: #9aa6bd; }
+.gallery-cell.wide { grid-column: 1 / -1; }
+.gallery-cell.modal, .gallery-cell.menu { grid-column: span 2; }
+.gallery-body { position: relative; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; }
+.gallery-body > * { max-width: 100%; }
+.gallery-body .tb-turn { margin-left: 0; }
+.gallery-body .hud-backdrop { display: none; }
+.gallery-body .hud-modal { max-height: none; }
+.gallery-body .strip { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; max-width: 100%; }
+.gallery-body .mn-screen { position: static; padding: 0; background: none; overflow: visible; }
+.gallery-body .mn-card { max-height: none; }
+.gallery-body .um-panel { position: relative; }
+.gallery-cell.col .gallery-body { max-height: 520px; }
+.gallery-body .hd-detail, .gallery-body .sh-dock, .gallery-body .tr-panel { width: 100%; }
+@media (max-width: 760px) { .gallery-grid { grid-template-columns: 1fr; } .gallery-cell.modal, .gallery-cell.menu { grid-column: auto; } .gallery-sheet { padding: 10px; } }

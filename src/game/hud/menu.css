@@ -1,0 +1,49 @@
+.mn-screen { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 16px; overflow: auto; pointer-events: auto;
+  background: radial-gradient(ellipse at 50% 15%, rgba(30, 48, 86, 0.94), rgba(8, 12, 22, 0.985)); }
+.mn-card { position: relative; width: min(940px, 100%); max-height: calc(100dvh - 32px); overflow: auto; padding: 22px 26px 24px; background: var(--panel-solid); }
+.mn-card header { margin-bottom: 10px; }
+.mn-card h1 { margin: 0; font: 900 clamp(24px, 4vw, 34px)/1.1 var(--font-display); color: var(--gold-bright); letter-spacing: 0.04em; }
+.mn-card header p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+.mn-card h2 { margin: 16px 0 8px; font: 700 11px/1.2 var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); }
+.mn-error { margin: 8px 0; padding: 7px 10px; font-size: 12px; color: #ffc4bc; background: rgba(255, 90, 74, 0.12); border: 1px solid rgba(255, 90, 74, 0.5); border-radius: var(--radius); }
+
+.mn-fgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+.mn-fcard { position: relative; display: block; cursor: pointer; }
+.mn-fcard input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.mn-fbody { display: flex; gap: 10px; height: 100%; padding: 10px 11px; background: var(--panel-raised); border: 1px solid var(--line-soft); border-top: 3px solid var(--fc); border-radius: var(--radius); }
+.mn-crest { flex: none; margin-top: 2px; }
+.mn-ftext { display: grid; gap: 3px; align-content: start; min-width: 0; }
+.mn-ftext b { font: 700 13px/1.2 var(--font-display); }
+.mn-ftext em { font-style: normal; font-size: 11px; line-height: 1.35; color: var(--muted); }
+.mn-ftext small { font-size: 11px; line-height: 1.35; color: color-mix(in srgb, var(--fa) 50%, #f3ead6); }
+.mn-fcard input:checked + .mn-fbody { border-color: var(--gold-bright); box-shadow: 0 0 0 1px var(--gold-bright), 0 0 14px rgba(242, 207, 107, 0.22); background: color-mix(in srgb, var(--fc) 14%, var(--panel-raised)); }
+.mn-fcard input:focus-visible + .mn-fbody { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.mn-fcard input:disabled + .mn-fbody { opacity: 0.38; cursor: not-allowed; }
+
+.mn-tabs { display: flex; gap: 4px; margin-top: 18px; border-bottom: 1px solid var(--panel-line); }
+.mn-tabs button { min-height: var(--touch); padding: 0 18px; background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; color: var(--muted); font: 700 13px var(--font-ui); cursor: pointer; }
+.mn-tabs button[aria-pressed='true'] { color: var(--gold-bright); border-bottom-color: var(--gold-bright); }
+.mn-tabs button:focus-visible { outline: 2px solid var(--cyan); outline-offset: -2px; }
+.mn-pane { display: none; }
+[data-tab='campaign'] > .mn-card .mn-pane[data-pane='campaign'], [data-tab='skirmish'] > .mn-card .mn-pane[data-pane='skirmish'] { display: block; }
+
+.mn-note { margin: 12px 0 4px; font-size: 12px; color: var(--muted); line-height: 1.5; max-width: 70ch; }
+.mn-mission { display: flex; align-items: center; gap: 14px; padding: 10px 0; border-top: 1px solid var(--line-soft); }
+.mn-mission:first-of-type { margin-top: 6px; }
+.mn-num { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--gold); color: var(--gold-bright); font: 700 14px var(--font-display); }
+.mn-mission > div { flex: 1; min-width: 0; }
+.mn-mission b { font: 700 14px/1.3 var(--font-display); }
+.mn-mission p { margin: 2px 0 0; font-size: 12px; color: var(--muted); line-height: 1.4; }
+.mn-mission .hud-btn { min-width: 76px; }
+.mn-opts { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 14px; }
+.mn-opts label { display: grid; gap: 4px; font-size: 11px; color: var(--muted); }
+.mn-opts select, .mn-opts input { min-height: var(--touch); min-width: 190px; padding: 0 9px; background: var(--panel-sunk); color: var(--ivory); border: 1px solid var(--panel-line); border-radius: var(--radius); font: 500 13px var(--font-ui); }
+.mn-go { display: flex; justify-content: flex-end; margin-top: 16px; }
+.mn-go .hud-btn { min-width: 160px; min-height: 40px; }
+@media (max-width: 560px) {
+  .mn-screen { padding: 8px; align-items: start; } .mn-card { padding: 14px 14px 18px; max-height: none; }
+  .mn-fgrid { grid-template-columns: 1fr 1fr; gap: 6px; } .mn-fbody { padding: 8px; gap: 6px; } .mn-crest { width: 20px; height: 24px; }
+  .mn-ftext em { display: none; }
+  .mn-opts label, .mn-opts select, .mn-opts input { width: 100%; }
+}
+@media (max-height: 500px) and (orientation: landscape) { .mn-card { padding: 12px 16px 14px; } .mn-ftext em { display: none; } .mn-card h2 { margin-top: 10px; } }
