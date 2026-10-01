@@ -7,13 +7,10 @@ export { forecast, forecastAttackFor } from './rules/forecast.js';
 export { STATUS_EFFECT_KEYS, evaluatePassives, hasRevenant, objectsNear, passiveHolds } from './rules/passives.js';
 export { MAPS, RIVER_FORD, CAMPAIGN_MAPS } from './content/maps/index.js';
 export { TERRAIN } from './content/terrain.js';
-<<<<<<< HEAD
 export * from './economy/index.js';
-=======
 
 // Portable battle resolution and fixed-step simulation.
 export { BATTLE_TUNING, resolveBattleRound } from './battle/round.js';
 export { FLANK_DAMAGE, resolveStrikes } from './battle/strikes.js';
 export { resolveMovement, selectAttackTarget, legalMovesFor } from './battle/targeting.js';
 export { TIMED_COMBAT_DEFAULTS, attackInterval, timedCombatConfig, resolveTimedBattle } from './battle/timed.js';
->>>>>>> 7bfd679 (Port deterministic battle and timed combat core)
