@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../../EXPERIMENT_SUMMARY.md).
+
 ### Level 4: The Reaving Line (the whole clan v a Braced line)
 
 _What does every clan skill and spell together change?_

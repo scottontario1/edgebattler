@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../../EXPERIMENT_SUMMARY.md).
+
 ### D. The Wall (River Ford): a Sapper's barricade at the bridge exit
 
 _What does preparation change: a Sapper raising a barricade on the bridge exit under Crossbow fire?_

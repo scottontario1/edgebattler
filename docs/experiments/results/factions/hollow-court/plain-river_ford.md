@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../../EXPERIMENT_SUMMARY.md).
+
 # Hollow Court simulation: plain-river_ford
 
 Map river_ford, max 30 rounds, rarity gate uncommon 3 / rare 6, village deployment radius 1, 200 seeds per matchup (200 x 2 sides; mirrors 400 seeds once). Win rate is for the first army of the matchup. 100s.

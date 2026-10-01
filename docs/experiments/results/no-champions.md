@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../EXPERIMENT_SUMMARY.md).
+
 | map | pairing | champions | games | draws (95%) | keep captures | army destroyed | mean rounds |
 |---|---|---|---|---|---|---|---|
 | river_ford | heuristic v heuristic | yes | 50 | 47 (94%, 84–98%) | 3 | 0 | 28.9 |

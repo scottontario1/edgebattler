@@ -1,0 +1,17 @@
+> Historical snapshot archived 2026-10-01. Earlier revisions/proposals, not current main. [Current docs index](../../../../README.md).
+
+# Type timeline experiment — 2026-09-30
+
+Command: `node tools/experiment-skill-timelines.mjs 10`.
+
+Scope: three authored campaigns × five factions × seeds1–10 × three player timeline policies × two pacing profiles =900 games. Each game replays through the authoritative match pipeline. Player policies are default order, reversed order, or all-empty slots; every copy of a type shares its order. Enemies retain their default timelines. Both teams' skill events are counted, so empty-player runs still report enemy activations. No recruitment is performed; players use normal march/regroup/rally actions. The steady profile retains current defaults; the alternative accelerates attacks up to30% and changes damage scaling from0.35 to0.30. Those two changes are coupled, so it does not isolate acceleration.
+
+All900 games finish with a player win; all900 replay exactly. No contested phase has zero basic strikes. This rules out a total no-attack stall in these scripted fixtures, not individual pathing stalls or skirmish keep balance.
+
+For steady combat, default/reversed/empty player timelines average6.41/6.23/6.39 rounds and98.79/99.17/94.39 surviving player HP. Default order produces2565 successful skills and4489 skips across both teams; its biggest skip categories are cooldown1645 and stance-trigger-unmet1190. Default slot activations are1828 at3s,552 at9s and185 at15s. Reversing shifts activations to380/531/475, demonstrating real scheduling effects; many encounters end before later slots can attempt. Unattempted slots are not counted as skips.
+
+The accelerating profile averages127.62 attacks per default-policy mission versus113.88 steady, but takes58.62 simulated combat seconds versus56.77. Average surviving HP is97.61 versus98.79. With the coupled lower damage scale, more attacks do not imply faster completion. No alternative profile is adopted.
+
+The main finding is limited difficulty discrimination: empty player skill timelines win all150 steady games too. Default skills preserve about4.4 more HP per mission on average, but these encounters do not require good skill ordering. Before asserting balance, add pressure/chokepoint fixtures and human playtests; collect per-side activation/skip outcomes, individual stuck time and keep capture rates. Make cooldown and trigger failures visible to players. Existing default timeline choices can be poor for stance-sensitive units; frequent skips warrant reviewing those defaults rather than treating every skip as an engine failure.
+
+Raw data: SKILL_TIMELINE_RESULTS.json. `firstHitSeconds` and `firstDeathSeconds` are timestamps within the first phase containing the respective event, not cumulative mission time. Damage is logged strike damage across both sides, including overkill; it excludes unattributed spells. `combatSeconds` sums simulated phase durations, including travel/regroup phases, and excludes planning time. Results establish reproducibility and authored campaign flow, not human fun, broad faction parity, or symmetric skirmish balance.

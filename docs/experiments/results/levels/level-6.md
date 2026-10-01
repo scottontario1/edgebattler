@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../EXPERIMENT_SUMMARY.md).
+
 ### Level 6: Claim the Hamlet (village deployment range)
 
 _What does claiming the village at 10,9 in round 1 and deploying the reserves beside it in round 2 change?_

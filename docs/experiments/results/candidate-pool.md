@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../EXPERIMENT_SUMMARY.md).
+
 candidates: setSpears,momentum
 
 | map | pairing | games | draws (95%) | keep captures | rounds / game | rounds with a strike | deaths / round | first strike | holds (of movement decisions) | blocked (no legal move) | contested | village captures / game | pop at cap | hand full |

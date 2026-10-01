@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../../EXPERIMENT_SUMMARY.md).
+
 ### Scenario 3: Feast at the Breach (corpses as offence)
 
 _Does an assault that leaves corpses behind hit harder than the same assault with no corpses?_

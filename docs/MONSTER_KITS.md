@@ -1,5 +1,7 @@
 # Monster kits
 
+Reviewed 2026-10-01: these identity passives remain enabled in Shards-only main. Active monster skills are not implemented.
+
 Campaign monsters carry one named passive each. src/monsters.js defines the display name, short description, and the existing src/passives.js data contract. createMonsterUnit attaches fresh passive data to each encounter unit; monsters remain enemy-only and gain no cards or registered culture.
 
 | Monster | Passive | Rule |

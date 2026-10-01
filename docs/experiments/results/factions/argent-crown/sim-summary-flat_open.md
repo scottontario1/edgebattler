@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../../EXPERIMENT_SUMMARY.md).
+
 | cell | games | A win | B win | draw | mean rounds | keep captured | army destroyed | round limit | village captures / game |
 |---|---|---|---|---|---|---|---|---|---|
 | Crown (crown AI) v baseline (heuristic) | 400 | 0.0% (0.0%-1.0%) | 1.8% (0.9%-3.6%) | 98.3% (96.4%-99.1%) | 29.7 | 1.8% (0.9%-3.6%) | 0.0% (0.0%-1.0%) | 98.3% (96.4%-99.1%) | 2.15 |

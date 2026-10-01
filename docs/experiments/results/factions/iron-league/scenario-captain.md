@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../../EXPERIMENT_SUMMARY.md).
+
 ### E. The Captain's Bridge (River Ford): champion kit Field Works
 
 _What does preparation change: Captain Voss fortifying the bridge exit with Field Works?_

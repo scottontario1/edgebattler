@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../../EXPERIMENT_SUMMARY.md).
+
 ### Level 1: Momentum (Reaver: Advance, contact, Reaving Rush)
 
 _What does Reavers advancing into contact with Reaving Rush from round 1 change?_

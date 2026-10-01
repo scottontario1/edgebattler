@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../../EXPERIMENT_SUMMARY.md).
+
 ### Scenario 1: The Ossuary Line (corpses as fuel)
 
 _Does the line hold longer when its fallen can be eaten and fed on than the identical army with no corpses?_

@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../../EXPERIMENT_SUMMARY.md).
+
 ## river_ford: 100 seeds x 2 sides per cell, max 30 rounds, rarity gate uncommon 3 / rare 6
 
 Subject win, loss and draw rates are over all 2N games (subject on Blue and on Red); the interval is a 95% Wilson interval. A draw is the round limit.

@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../../EXPERIMENT_SUMMARY.md).
+
 ### Scenario 2: The Knight Who Would Not Fall (Revenant Vow)
 
 _How often is the Knight really gone, and what does it still do after it was killed?_

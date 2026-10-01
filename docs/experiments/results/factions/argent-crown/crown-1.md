@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../../EXPERIMENT_SUMMARY.md).
+
 ### Level 1: Shield Wall (Crown Guard: Line Doctrine, Shieldwall, Close Ranks)
 
 _How much stronger is the same Crown army in a block than scattered, and what do Line Doctrine, Shieldwall and Close Ranks each add?_

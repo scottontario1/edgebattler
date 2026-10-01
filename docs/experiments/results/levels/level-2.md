@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../EXPERIMENT_SUMMARY.md).
+
 ### Level 2: Arrow Rain (Archer: formation and Focused Shot)
 
 _What does a Pikeman screen with Archers behind it, Focused Shot from round 2 and Brace on the screen change?_

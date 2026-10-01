@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../../EXPERIMENT_SUMMARY.md).
+
 ### A. The Bridge (River Ford): the plug on the bridge exit
 
 _What does preparation change: a Pavise plug on the bridge exit with Crossbowmen at range 2 of the bridge, Set Position and Prepared Position?_

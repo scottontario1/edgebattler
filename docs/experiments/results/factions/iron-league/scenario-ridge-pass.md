@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../../EXPERIMENT_SUMMARY.md).
+
 ### C. The Ridge Pass (ridge_line): barricade, mountain crossbows and Arc Burst
 
 _What does preparation change: a barricade in the pass, Crossbowmen on the ridge and Arc Burst from behind?_

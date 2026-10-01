@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../../EXPERIMENT_SUMMARY.md).
+
 ### Level 3: Rally and Ride (Crown Knights, Rally Banner, Charge from the block)
 
 _What does a Crown army gain by holding a block first and riding second, and what do Rally Banner and Charge add?_

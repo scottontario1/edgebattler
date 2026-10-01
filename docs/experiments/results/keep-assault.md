@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../EXPERIMENT_SUMMARY.md).
+
 ### Six Supply of attackers v a defended keep (Dreg on the keep, two holding Pikemen)
 
 _Which attacking composition, preparation or candidate card can take a keep held by a champion, and what does a reinforcement do?_

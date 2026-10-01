@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../EXPERIMENT_SUMMARY.md).
+
 | map | pairing | games | draws (95%) | keep captures | rounds / game | rounds with a strike | deaths / round | first strike | holds (of movement decisions) | blocked (no legal move) | contested | village captures / game | pop at cap | hand full |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | river_ford | heuristic v heuristic | 50 | 94% (84%–98%) | 3 | 28.9 | 96% | 0.27 | 2.0 | 78% | 17% | 5% | 1.20 | 68% | 92% |

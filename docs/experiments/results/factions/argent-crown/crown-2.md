@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../../EXPERIMENT_SUMMARY.md).
+
 ### Level 2: The Standard and the Oath (Bannerman, Oathsworn, Brenna)
 
 _What do the Banner aura, Sworn Guard, Interpose, Hold the Standard and Brenna's kit add to a block, and how much of it needs the block?_

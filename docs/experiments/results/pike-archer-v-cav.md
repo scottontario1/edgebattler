@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../EXPERIMENT_SUMMARY.md).
+
 ### Two Pikemen and an Archer (hold) v two Cavaliers (advance)
 
 _What does adding an Archer to two Pikemen change against cavalry, and how much does formation (sheltered, gap, exposed) and preparation matter?_

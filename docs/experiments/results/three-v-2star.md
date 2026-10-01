@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../EXPERIMENT_SUMMARY.md).
+
 ### Three 1-star Pikemen v one 2-star Pikeman (equal Supply, population 3 v 2)
 
 _Is combining three Pikemen worth the lost bodies? One strike per unit per round favours the three; what terrain, equipment or preparation lets the 2-star hold?_

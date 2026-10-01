@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../EXPERIMENT_SUMMARY.md).
+
 6 cells x 100 seeds (heuristic v heuristic, map ridge_line, 30 rounds) in 39.2s on 3 workers; replay checks 6/6 ok
 
 draws  (rows dvil, columns —)

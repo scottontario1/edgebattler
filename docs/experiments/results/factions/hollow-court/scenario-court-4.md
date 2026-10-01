@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../../EXPERIMENT_SUMMARY.md).
+
 ### Scenario 4: The Keep Race (the limit of the idea)
 
 _Do the death mechanics help when the enemy simply rides for the keep?_

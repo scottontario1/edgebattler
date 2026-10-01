@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../../EXPERIMENT_SUMMARY.md).
+
 # Hollow Court simulation: mirror1000-village_chain-dvil5
 
 Map village_chain, max 30 rounds, rarity gate uncommon 3 / rare 6, village deployment radius 5, 500 seeds per matchup (500 x 2 sides; mirrors 1000 seeds once). Win rate is for the first army of the matchup. 738s.

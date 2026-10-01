@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../../EXPERIMENT_SUMMARY.md).
+
 ### Level 3: The Pair (Blood Challenge: +4 on the mark, -4 on anything else)
 
 _What does Blood Challenge marking the south Pikeman change?_

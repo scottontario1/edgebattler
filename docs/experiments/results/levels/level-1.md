@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../EXPERIMENT_SUMMARY.md).
+
 ### Level 1: Hold the Crossing (Pikeman: Hold, Rally, Brace)
 
 _What does holding the crossing mouth with Rally every round and Brace when they arrive change?_

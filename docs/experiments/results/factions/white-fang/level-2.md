@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../../EXPERIMENT_SUMMARY.md).
+
 ### Level 2: Blood Challenge (Dreg: mark, Warlord's Rush)
 
 _What does Dreg marking the exposed Archer (Blood Challenge) with the Reavers advancing beside him change?_

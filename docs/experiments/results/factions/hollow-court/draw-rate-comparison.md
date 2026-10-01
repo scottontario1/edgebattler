@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../../EXPERIMENT_SUMMARY.md).
+
 # Do the death mechanics change the draw rate?
 
 | regime | driver / matchup | draws WITH death mechanics | draws WITHOUT | difference (95%) | keep-captured with / without | mean rounds with / without | baseline mirror draws |

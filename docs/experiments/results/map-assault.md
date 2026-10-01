@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../EXPERIMENT_SUMMARY.md).
+
 ### Three Pikemen and an Archer advance on three Pikemen and an Archer holding across a river, by map (equal Supply)
 
 _Do chokepoints, forest and the shipped river map help the defender, make the attack stall, or just add congestion?_

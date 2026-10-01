@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../../EXPERIMENT_SUMMARY.md).
+
 # The default game is untouched (checked 2026-09-30)
 
 Command, run on this branch (commit 6605177, culture module present but never registered; later commits change only docs) and on a `git archive` of commit 7e9d663:

@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../../EXPERIMENT_SUMMARY.md).
+
 ### B. The Gap (one-tile crossing): the Pavise plug
 
 _What does preparation change: a Pavise Guard plug with Set Position, Prepared Position and Field Repair?_

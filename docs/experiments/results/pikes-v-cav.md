@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../EXPERIMENT_SUMMARY.md).
+
 ### Three Pikemen (hold) v two Cavaliers (advance)
 
 _Do three cheap Pikemen stop two expensive Cavaliers, and which decisions change that: the angle of attack, waiting to charge energy, candidate abilities, equipment?_

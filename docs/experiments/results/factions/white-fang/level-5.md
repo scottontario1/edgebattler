@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../../EXPERIMENT_SUMMARY.md).
+
 ### Level 5: Sitting Still (clan on Hold v baseline Pikemen on Hold)
 
 _What does Axeguards holding the village with Iron Skin change?_

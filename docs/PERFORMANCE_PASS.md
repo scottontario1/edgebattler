@@ -1,5 +1,7 @@
 # Rendering performance pass
 
+Implementation reviewed against merged main on 2026-10-01; measurements below are the recorded original pass, not a new device benchmark.
+
 ## Changes
 
 - Idle planning targets 30 rendered frames per second; battle playback and active camera dragging target 60. This reduces the number of complete scene and post-processing renders during planning while keeping interactions and combat at the existing cadence.

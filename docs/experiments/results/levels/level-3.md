@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../EXPERIMENT_SUMMARY.md).
+
 ### Level 3: Ride Them Down (Cavalier: Charge, flanking, Second Wind)
 
 _What does Pikemen pin the front while the Cavaliers wait a round, swing round the north end and Charge into the Archers' side change?_

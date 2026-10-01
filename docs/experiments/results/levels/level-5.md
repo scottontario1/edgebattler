@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../EXPERIMENT_SUMMARY.md).
+
 ### Level 5: The Warlord's Keep (all skills, champion wall)
 
 _What does a marching block with Rally (never Brace: it forces Hold), then Fireburst on the garrison and Ward on the front while Mend keeps the 2-stars up change?_

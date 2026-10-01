@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../EXPERIMENT_SUMMARY.md).
+
 ### Level 4: Cavalry Storm (Fireburst, Ward, Mend, Brace)
 
 _What does Fireburst on the staged Cavaliers, Ward on the centre, Brace on the line and Mend after change?_

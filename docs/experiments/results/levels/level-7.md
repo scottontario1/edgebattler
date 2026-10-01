@@ -1,3 +1,5 @@
+> Historical output from earlier rules, not current main balance certification. [Retained findings](../../../EXPERIMENT_SUMMARY.md).
+
 ### Level 7: Muster the Line (candidate: Muster)
 
 _What does holding the line and mustering three bench Archers behind it in round 2 change?_
