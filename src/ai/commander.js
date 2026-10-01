@@ -13,6 +13,7 @@ import { UNIT_CARDS, CARD_LIMITS, previewCycle, unitCardFor } from '../cards.js'
 import { categoryOf, metaOf } from '../categories.js';
 import { weaponOf } from '../combat.js';
 import { findUpgradeMatches } from '../upgrades.js';
+import { SHARD_RULES, findShardCombos } from '../shards.js';
 import { ABILITY_CATALOG, ABILITIES, SPELL_CATALOG, selectedCost, kitFor } from '../abilities.js';
 
 export const DEFAULT_PARAMS = Object.freeze({
@@ -27,6 +28,9 @@ export const DEFAULT_PARAMS = Object.freeze({
   threatRange: 6,       // "near" for the champion guard
   seizeRatio: 1.3,      // march on the enemy keep when own field HP >= enemy field HP x this
   archerHoldRange: 5,   // archers hold while a foe is within this many tiles
+  shards: true,         // buy, apply and combine shards (false isolates unit/spell behaviour)
+  shardKeepSupply: 0,   // Supply left untouched after unit recruiting before shards are bought
+  shardDockReserve: 1,  // free dock slots kept open when buying (room for removals and combine results)
 });
 
 const manhattan = (a, b) => Math.abs(a.c - b.c) + Math.abs(a.r - b.r);
@@ -39,6 +43,42 @@ const isCultureAbility = (a) => !ABILITIES[a.id] && a.id !== 'setSpears' && a.id
 const other = (f) => (f === 'blue' ? 'red' : 'blue');
 const KEEP = { get blue() { return findTile('C'); }, get red() { return findTile('K'); } }; // follows the active map
 const nearestFoeDistance = (m, f, c, r) => m.alive(other(f)).reduce((best, o) => Math.min(best, Math.abs(o.c - c) + Math.abs(o.r - r)), 99);
+
+// Which shards suit which class (first match wins when choosing where to apply). Classes not listed use the default order.
+const SHARD_PREFERENCE = {
+  archer: ['ruby', 'amethyst', 'topaz', 'emerald', 'pearl'],
+  pikeman: ['sapphire', 'emerald', 'garnet', 'onyx', 'pearl', 'ruby'],
+  cavalier: ['ruby', 'topaz', 'emerald', 'sapphire', 'garnet'],
+};
+const DEFAULT_SHARD_PREFERENCE = ['ruby', 'sapphire', 'emerald', 'garnet', 'pearl', 'onyx', 'topaz', 'amethyst'];
+
+// Shards: combine whatever can be combined, buy affordable shard cards while the dock has room, apply dock shards to classes
+// (the most numerous class first, matching its preference list, then any class with a free slot). All through match.apply.
+function manageShards(m, f, act, P) {
+  const side = () => m.sides[f];
+  for (let guard = 0; guard < 10; guard += 1) {
+    const combo = findShardCombos(side().shardDock)[0];
+    if (!combo || !act({ type: 'combineShards', faction: f, shardId: combo.shardId, tier: combo.tier }).ok) break;
+  }
+  for (const card of [...side().cards.hand].filter((c) => c.type === 'shard').sort((a, b) => a.cost - b.cost || String(a.instanceId).localeCompare(String(b.instanceId)))) {
+    if (side().shardDock.length >= SHARD_RULES.dockSlots - P.shardDockReserve) break;
+    if (card.cost > side().cards.supply - P.shardKeepSupply) continue;
+    act({ type: 'buyShard', faction: f, cardId: card.instanceId });
+  }
+  for (let guard = 0; guard < 10; guard += 1) { // a fresh triple may appear after buying
+    const combo = findShardCombos(side().shardDock)[0];
+    if (!combo || !act({ type: 'combineShards', faction: f, shardId: combo.shardId, tier: combo.tier }).ok) break;
+  }
+  const counts = {};
+  for (const u of m.armyRecords(f)) { const cls = m.classOf(u); counts[cls] = (counts[cls] || 0) + 1; }
+  const classes = Object.keys(counts).sort((a, b) => counts[b] - counts[a] || a.localeCompare(b));
+  const free = (cls) => (side().shards[cls] || []).length < SHARD_RULES.classSlots;
+  for (const shard of [...side().shardDock].sort((a, b) => b.tier - a.tier || String(a.id).localeCompare(String(b.id)))) {
+    const want = (cls) => (SHARD_PREFERENCE[cls] || DEFAULT_SHARD_PREFERENCE).includes(shard.shardId);
+    const cls = classes.find((c) => free(c) && want(c)) || classes.find(free);
+    if (cls) act({ type: 'applyShard', faction: f, shardInstanceId: shard.id, unitType: cls });
+  }
+}
 
 // Deploy a reserve on the legal tile closest to the enemy (greedy and heuristic share this).
 function deployReserve(m, f, act, reserve) {
@@ -203,6 +243,9 @@ export function heuristic(m, f, { act, params = {} }) {
     if (!recruitAndDeploy(m, f, act, affordable[0])) break;
   }
 
+  // 5b. Shards with whatever Supply is left.
+  if (P.shards) manageShards(m, f, act, P);
+
   // 6. Stances and objectives.
   const hpOf = (list) => list.reduce((s, u) => s + u.hp, 0);
   const seize = hpOf(mine()) >= hpOf(foes()) * P.seizeRatio;
@@ -227,7 +270,7 @@ export function heuristic(m, f, { act, params = {} }) {
     if (!same) act({ type: 'stance', faction: f, unitId: u.id, ...want });
   }
   // Optional kit selections use the same validated, logged planning actions as the player.
-  for(const u of mine()) {
+  for(const u of m.abilitiesEnabled?mine():[]) {
     const near=foes().some(o=>manhattan(o,u)<=u.mov+2);
     const picks=[];
     if(u.cls==='pikeman') {

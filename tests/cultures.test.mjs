@@ -55,7 +55,7 @@ test('culture hooks are inert until a culture registers, and fully removable', (
   assert.deepEqual(VARIANTS, {});
   assert.equal(cardFor('fxGuard'), null);
   assert.equal(ACTIVE_CULTURES.length, 0);
-  assert.ok(RECRUITMENT_POOL.length === 10);
+  assert.ok(RECRUITMENT_POOL.length === 26);
 });
 
 test('a variant recruits as its base class with the stat delta, culture and passives', () => {
@@ -260,3 +260,7 @@ test('the game header is unchanged with no culture registered', () => {
   assert.equal(log.entries[0].cultures, undefined);
   assert.equal(log.entries[0].pools, undefined);
 });
+
+// Ability kits are off in the shipped game (Shards replaced them); this file exercises the kits, so it opts in.
+import { setAbilitiesEnabled } from '../src/abilities.js';
+setAbilitiesEnabled(true);

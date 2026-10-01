@@ -1,5 +1,5 @@
 /* Planning tray shell: ledger, collapse toggle, battle lock, body strips. Owned by TASK-002.
-   Height budget (border-box, #planning): expanded L 172, S 150, P 190; collapsed <= 44.
+   Height budget (border-box, #planning): expanded L 208, S 180, P 262 (each includes the shard dock row); collapsed <= 44.
    The tray keeps a fixed height when expanded so the dock and camera can read --tray-h. */
 .planning {
   --tl-h: 40px;                 /* ledger row height */
@@ -8,7 +8,7 @@
   left: calc(var(--edge) + var(--safe-l));
   right: calc(var(--edge) + var(--safe-r) + 168px);
   bottom: calc(var(--edge) + var(--safe-b));
-  height: 168px;
+  height: 208px;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -148,7 +148,7 @@
 
 /* ---- short landscape (S) ---- */
 @media (max-height: 500px) and (min-aspect-ratio: 1/1) and (min-width: 561px) {
-  .planning { --tl-h: 38px; left: calc(var(--edge) + var(--safe-l)); right: calc(var(--edge) + var(--safe-r) + 58px); bottom: calc(var(--edge) + var(--safe-b)); height: 148px; }
+  .planning { --tl-h: 38px; left: calc(var(--edge) + var(--safe-l)); right: calc(var(--edge) + var(--safe-r) + 58px); bottom: calc(var(--edge) + var(--safe-b)); height: 180px; }
   .supply-readout .ledger-value b { font-size: 20px; line-height: 20px; }
   .planning-body { padding: 4px 8px 5px; gap: 3px; }
   .plan-foot { min-height: 20px; }
@@ -162,7 +162,7 @@
     left: calc(var(--edge) + var(--safe-l));
     right: calc(var(--edge) + var(--safe-r));
     bottom: calc(var(--edge) + var(--safe-b) + var(--touch) + 5px);
-    height: 188px;
+    height: 262px;
   }
   .tray-ledger { flex-wrap: wrap; align-content: flex-start; padding-left: 8px; padding-right: calc(var(--tt) + 6px); }
   .ledger-cell { padding: 0 9px; height: var(--tl-h); }

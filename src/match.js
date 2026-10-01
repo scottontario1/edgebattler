@@ -1,3 +1,5 @@
+import {defaultSkillSlots,validateSkillSlots} from './skill-slots.js';
+import {resolveTimedBattle, timedCombatConfig} from './timed-battle.js';
 import { createBattleStats } from './battle-stats.js';
 // Match controller: the authoritative state of one game and the only code that changes it.
 // Pure data (no DOM, no Three.js), so the browser UI (src/ui.js) and the Node simulator
@@ -18,18 +20,21 @@ import { createBattleStats } from './battle-stats.js';
 //   { type: 'equip', faction, cardId, unitType }             type-wide skill card
 //   { type: 'transfer', faction, skillId, from, to }
 //   { type: 'combine', faction, ids, survivorId, destination }
+//   { type: 'buyShard', faction, cardId } | { type: 'applyShard', faction, shardInstanceId, unitType }
+//   { type: 'removeShard', faction, unitType, index } | { type: 'combineShards', faction, shardId, tier } | { type: 'grantShard', faction, shardId, tier }
 import { MAP, W, H, LAYOUT, inBounds, terrainAt } from './board.js';
 import { MOVE_COST, MOVE_TYPE, computeRange } from './rules.js';
 import { forecast, weaponOf } from './combat.js';
+import { SHARDS, SHARD_RULES, shardBonus, combineShards as mergeShards, findShardCombos } from './shards.js';
 import { CARD_LIMITS, UNIT_CARDS, unitCardFor, RARITY_GATE, rarityGateActive, skillCardFor, createCardState, drawOpeningHand, refreshRound, recruitUnit, canDeployReserve, seededRandom, cycleCard } from './cards.js';
-import { SPELL_CATALOG, kitFor, advanceAbilityRound, initializeAbilityState, queueSpell, cancelSpell, activatePhase, paidBundleReady, validateAbilitySelection, facingFromPath, FACING, battleMovement, ABILITY_RULES, ABILITIES, resolveQueuedSpells, equipTypeSkill, transferTypeSkill, skillsForUnitType } from './abilities.js';
+import { SPELL_CATALOG, kitFor, advanceAbilityRound, initializeAbilityState, queueSpell, cancelSpell, activatePhase, paidBundleReady, validateAbilitySelection, facingFromPath, FACING, battleMovement, ABILITY_RULES, ABILITIES, ABILITY_SWITCH, resolveQueuedSpells, equipTypeSkill, transferTypeSkill, skillsForUnitType } from './abilities.js';
 import { previewUpgrade, combineUnits } from './upgrades.js';
 import { resolveBattleRound, selectAttackTarget, BATTLE_TUNING } from './battle.js';
 import { evaluatePassives, hasRevenant } from './passives.js';
 import { ACTIVE_CULTURES } from './cultures.js';
-import { UNITS, createRecruitUnit, createHeroRespawnData, createGradedRecruitUnit } from './roster.js';
+import { RECRUIT, UNITS, createRecruitUnit, createHeroRespawnData, createGradedRecruitUnit } from './roster.js';
 
-export const SCHEMA = 3;
+export const SCHEMA = 4;
 // Prototype pacing values (GAME.md "Decisions to tune"). Logged in every header.
 export const RULES = Object.freeze({
   heroRespawnDelay: 2, // rounds after the champion's death before it can return
@@ -62,7 +67,18 @@ const clone = (v) => structuredClone(v);
  */
 // pools: optional { blue: [cardKeys], red: [cardKeys] } per-side draw pools (cultures); absent = the shared pool.
 // champions: optional { blue: id, red: id } (cultures with their own champion); default Brenna and Dreg.
-export function createMatch({ seed = 0x415348, maxRounds = null, log = null, meta = {}, roster = UNITS, pools = null, champions = null, campaign = null } = {}) {
+export function createMatch({ seed = 0x415348, maxRounds = null, log = null, meta = {}, roster = UNITS, pools = null, champions = null, campaign = null, combat = null, abilities = combat ? true : ABILITY_SWITCH.enabled } = {}) {
+  const abilitiesOn = Boolean(abilities);
+  const combatConfig = combat ? timedCombatConfig(combat) : null;
+  const skillTimelines={blue:{},red:{}};
+  const timelineType=u=>u.variantId||u.unitId||u.cls;
+  function configureTimeline(u){
+    if(combatConfig?.skillMode!=='slots'||!abilitiesOn)return;
+    const key=timelineType(u),shared=combatConfig.timelineScope==='type';
+    const slots=shared?(skillTimelines[u.faction][key]??defaultSkillSlots(u)):defaultSkillSlots(u);
+    if(shared)skillTimelines[u.faction][key]=[...slots];
+    u.skillSlots=[...slots];u.selectedAbilities=slots.filter(Boolean);
+  }
   const CHAMPION = { ...DEFAULT_CHAMPION, ...(champions || {}) };
   const emit = (entry) => { if (log) log(entry); };
   const units = clone(roster).map((u) => {const next=prepare(u);next.energy=Math.min(next.maxEnergy,next.energy+1);return next;});
@@ -78,8 +94,8 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
     // Blue keeps the original UI seed so existing seeded games are unchanged.
     const rng = seededRandom(f === 'blue' ? seed : (seed ^ 0x5a5a5a5a) + 0x1057b11);
     const cards = drawOpeningHand(createCardState({ population: 0, pool: pools?.[f] }), rng).state;
-    sides[f] = { cards, rng, loadouts: {}, queuedSpellCards: {}, heroRespawnAt: null,
-      stats: { recruited: {}, spells: {}, skills: 0, deployed: 0, withdrawn: 0, combined: 0, lost: {}, killed: {}, supplySpent: 0, captures: 0, respawns: 0, blockedDraws: 0, abilities: {}, abilitySkips: {}, energySpent: 0, energyCapped: 0, cycles: {hand:0,bench:0}, supplyRefunded: 0 } };
+    sides[f] = { cards, rng, loadouts: {}, shardDock: [], shards: {}, shardSeq: 0, queuedSpellCards: {}, heroRespawnAt: null,
+      stats: { recruited: {}, spells: {}, skills: 0, deployed: 0, withdrawn: 0, combined: 0, shardsBought: 0, shardsCombined: 0, lost: {}, killed: {}, supplySpent: 0, captures: 0, respawns: 0, blockedDraws: 0, abilities: {}, abilitySkips: {}, energySpent: 0, energyCapped: 0, cycles: {hand:0,bench:0}, supplyRefunded: 0 } };
   }
   const battleStats = createBattleStats();
   const m = { seed, maxRounds, round: 1, phase: 'planning', over: false, winner: null, reason: null, units, territory, sides, seq: 0, objects: [] };
@@ -124,10 +140,10 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
   const consumeObject = (id) => { const i = m.objects.findIndex((o) => o.id === id); if (i < 0) return false; m.objects.splice(i, 1); return true; };
   const objectsNear = (c, r, n, objectKind) => m.objects.filter((o) => o.hp > 0 && Math.abs(o.c - c) + Math.abs(o.r - r) <= n && (!objectKind || o.objectKind === objectKind));
   // Where a spawn ability puts its object: 'front' = the adjacent tile the unit faces, 'self' = its own tile.
-  function spawnFor(u, spawn) {
+  function spawnFor(u, spawn, records=null) {
     let [c, r] = [u.c, u.r];
     if (spawn.at !== 'self') { const f = FACING[u.facing] || FACING[u.faction === 'red' ? 'south' : 'north']; c += f[0]; r += f[1]; }
-    const free = inBounds(c, r) && MOVE_COST.foot[terrainAt(c, r)] !== undefined && !unitAt(c, r) && !objectAt(c, r);
+    const free = inBounds(c, r) && MOVE_COST.foot[terrainAt(c, r)] !== undefined && !(records?records.some(o=>o.hp>0&&o.c===c&&o.r===r):unitAt(c,r)||objectAt(c,r));
     if (!free) return null;
     return addObject({ objectKind: spawn.kind, faction: u.faction, c, r, hp: spawn.hp, blocks: spawn.blocks, decay: spawn.decay, name: spawn.name });
   }
@@ -135,8 +151,9 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
   function prepare(u) {
     Object.assign(u, initializeAbilityState(u, {
       stance: u.stance || unitCardFor(u.cls)?.defaultStance || (u.cls === 'archer' ? 'hold' : 'advance'),
-      selectedAbilities: u.selectedAbilities || [],
+      selectedAbilities: abilitiesOn ? ((u.selectedAbilities?.length||!combatConfig)?(u.selectedAbilities||[]):kitFor(u).map(a=>a.id)) : [],
     }));
+    configureTimeline(u);
     u.costPaid=u.costPaid??0;
     u.rarity=u.rarity??unitCardFor(u.variantId ?? u.cls)?.rarity??'common';
     u.state = 'field';
@@ -144,6 +161,30 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
     u.planningMoved = false;
     return u;
   }
+
+  // ---------- shards (src/shards.js) ----------
+  // Invariant: unit stats = own base stats + summed bonus of the shards applied to the unit's class. `rec.shardBonus` records the stat
+  // bonus currently folded into a unit or bench record, so a sync applies only the difference and base stats never drift.
+  const classOf = (rec) => rec.cls ?? rec.classId ?? rec.unitId;
+  function syncShards(rec) {
+    const side = sides[rec?.faction];
+    if (!side) return rec;
+    const b = shardBonus(side.shards[classOf(rec)]);
+    const prev = rec.shardBonus || {};
+    for (const k of ['str', 'def', 'spd', 'skl']) { const d = b[k] - (prev[k] || 0); if (d) rec[k] = (rec[k] ?? 0) + d; }
+    const dMax = b.maxHp - (prev.maxHp || 0);
+    if (dMax && rec.maxHp != null) {
+      rec.maxHp += dMax;
+      if (rec.hp != null && rec.hp > 0) rec.hp = Math.max(1, Math.min(rec.maxHp, rec.hp + dMax));
+    } else if (dMax) { b.maxHp = prev.maxHp || 0; } // no max HP to move yet: keep the record honest
+    rec.shardBonus = { str: b.str, def: b.def, maxHp: b.maxHp, spd: b.spd, skl: b.skl };
+    return rec;
+  }
+  function syncClassShards(f, cls) {
+    for (const u of m.units) if (u.faction === f && classOf(u) === cls) syncShards(u);
+    for (const r of sides[f].cards.reserves) if (classOf(r) === cls) syncShards(r);
+  }
+  const validShardClass = (f, cls) => Boolean(cls) && (Boolean(RECRUIT[cls]) || m.units.some((u) => u.faction === f && classOf(u) === cls) || sides[f].cards.reserves.some((r) => classOf(r) === cls));
 
   // ---------- queries ----------
   const alive = (f) => m.units.filter((u) => u.hp > 0 && (!f || u.faction === f));
@@ -245,6 +286,8 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       const id=`${f}-r${++m.seq}-${res.reserve.unitId}`;
       const graded=createGradedRecruitUnit(res.reserve.unitId,id,f,res.reserve.stars);
       const reserve={...graded,...res.reserve,id,faction:f,state:'reserve',hp:graded.maxHp,maxHp:graded.maxHp};delete reserve.c;delete reserve.r;
+      configureTimeline(reserve);
+      syncShards(reserve);
       side.cards = { ...res.state, reserves: [...res.state.reserves.slice(0, -1), reserve] };
       side.stats.recruited[reserve.unitId] = (side.stats.recruited[reserve.unitId] || 0) + 1;
       side.stats.supplySpent += res.supplySpent;
@@ -271,7 +314,9 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       const carried = Object.fromEntries(Object.entries(reserve).filter(([k, v]) => v != null && !['id', 'fieldId', 'state', 'faction', 'c', 'r', 'unitId'].includes(k)));
       Object.assign(unit, carried);
       Object.assign(unit, initializeAbilityState(unit));
+      unit.faction=f;configureTimeline(unit);
       unit.id = id; unit.faction = f; unit.c = c; unit.r = r; unit.state = 'field'; unit.planningMoved = false;
+      syncShards(unit);
       side.cards = { ...side.cards, reserves: side.cards.reserves.filter((u) => u.id !== reserveId) };
       m.units = m.units.filter((u) => u.id !== id); // a fallen copy with the same id
       m.units.push(unit);
@@ -329,17 +374,29 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       u.stance = stance;
       return { ok: true };
     },
-    abilities({faction:f,unitId,unitIds,abilityIds}) {
+    abilities({faction:f,unitId,unitIds,abilityIds,skillSlots}) {
+      if(!abilitiesOn) return fail('abilities-disabled');
       const ids=unitIds??[unitId];
       if(!Array.isArray(ids)||!ids.length||new Set(ids).size!==ids.length) return fail('invalid-group');
-      const targets=ids.map(byId);
+      let targets=ids.map(byId);
       for(const u of targets) {
         if(!u||u.hp<=0||u.faction!==f) return fail('unit-not-found');
-        const check=validateAbilitySelection(u,abilityIds);
+        const slots=skillSlots??Array.from({length:3},(_,i)=>abilityIds?.[i]||null);
+        const check=combatConfig?.skillMode==='slots'?validateSkillSlots(u,slots):validateAbilitySelection(u,abilityIds);
         if(!check.ok) return {...check,unitId:u.id};
       }
-      for(const u of targets) u.selectedAbilities=[...new Set(abilityIds)];
-      return {ok:true,unitIds:ids};
+      if(combatConfig?.skillMode==='slots'&&combatConfig.timelineScope==='type'){
+        const keys=new Set(targets.map(timelineType));
+        const slots=skillSlots??Array.from({length:3},(_,i)=>abilityIds?.[i]||null);
+        targets=[...m.units.filter(u=>u.faction===f&&keys.has(timelineType(u))),...sides[f].cards.reserves.filter(u=>keys.has(timelineType(u)))];
+        for(const u of targets){const check=validateSkillSlots(u,slots);if(!check.ok)return {...check,unitId:u.id};}
+        for(const key of keys)skillTimelines[f][key]=[...slots];
+      }
+      for(const u of targets){
+        if(combatConfig?.skillMode==='slots'){u.skillSlots=[...(skillSlots??Array.from({length:3},(_,i)=>abilityIds?.[i]||null))];u.selectedAbilities=u.skillSlots.filter(Boolean);}
+        else u.selectedAbilities=[...new Set(abilityIds)];
+      }
+      return {ok:true,unitIds:targets.map(u=>u.id)};
     },
     facing({faction:f,unitId,facing}) {
       const u=byId(unitId);
@@ -350,6 +407,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
     // Culture hook: aim a mark ability (kit ability with `mark: { radius }`, e.g. Blood Challenge) at an enemy. It only takes
     // effect if the ability is selected and activates this round; without an intent the nearest enemy in radius is marked.
     mark({ faction: f, unitId, targetId }) {
+      if (!abilitiesOn) return fail('abilities-disabled');
       const u = byId(unitId);
       if (!u || u.hp <= 0 || u.faction !== f) return fail('unit-not-found');
       const def = kitFor(u).find((a) => a.mark);
@@ -415,6 +473,62 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       sides[f].loadouts = res.loadouts;
       return { ok: true };
     },
+    // Shard actions (docs/SHARDS.md). The dock holds bought shards ({ id, shardId, tier }); a class holds applied ones ({ shardId, tier }).
+    buyShard({ faction: f, cardId }) {
+      const side = sides[f];
+      const card = side.cards.hand.find((x) => x.instanceId === cardId);
+      if (!card || card.type !== 'shard') return fail('card-not-found');
+      if (side.shardDock.length >= SHARD_RULES.dockSlots) return fail('dock-full');
+      if (side.cards.supply < card.cost) return fail('insufficient-supply');
+      const shard = { id: `shard-${++side.shardSeq}`, shardId: card.shardId, tier: card.tier ?? 1 };
+      side.shardDock.push(shard);
+      side.cards = { ...side.cards, supply: side.cards.supply - card.cost, hand: side.cards.hand.filter((x) => x.instanceId !== cardId) };
+      side.stats.shardsBought += 1;
+      side.stats.supplySpent += card.cost;
+      return { ok: true, shardInstanceId: shard.id, shardId: shard.shardId, tier: shard.tier };
+    },
+    // Scripted levels only: put a shard in the dock without a card or Supply.
+    grantShard({ faction: f, shardId, tier = 1 }) {
+      const side = sides[f];
+      if (!SHARDS[shardId] || !Number.isInteger(tier) || tier < 1 || tier > SHARD_RULES.maxTier) return fail('invalid-shard');
+      if (side.shardDock.length >= SHARD_RULES.dockSlots) return fail('dock-full');
+      const shard = { id: `shard-${++side.shardSeq}`, shardId, tier };
+      side.shardDock.push(shard);
+      return { ok: true, shardInstanceId: shard.id, shardId, tier };
+    },
+    applyShard({ faction: f, shardInstanceId, unitType }) {
+      const side = sides[f];
+      const index = side.shardDock.findIndex((x) => x.id === shardInstanceId);
+      if (index < 0) return fail('shard-not-found');
+      if (!validShardClass(f, unitType)) return fail('invalid-unit-type');
+      const applied = side.shards[unitType] || [];
+      if (applied.length >= SHARD_RULES.classSlots) return fail('class-full');
+      const [shard] = side.shardDock.splice(index, 1);
+      side.shards[unitType] = [...applied, { shardId: shard.shardId, tier: shard.tier }];
+      syncClassShards(f, unitType);
+      return { ok: true, unitType, shardId: shard.shardId, tier: shard.tier };
+    },
+    removeShard({ faction: f, unitType, index }) {
+      const side = sides[f];
+      const applied = side.shards[unitType] || [];
+      if (!Number.isInteger(index) || index < 0 || index >= applied.length) return fail('shard-not-found');
+      if (side.shardDock.length >= SHARD_RULES.dockSlots) return fail('dock-full');
+      const [shard] = applied.splice(index, 1);
+      if (!applied.length) delete side.shards[unitType];
+      const back = { id: `shard-${++side.shardSeq}`, shardId: shard.shardId, tier: shard.tier };
+      side.shardDock.push(back);
+      syncClassShards(f, unitType);
+      return { ok: true, unitType, shardInstanceId: back.id, shardId: back.shardId, tier: back.tier };
+    },
+    combineShards({ faction: f, shardId, tier }) {
+      const side = sides[f];
+      const res = mergeShards(side.shardDock, shardId, tier, `shard-${side.shardSeq + 1}`);
+      if (!res.ok) return fail(res.reason);
+      side.shardSeq += 1;
+      side.shardDock = res.dock;
+      side.stats.shardsCombined += 1;
+      return { ok: true, shardInstanceId: res.shard.id, shardId, tier: res.shard.tier, consumed: res.consumed };
+    },
     combine({ faction: f, ids, survivorId, destination }) {
       const side = sides[f];
       const records = armyRecords(f);
@@ -429,6 +543,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       side.cards = { ...side.cards, reserves: side.cards.reserves.filter((u) => !consumed.has(u.id)) };
       if (res.unit.state === 'reserve') side.cards.reserves.push({ ...res.unit, unitId: res.unit.unitId || res.unit.cls, faction: f });
       else m.units.push(res.unit);
+      syncShards(m.byId(res.unit.id) ?? side.cards.reserves.find((u) => u.id === res.unit.id));
       side.stats.combined += 1;
       return { ok: true, unitId: res.unit.id, stars: res.unit.stars, populationDelta: res.populationDelta };
     },
@@ -462,6 +577,14 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
     m.phase = 'battle';
     const batches = [];
     const notes = [];
+    // 0. Pearl (regen) shards: field units heal at the start of the round's resolution, before spells. Logged as a 'shards' batch.
+    const shardEvents = [];
+    for (const u of alive()) {
+      const regen = shardBonus(sides[u.faction].shards[classOf(u)]).regen;
+      const amount = Math.min(regen, (u.maxHp ?? u.hp) - u.hp);
+      if (amount > 0) { u.hp += amount; shardEvents.push({ type: 'regen', unitId: u.id, amount }); }
+    }
+    if (shardEvents.length) batches.push({ type: 'shards', events: shardEvents });
     const before = new Map(alive().map((u) => [u.id, u.hp]));
 
     // 1. Spells, each side against its own friendly faction.
@@ -489,20 +612,36 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
         if(e.applied) {stats.energySpent+=e.cost;stats.energyCapped+=e.energyCapped||0;}
       }
     };
+    const fired=new Map();
+    let activeSkillSlot=-1;
+    const activateFor=(unit,phase,ctx)=>{
+      if(!combatConfig)return activatePhase(unit,phase,ctx);
+      const picks=unit.selectedAbilities||[],used=fired.get(unit.id)||new Set();
+      let next=unit;const events=[];
+      // Timed auto-casts are individual energy checks, with at most one successful
+      // use of each selected skill per combat phase, only in its assigned window.
+      for(const a of kitFor(unit).filter(a=>a.phase===phase&&picks.includes(a.id)&&(combatConfig.skillMode!=='slots'||unit.skillSlots?.[activeSkillSlot]===a.id)&&!used.has(a.id))){
+        const act=activatePhase({...next,selectedAbilities:[a.id]},phase,{...ctx,paid:next.energy>=a.cost});
+        next=act.unit;events.push(...act.events);
+        if(act.events.some(e=>e.applied))used.add(a.id);
+      }
+      next.selectedAbilities=picks;fired.set(unit.id,used);return {unit:next,events};
+    };
+    const defensePhase = records => {
     const defenseEvents=[];
-    for(const u of alive()) {
-      const act=activatePhase(u,'defense',{paid:paid.get(u.id),onControlled:onOwnedTile(u),objectCount:(k,r)=>objectsNear(u.c,u.r,r,k).length});
+    for(const u of records.filter(u=>u.hp>0&&u.kind!=='object')) {
+      const act=activateFor(u,'defense',{paid:paid.get(u.id),onControlled:onOwnedTile(u),objectCount:(k,r)=>objectsNear(u.c,u.r,r,k).length});
       Object.assign(u,act.unit);defenseEvents.push(...act.events);
       // Spawn abilities (phase 'defense', before movement): put a tile object (barricade...) in front of or under the unit.
       for(const e of act.events) if(e.applied&&e.spawn) {
-        const o=spawnFor(u,e.spawn);
-        if(o) notes.push({faction:u.faction,text:`${u.name} raised a ${o.name}`});
+        const o=spawnFor(u,e.spawn,combatConfig?records:null);
+        if(o){notes.push({faction:u.faction,text:`${u.name} raised a ${o.name}`});if(combatConfig){e.objectSpawn=clone(o);records.push({...o});}}
         else e.spawned=false;
       }
       // Grant abilities (phase 'defense'): numeric battle statuses for friendly units within a radius (Blood Cry, Sanctuary...).
       for(const e of act.events) if(e.applied&&e.grant) {
         const g=e.grant;
-        for(const o of alive(u.faction)) {
+        for(const o of records.filter(o=>o.hp>0&&o.kind!=='object'&&o.faction===u.faction)) {
           if(o.id===u.id?!g.self:Math.abs(o.c-u.c)+Math.abs(o.r-u.r)>g.radius) continue;
           if(g.classes&&!g.classes.includes(o.cls)) continue;
           o.statuses={...(o.statuses||{})};
@@ -511,19 +650,27 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       }
       // Mark abilities (phase 'defense', before movement): the chosen or nearest enemy in radius becomes the unit's target.
       for(const e of act.events) if(e.applied&&e.mark) {
-        const foes=alive().filter(o=>o.faction!==u.faction&&Math.abs(o.c-u.c)+Math.abs(o.r-u.r)<=e.mark.radius);
+        const foes=records.filter(o=>o.hp>0&&o.kind!=='object'&&o.faction!==u.faction&&Math.abs(o.c-u.c)+Math.abs(o.r-u.r)<=e.mark.radius);
         const chosen=foes.find(o=>o.id===u.markIntent)||foes.sort((a,b)=>Math.abs(a.c-u.c)+Math.abs(a.r-u.r)-Math.abs(b.c-u.c)-Math.abs(b.r-u.r)||String(a.id).localeCompare(String(b.id)))[0];
         if(chosen) u.markTargetId=chosen.id;
       }
     }
-    recordAbilities(defenseEvents);
-    batches.push({type:'abilities',events:defenseEvents});
+    return defenseEvents;
+    };
+    if(!combatConfig){const events=defensePhase(alive());recordAbilities(events);batches.push({type:'abilities',events});}
 
     // 3. Simultaneous movement and combat from one shared snapshot.
     const snapshot = alive().map((u) => ({ ...u, statuses: { ...(u.statuses || {}) } }));
     for (const u of snapshot) {
       const barrier = skillsForUnitType(sides[u.faction].loadouts, u.cls).find((s) => s.id === 'barrier');
       if (barrier) u.statuses.barrier = { amount: barrier.blockDamage, duration: 'upcoming-battle' };
+      // Garnet (block) shards add to the Barrier status; Onyx (thorns) sets the thorns status battle.js reads.
+      const shardFx = shardBonus(sides[u.faction].shards[classOf(u)]);
+      if (shardFx.block) {
+        const cur = u.statuses.barrier;
+        u.statuses.barrier = { amount: ((typeof cur === 'number' ? cur : cur?.amount) || 0) + shardFx.block, duration: 'upcoming-battle' };
+      }
+      if (shardFx.thorns) u.statuses.thorns = (u.statuses.thorns || 0) + shardFx.thorns;
       // Candidate passive equipment (statMods) applies for this battle only, through statuses that battle.js clears.
       for (const skill of skillsForUnitType(sides[u.faction].loadouts, u.cls)) {
         if (skill.statMods?.str) u.statuses.equipStr = (u.statuses.equipStr || 0) + skill.statMods.str;
@@ -531,15 +678,32 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       }
     }
     const objectSnap = blockingObjects().map((o) => ({ ...o }));
+    const ordersFor = snapshot => {
     const ids = new Set(snapshot.map((u) => u.id));
-    const orders = Object.fromEntries(snapshot.map((u) => {
-      let stance = u.statuses?.brace || u.statuses?.setSpears ? 'hold' : u.stance || 'advance';
+    return Object.fromEntries(snapshot.map((u) => {
+      let stance = (combatConfig&&fired.get(u.id)?.has('brace')) || u.statuses?.brace || u.statuses?.setSpears ? 'hold' : u.stance || 'advance';
       // A Protect order whose subject has fallen reverts to the class default (GAME.md, Stances).
       if (stance === 'protect' && !(u.objective?.type === 'protect' && ids.has(u.objective.targetId))) stance = unitCardFor(u.cls)?.defaultStance || 'advance';
       const order = { stance, range: weaponOf(u).rng, objective: u.objective };
       // Culture hook: a marked enemy becomes the unit's explicit target (set by a culture ability/action; absent in the game).
       const marked = u.markTargetId ? snapshot.find((o) => o.id === u.markTargetId && o.faction !== u.faction) : null;
       if (marked) order.targetId = marked.id;
+      if(combatConfig&&stance==='advance'){
+        const foes=snapshot.filter(o=>o.hp>0&&o.kind!=='object'&&o.faction!==u.faction)
+          .sort((a,b)=>Math.abs(a.c-u.c)+Math.abs(a.r-u.r)-Math.abs(b.c-u.c)-Math.abs(b.r-u.r)||String(a.id).localeCompare(String(b.id)));
+        const target=foes.find(o=>o.id===order.targetId)||foes[0];
+        const [lo,hi]=order.range;
+        const distance=p=>target?Math.abs(p[0]-target.c)+Math.abs(p[1]-target.r):Infinity;
+        const engaged=foes.some(o=>{const d=Math.abs(o.c-u.c)+Math.abs(o.r-u.r);return d>=lo&&d<=hi;});
+        const goal=target||u.objective;
+        if(!engaged&&goal){
+          const score=p=>target?Math.max(lo-distance(p),distance(p)-hi,0):Math.abs(p[0]-goal.c)+Math.abs(p[1]-goal.r);
+          const range=computeRange(u,board(snapshot),Math.max(4,u.mov),{blockAllies:true});
+          const best=range.move.sort((a,b)=>score(a)-score(b)||range.pathTo(...a).length-range.pathTo(...b).length||a[1]-b[1]||a[0]-b[0])[0];
+          if(best&&score(best)<score([u.c,u.r])){const at=range.pathTo(...best)[0];if(at)order.destination={c:at[0],r:at[1]};}
+        }
+        return [u.id,order];
+      }
       // Tile objective (march on a keep or village): head for it unless a foe is already in weapon range.
       if (stance === 'advance' && u.objective?.type === 'tile') {
         const [lo, hi] = weaponOf(u).rng;
@@ -548,36 +712,36 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
           const goal = u.objective;
           const d = (p) => Math.abs(p[0] - goal.c) + Math.abs(p[1] - goal.r);
           const occupied = new Set(snapshot.map((o) => `${o.c},${o.r}`));
-          const best = computeRange(u, board(snapshot), battleMovement({...u,stance})).move
+          const best = computeRange(u, board(snapshot), combatConfig?u.mov:battleMovement({...u,stance})).move
             .filter(([c, r]) => !occupied.has(`${c},${r}`) || (c === u.c && r === u.r))
             .sort((a, b) => d(a) - d(b) || a[1] - b[1] || a[0] - b[0])[0];
-          if (best && d(best) < d([u.c, u.r])) order.destination = { c: best[0], r: best[1] };
+          if (best && d(best) < d([u.c, u.r])) {
+            const at=combatConfig?computeRange(u,board(snapshot),u.mov).pathTo(...best)[0]:best;
+            if(at)order.destination = {c:at[0],r:at[1]};
+          }
         }
       }
       return [u.id, order];
     }));
+    };
+    const orders=ordersFor(snapshot);
     const recoveryEvents=[];
     const struckEnergy=new Map(); // unit id -> energy gained if it takes damage this battle (passive energyWhenStruck)
-    const battle = resolveBattleRound({
-      units: [...snapshot, ...objectSnap], orders, seed: (m.seed + m.round) >>> 0,
-      legalMoves: (u, shared) => computeRange(u, board(shared), battleMovement({...u,stance:orders[u.id].stance})).move.map(([c, r]) => ({ c, r })),
-      forecastAttack: (a, d, from) => forecast(withEquip(a), withEquip(d), [from.c, from.r]),
-      pathForMove:(u,to,shared)=>computeRange(u,board(shared),battleMovement({...u,stance:orders[u.id].stance})).pathTo(to.c,to.r),
-      beforeCombat:(moved,events)=>{
+    const recoveryPhase=(moved,events)=>{
         for(const u of moved) {
-          if(u.kind==='object') continue;
+          if(u.kind==='object'||u.hp<=0) continue;
           const e=events.find(e=>e.unitId===u.id&&e.type==='move');
           if(e) u.facing=facingFromPath([[e.from.c,e.from.r],...e.path],u.facing);
-          const act=activatePhase(u,'recovery',{paid:paid.get(u.id),onControlled:onOwnedTile(u),objectCount:(k,r)=>objectsNear(u.c,u.r,r,k).length});
+          const act=activateFor(u,'recovery',{paid:paid.get(u.id),onControlled:onOwnedTile(u),objectCount:(k,r)=>objectsNear(u.c,u.r,r,k).length});
           Object.assign(u,act.unit);recoveryEvents.push(...act.events);
           // Heal-allies ability (recovery phase): heal friendly units within a radius (the healer itself only with `self`).
           for(const e of act.events) if(e.applied&&e.healAllies) {
             const h=e.healAllies;
-            e.healed=0;
+            e.healed=0;if(combatConfig)e.heals=[];
             for(const o of moved) {
               if(o.kind==='object'||o.faction!==u.faction||o.hp<=0) continue;
               if(o.id===u.id?!h.self:Math.abs(o.c-u.c)+Math.abs(o.r-u.r)>h.radius) continue;
-              const before=o.hp;o.hp=Math.min(o.maxHp,o.hp+h.amount);e.healed+=o.hp-before;
+              const before=o.hp;o.hp=Math.min(o.maxHp,o.hp+h.amount);e.healed+=o.hp-before;if(combatConfig)e.heals.push({unitId:o.id,amount:o.hp-before});
             }
           }
           // Consume ability (recovery phase): eat the nearest tile objects of a kind and heal friends around the unit.
@@ -585,21 +749,21 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
             const c=e.consume;
             const eaten=objectsNear(u.c,u.r,c.radius,c.kind).sort((a,b)=>Math.abs(a.c-u.c)+Math.abs(a.r-u.r)-Math.abs(b.c-u.c)-Math.abs(b.r-u.r)||String(a.id).localeCompare(String(b.id))).slice(0,c.count??1);
             for(const o of eaten) consumeObject(o.id);
-            e.consumed=eaten.length;
+            e.consumed=eaten.length;if(combatConfig)e.consumedIds=eaten.map(o=>o.id);
             if(c.heal&&eaten.length) for(const o of moved) if(o.kind!=='object'&&o.faction===u.faction&&o.hp>0&&Math.abs(o.c-u.c)+Math.abs(o.r-u.r)<=(c.heal.radius??0)) o.hp=Math.min(o.maxHp,o.hp+c.heal.amount);
           }
         }
         // Target eligibility comes from the shared post-move snapshot, never presentation direction.
         for(const u of moved) {
-          if(u.kind==='object') continue;
-          const act=activatePhase(u,'enhancement',{paid:paid.get(u.id),onControlled:onOwnedTile(u),
+          if(u.kind==='object'||u.hp<=0) continue;
+          const act=activateFor(u,'enhancement',{paid:paid.get(u.id),onControlled:onOwnedTile(u),
             moved:events.some(e=>e.unitId===u.id&&e.type==='move'),
             movedTiles:events.find(e=>e.unitId===u.id&&e.type==='move')?.path?.length||0,
             hasTarget:Boolean(selectAttackTarget(u,moved,(a,d,from)=>forecast(withEquip(a),withEquip(d),[from.c,from.r])))});
           Object.assign(u,act.unit);recoveryEvents.push(...act.events);
         }
         // Culture passives (src/passives.js): evaluated on post-movement positions, before strikes. No-op without `passives`.
-        if(moved.some(u=>u.passives?.length)) {
+        if(!combatConfig&&moved.some(u=>u.passives?.length)) {
           const movedIds=new Set(events.filter(e=>e.type==='move').map(e=>e.unitId));
           const fx=evaluatePassives(moved,{moved:movedIds,stanceOf:u=>orders[u.id]?.stance||u.stance,controlled:onOwnedTile,objectCount:(u,k,r)=>objectsNear(u.c,u.r,r,k).length});
           for(const u of moved) {
@@ -613,23 +777,47 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
           }
         }
         return moved;
+      };
+    const forecastAttack=(a,d,from)=>forecast(withEquip(a),withEquip(d),[from.c,from.r]);
+    const legalMoves=(u,shared)=>{
+      const stance=orders[u.id]?.stance||u.stance;
+      const range=computeRange(u,board(shared),combatConfig?u.mov:battleMovement({...u,stance}));
+      return range.move.filter(([c,r])=>!combatConfig||Math.abs(c-u.c)+Math.abs(r-u.r)<=1).map(([c,r])=>({c,r}));
+    };
+    const pathForMove=(u,to,shared)=>computeRange(u,board(shared),combatConfig?u.mov:battleMovement({...u,stance:orders[u.id]?.stance}),{blockAllies:Boolean(combatConfig)}).pathTo(to.c,to.r);
+    const battle = combatConfig ? resolveTimedBattle({
+      units:[...snapshot,...objectSnap],orders:ordersFor,seed:(m.seed+m.round)>>>0,forecastAttack,legalMoves,pathForMove,config:combatConfig,
+      skillWindow:(records,history,time)=>{
+        activeSkillSlot=combatConfig.skillTimes.indexOf(time);
+        const start=recoveryEvents.length;
+        for(const u of records)if(u.hp>0&&u.kind!=='object')u.energy=Math.min(u.maxEnergy,(u.energy||0)+1);
+        const defense=defensePhase(records);
+        recoveryPhase(records,history);
+        const events=[...defense,...recoveryEvents.slice(start)];recordAbilities(events);
+        for(const o of blockingObjects())if(!records.some(u=>u.id===o.id))records.push({...o});
+        return {units:records.filter(u=>u.kind!=='object'||m.objects.some(o=>o.id===u.id&&o.hp>0)),events};
       },
-    });
-    batches.push({type:'movement',events:battle.batches[0].events});
-    recordAbilities(recoveryEvents);
-    batches.push({type:'abilities',events:recoveryEvents});
-    batches.push({ type: 'combat', events: battle.batches[1].events });
+      passives:(records,moved)=>evaluatePassives(records,{moved,stanceOf:u=>(fired.get(u.id)?.has('brace')||u.statuses?.brace>0?'hold':u.stance),controlled:onOwnedTile,objectCount:(u,k,r)=>objectsNear(u.c,u.r,r,k).length}),
+    }) : resolveBattleRound({units:[...snapshot,...objectSnap],orders,seed:(m.seed+m.round)>>>0,forecastAttack,legalMoves,pathForMove,beforeCombat:recoveryPhase});
+    if(combatConfig)batches.push(...battle.batches);
+    else {
+      batches.push({type:'movement',events:battle.batches[0].events});
+      recordAbilities(recoveryEvents);
+      batches.push({type:'abilities',events:recoveryEvents});
+      batches.push({type:'combat',events:battle.batches[1].events});
+    }
+    const combatEvents=battle.batches.filter(b=>b.type==='combat').flatMap(b=>b.events);
     for (const rec of battle.units) {
       if (rec.kind === 'object') { const o = m.objects.find((x) => x.id === rec.id); if (o) o.hp = rec.hp; } else Object.assign(byId(rec.id), rec);
     }
     for (const [id, gain] of struckEnergy) {
       const u = byId(id);
-      if (u && u.hp > 0 && battle.batches[1].events.some((e) => e.type === 'strike' && e.targetId === id && e.damage > 0)) u.energy = Math.min(u.maxEnergy, (u.energy || 0) + gain);
+      if (u && u.hp > 0 && combatEvents.some(e=>e.type==='strike'&&e.targetId===id&&e.damage>0)) u.energy=Math.min(u.maxEnergy,(u.energy||0)+gain);
     }
 
     // 4. Deaths (spell deaths included), champions, captures, end check.
     const results = [];
-    let deaths = [...spellDeaths, ...battle.batches[1].events.filter((e) => e.type === 'death').map((e) => e.unitId)];
+    let deaths = [...spellDeaths, ...combatEvents.filter((e) => e.type === 'death').map((e) => e.unitId)];
     // Culture hook (revenant passive): once per match a fallen unit returns at the end of the battle with 1 HP on its own tile.
     // Champions never use it (they have their own respawn).
     deaths = deaths.filter((id) => {
@@ -641,8 +829,9 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       return false;
     });
     const killerOf = new Map();
-    for (const e of battle.batches[1].events) if (e.type === 'strike' && e.damage > 0) killerOf.set(e.targetId, e.attackerId);
-    for (const e of battle.batches[1].events) if (e.type === 'objectDestroyed') {
+    for (const e of combatEvents) if (e.type === 'strike' && e.damage > 0) killerOf.set(e.targetId, e.attackerId);
+    for (const e of combatEvents) if (e.type === 'thorns' && e.amount > 0) killerOf.set(e.targetId, e.unitId);
+    for (const e of combatEvents) if (e.type === 'objectDestroyed') {
       const o = m.objects.find((x) => x.id === e.unitId);
       if (o) { results.push({ type: 'objectDestroyed', id: o.id, objectKind: o.objectKind, c: o.c, r: o.r }); notes.push({ faction: o.faction, text: `${o.name} destroyed` }); }
     }
@@ -739,9 +928,10 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
     if (side.cards.supply < RULES.heroRespawnCost) return null;
     const tile = deploymentTiles(f).find(([c, r]) => !unitAt(c, r) && MOVE_COST.armor[terrainAt(c, r)] !== undefined);
     if (!tile) return null;
-    const hero = advanceAbilityRound(prepare({ ...createHeroRespawnData(CHAMPION[f], tile[0], tile[1]), faction: f }));
+    const hero = advanceAbilityRound(prepare({ ...createHeroRespawnData(CHAMPION[f], tile[0], tile[1]), ...(combatConfig?.skillMode==='slots'&&byId(CHAMPION[f])?.skillSlots?{skillSlots:[...byId(CHAMPION[f]).skillSlots]}:{}), faction: f }));
     m.units = m.units.filter((u) => u.id !== hero.id);
     m.units.push(hero);
+    syncShards(hero);
     side.cards = { ...side.cards, supply: side.cards.supply - RULES.heroRespawnCost };
     side.heroRespawnAt = null;
     side.stats.respawns += 1;
@@ -792,8 +982,10 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       territory: [...territory.values()].filter((o) => o === f).length,
       championDown: side.heroRespawnAt !== null,
       unitState:field.map(u=>({id:u.id,c:u.c,r:u.r,hp:u.hp,energy:u.energy,facing:u.facing,stance:u.stance,objective:u.objective,
-        selectedAbilities:u.selectedAbilities,cooldowns:u.cooldowns,energyGainNextTurn:u.energyGainNextTurn})),
+        selectedAbilities:u.selectedAbilities,...(combatConfig?.skillMode==='slots'?{skillSlots:u.skillSlots}:{}),cooldowns:u.cooldowns,energyGainNextTurn:u.energyGainNextTurn})),
+      ...(combatConfig?.timelineScope==='type'?{skillTimelines:clone(skillTimelines[f])}:{}),
       reserveState:clone(side.cards.reserves),
+      shardDock:clone(side.shardDock), shards:clone(side.shards),
     };
   }
   const summaryEntry = (round = m.round) => ({ t: 'summary', round, ...(m.campaign ? { campaign: { stage: m.campaign.stage, wave: m.campaign.wave, phase: m.campaign.phase, rallied: m.campaign.rallied } } : {}), blue: sideSummary('blue'), red: sideSummary('red'),
@@ -802,14 +994,17 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
 
   for (const f of FACTIONS) sides[f].cards.population = population(f);
   if (m.campaign) spawnCampaignWave();
-  emit({ t: 'header', schema: SCHEMA, seed, maxRounds, map: MAP.id, rules: RULES, abilityRules: ABILITY_RULES, abilities: ABILITIES, cardLimits: { ...CARD_LIMITS }, ...(BATTLE_TUNING.damageScale !== 1 ? { battleTuning: { ...BATTLE_TUNING } } : {}), ...(JSON.stringify(EXPERIMENT_RULES) === JSON.stringify(DEFAULT_EXPERIMENT_RULES) ? {} : { experimentRules: { ...EXPERIMENT_RULES } }), ...(ACTIVE_CULTURES.length ? { cultures: [...ACTIVE_CULTURES] } : {}), ...(rarityGateActive() ? { rarityGate: { ...RARITY_GATE } } : {}), ...(champions ? { champions } : {}), ...(pools ? { pools } : {}), ...(campaign ? { campaign: clone(campaign) } : {}), ...meta });
+  emit({ t: 'header', schema: SCHEMA, seed, maxRounds, map: MAP.id, rules: RULES, ...(combatConfig?{combat:combatConfig}:{}), abilityRules: ABILITY_RULES, abilities: ABILITIES, abilitiesEnabled: abilitiesOn, shardRules: SHARD_RULES, cardLimits: { ...CARD_LIMITS }, ...(BATTLE_TUNING.damageScale !== 1 ? { battleTuning: { ...BATTLE_TUNING } } : {}), ...(JSON.stringify(EXPERIMENT_RULES) === JSON.stringify(DEFAULT_EXPERIMENT_RULES) ? {} : { experimentRules: { ...EXPERIMENT_RULES } }), ...(ACTIVE_CULTURES.length ? { cultures: [...ACTIVE_CULTURES] } : {}), ...(rarityGateActive() ? { rarityGate: { ...RARITY_GATE } } : {}), ...(champions ? { champions } : {}), ...(pools ? { pools } : {}), ...(campaign ? { campaign: clone(campaign) } : {}), ...meta });
   emit(summaryEntry(0));
 
   Object.assign(m, {
+    // Unlogged setup for scripted levels: put a shard straight onto a class (before any planning action).
+    seedShard: (f, unitType, shardId, tier = 1) => { const g = handlers.grantShard({ faction: f, shardId, tier }); return g.ok ? handlers.applyShard({ faction: f, shardInstanceId: g.shardInstanceId, unitType }) : g; },
+    abilitiesEnabled: abilitiesOn, syncShards, classOf, shardBonusFor: (f, cls) => shardBonus(sides[f].shards[cls]),
     alive, byId, unitAt, objectAt, addObject, consumeObject, objectsNear, board, population, deploymentTiles, canDeployAt, canWithdraw, armyRecords,
     battleStats: () => { battleStats.register([...m.units,...sides.blue.cards.reserves,...sides.red.cards.reserves]); return battleStats.snapshot(); },
     unitStats: id => battleStats.forUnit(id),
-    apply, resolveRound, summary: sideSummary, stats: statsEntry, champion: (f) => CHAMPION[f], home: (f) => HOME[f],
+    combat:combatConfig, apply, resolveRound, summary: sideSummary, stats: statsEntry, champion: (f) => CHAMPION[f], home: (f) => HOME[f],
   });
   return m;
 }

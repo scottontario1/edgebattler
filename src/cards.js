@@ -1,4 +1,6 @@
 import {UPGRADE_MAX_STARS,UPGRADE_POPULATION_BY_STARS} from './upgrades.js';
+import {SHARD_CARDS,SHARD_IDS} from './shards.js';
+export {SHARD_CARDS};
 /** Prototype card economy rules. Pure data helpers; rendering and board occupancy stay in callers. */
 
 export const DEFAULT_CARD_LIMITS = Object.freeze({
@@ -36,10 +38,13 @@ export const SKILL_CARDS = Object.freeze({
   barrier: Object.freeze({ id: 'skill-barrier', type: 'skill', rarity: 'common', skillId: 'barrier', name: 'Barrier', cost: 2, target: 'unit-type', duration: 'persistent', blockDamage: 2, effect: 'All friendly units of this type reduce incoming damage by 2 per battle.' }),
 });
 
-// Repeated entries represent relative weights in the shared pool.
+// Repeated entries represent relative weights in the shared pool. Shards (src/shards.js) replaced the Barrier skill card:
+// unit and spell weights doubled, each of the eight shard types once (shards are about a third of draws).
+// SKILL_CARDS stays exported for old level scripts and experiments, but no skill card is drawable.
 export const RECRUITMENT_POOL = Object.freeze([
-  'pikeman', 'pikeman', 'pikeman', 'archer', 'archer', 'cavalier',
-  'mend', 'ward', 'fireburst', 'barrier',
+  'pikeman', 'pikeman', 'pikeman', 'pikeman', 'pikeman', 'pikeman', 'archer', 'archer', 'archer', 'archer', 'cavalier', 'cavalier',
+  'mend', 'mend', 'ward', 'ward', 'fireburst', 'fireburst',
+  ...SHARD_IDS,
 ]);
 
 /** Small deterministic xorshift generator. Same seed produces the same stream. */
@@ -68,7 +73,7 @@ export const registerCandidateCards = (cards) => Object.assign(CANDIDATE_CARDS, 
 export const setRecruitmentPool = (keys) => { ACTIVE_POOL = keys ? Object.freeze([...keys]) : RECRUITMENT_POOL; };
 export const unregisterCandidateCards = (keys) => { for (const k of keys) delete CANDIDATE_CARDS[k]; };
 export const resetCandidateCards = () => { for (const k of Object.keys(CANDIDATE_CARDS)) delete CANDIDATE_CARDS[k]; ACTIVE_POOL = RECRUITMENT_POOL; };
-export const cardFor = (key) => UNIT_CARDS[key] ?? SPELL_CARDS[key] ?? SKILL_CARDS[key] ?? CANDIDATE_CARDS[key] ?? null;
+export const cardFor = (key) => UNIT_CARDS[key] ?? SPELL_CARDS[key] ?? SHARD_CARDS[key] ?? SKILL_CARDS[key] ?? CANDIDATE_CARDS[key] ?? null;
 /** Unit card by unit key: the shipped classes, or a registered culture variant. */
 export const unitCardFor = (key) => UNIT_CARDS[key] ?? (CANDIDATE_CARDS[key]?.type === 'unit' ? CANDIDATE_CARDS[key] : null);
 export const skillCardFor = (skillId) => SKILL_CARDS[skillId] ?? Object.values(CANDIDATE_CARDS).find((c) => c.skillId === skillId) ?? null;

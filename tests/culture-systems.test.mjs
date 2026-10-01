@@ -309,3 +309,7 @@ test('objects appear in summaries only when present and replay deterministically
   resetCultures();
   assert.deepEqual(Object.keys(ABILITY_CATALOG), Object.keys(ABILITIES));
 });
+
+// Ability kits are off in the shipped game (Shards replaced them); this file exercises the kits, so it opts in.
+import { setAbilitiesEnabled } from '../src/abilities.js';
+setAbilitiesEnabled(true);

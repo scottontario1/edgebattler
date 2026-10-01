@@ -8,10 +8,12 @@
 import { esc, uniqueIds } from './util.js';
 import { UNIT_CARDS } from '../cards.js';
 import { skillsForUnitType } from '../abilities.js';
+import { gemSVG } from './shards.js';
+import { SHARDS, shardEffectText } from '../shards.js';
 
 export const SKILL_TYPES = [['pikeman', 'Pikeman'], ['archer', 'Archer'], ['cavalier', 'Cavalier']];
 
-const KIND_LABEL = { unit: 'Unit', spell: 'Spell', skill: 'Skill' };
+const KIND_LABEL = { unit: 'Unit', spell: 'Spell', skill: 'Skill', shard: 'Shard' };
 
 // 24x24 icons drawn to read at 24-28px. Each one sits on the coloured glyph block of its card.
 const ICONS = {
@@ -33,6 +35,7 @@ const UNIT_GLYPHS = {
 const glyphSVG = (paths) => `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">${paths}</svg>`;
 
 function glyphFor(item) {
+  if (item.type === 'shard') return gemSVG(SHARDS[item.shardId]?.color ?? '#2fc4b0', 30);
   return glyphSVG(ICONS[item.id] || (item.type === 'skill' ? ICONS.skill : ICONS.spell));
 }
 
@@ -45,7 +48,7 @@ const costBadge = (cost, affordable) =>
 export function handHTML(m) {
   return m.hand.map((item) => {
     const unit = item.type === 'unit';
-    const kind = ['unit', 'spell', 'skill'].includes(item.type) ? item.type : 'spell';
+    const kind = ['unit', 'spell', 'skill', 'shard'].includes(item.type) ? item.type : 'spell';
     const affordable = !!m.canAfford(item.cost);
     const selected = item.instanceId === m.selectedCardId;
     const face = unit ? uniqueIds(m.portraitFor(item)) : uniqueIds(glyphFor(item));
@@ -96,6 +99,11 @@ export function detailHTML(m) {
   if(!c) return '';
   const unit = c.type === 'unit';
   const skill = c.type === 'skill';
+  if (c.type === 'shard') {
+    const short = !m.canAfford(c.cost), full = m.dockFree <= 0;
+    const why = full ? 'Shard dock is full: apply, remove or combine a shard first' : short ? `Not enough Supply: ${c.name} costs ${c.cost}` : `Buy ${c.name} into the shard dock (${c.cost} Supply)`;
+    return `<div class="plan-detail shard-detail"><div class="plan-detail-text" title="${esc(`${c.name}: ${shardEffectText(c.shardId, c.tier)}`)}">${gemSVG(SHARDS[c.shardId]?.color ?? '#2fc4b0', 16)}<b>${esc(c.name)}</b> <span class="effect">${esc(shardEffectText(c.shardId, c.tier))} for every unit of a class</span><small class="hint">${esc(why)}</small></div><button type="button" class="shard-buy" data-act="buyShard" title="${esc(why)}"${short || full ? ' disabled' : ''}>Buy · ${c.cost}S</button>${cycleControl}</div>`;
+  }
   const effect = unit ? `${c.class} · ${c.stars} star · ${c.range} range · default ${c.defaultStance}` : c.effect;
   const typeLabel = (id) => SKILL_TYPES.find(([t]) => t === id)?.[1] || id;
   let controls = '';

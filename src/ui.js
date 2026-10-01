@@ -1,8 +1,11 @@
+import {defaultSkillSlots,placeSkill} from './skill-slots.js';
+import {createCombatClock} from './ui/combat-clock.js';
+import {attackInterval} from './timed-battle.js';
 import { armyGroups, armyHTML, unitType } from './ui/army.js';
 import { battleReportHTML } from './ui/battlereport.js';
 import { createObjectLayer } from './objects.js';
 import {abilityEditorHTML} from './ui/abilities.js';
-import {selectedCost,FACING,flankSide} from './abilities.js';
+import {selectedCost,FACING,flankSide,kitFor} from './abilities.js';
 import './ui/abilities.css';
 import * as THREE from 'three';
 import { W, H, TERRAIN, inBounds, terrainAt, toWorld, tileTop } from './map.js';
@@ -19,6 +22,10 @@ import { createRecruitUnit } from './units.js';
 import { esc } from './ui/util.js';
 import { handHTML, reservesHTML, detailHTML, loadoutsHTML } from './ui/hand.js';
 import { trayHTML, applyTrayState } from './ui/tray.js';
+import { shardDockHTML, shardApplyHTML, appliedShardsHTML } from './ui/shards.js';
+import { SHARDS, SHARD_RULES, findShardCombos, shardLabel } from './shards.js';
+import { uiFlags } from './ui/util.js';
+import './ui/shards.css';
 import { queuedHTML, upgradePromptsHTML, upgradeChoiceHTML } from './ui/upgrade.js';
 import { unitCardHTML, forecastHTML, targetPromptHTML, sheetHTML, terrainChipHTML, rosterMiniHTML, decorateRoster } from './ui/unitpanels.js';
 import { createFeed } from './ui/feed.js';
@@ -220,6 +227,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     controls.setAttribute('aria-label','Campaign progress'); document.body.appendChild(controls);
     controls.addEventListener('click', e => { const b=e.target.closest('[data-act]'); if(b && !b.disabled) commands[b.dataset.act]?.(); });
   }
+  const combatClock=createCombatClock();
   const objectLayer = createObjectLayer(scene);
   const card = document.getElementById('card');
   const terrainChip = document.getElementById('terrain');
@@ -231,6 +239,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
   document.body.appendChild(sheet);
   const army = document.createElement('nav'); army.className='panel army-rail'; army.setAttribute('aria-label','Your recruited army'); document.body.appendChild(army);
   const armyPopover=document.createElement('div');armyPopover.className='panel army-popover';armyPopover.hidden=true;document.body.appendChild(armyPopover);
+  const skillPanel=document.createElement('section');skillPanel.className='panel type-skills';skillPanel.hidden=true;skillPanel.setAttribute('aria-label','Unit stats and type skill timeline');document.body.appendChild(skillPanel);
   const reportBackdrop=document.createElement('div');reportBackdrop.className='battle-report-backdrop';reportBackdrop.hidden=true;document.body.appendChild(reportBackdrop);
   const reportPanel = document.createElement('section'); reportPanel.className='panel battle-report'; reportPanel.hidden=true;reportPanel.setAttribute('role','dialog');reportPanel.setAttribute('aria-modal','true');reportPanel.setAttribute('aria-label','Battle statistics');document.body.appendChild(reportPanel);
 
@@ -259,6 +268,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
   const selMark = brackets(scene, 0xf2cf6b, 0.04, 0.26);
   const marks = reticles(scene);
 
+  uiFlags.abilities = !!match.abilitiesEnabled;
   const state = {
     hoverId: null,
     // Brenna in the shipped game; the side's champion (or its first unit) when a faction or level has none of that name.
@@ -268,13 +278,14 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     targetId: null,
     danger: false,
     sheet: false, managedType:null, reportOpen:false, reportSide:'blue', previousReport:false,
-    abilityDraft:null, abilityTargets:[], abilityNotice:'', abilityGroupOpen:false, lastAbilityResults:{},
+    unitSkillsOpen:false, abilityDraft:null, abilityTargets:[], abilityNotice:'', abilityGroupOpen:false, lastAbilityResults:{},
     selectedAt: 0,
     phase: 'player', // 'player' | 'enemy'
     turn: 1,
     busy: false, // an animation or the enemy phase is running: input is ignored
     over: false, // victory or defeat reached
     selectedCardId: null,
+    selectedShardId: null,
     selectedSkillType: 'pikeman',
     skillTransferTargets: {},
     selectedReserveId: null,
@@ -283,7 +294,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     trayCollapsed: matchMedia('(max-height: 500px) and (min-aspect-ratio: 1/1) and (min-width: 561px)').matches,
     notice: '',
   };
-  Object.defineProperty(state, 'turn', { get: () => match.round });
+  Object.defineProperty(state, 'turn', { get: () => state.playbackRound??match.round });
   Object.defineProperty(state, 'over', { get: () => match.over });
   const territory = match.territory;
   let range = null;
@@ -306,11 +317,21 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
 
   const armyRecords = () => match.armyRecords('blue');
 
+  const titleCase = (t) => String(t).replace(/[_-]+/g, ' ').replace(/\b\w/g, (ch) => ch.toUpperCase());
+  /** Unit classes a shard can be applied to: the recruit classes plus any class on the field or bench. */
+  function shardClasses() {
+    const ids = ['pikeman', 'archer', 'cavalier'];
+    for (const r of [...match.units.filter((u) => u.faction === 'blue'), ...blue().cards.reserves]) { const c = match.classOf(r); if (c && !ids.includes(c)) ids.push(c); }
+    for (const c of Object.keys(match.sides.blue.shards)) if (!ids.includes(c)) ids.push(c);
+    return ids.map((id) => ({ id, label: titleCase(id), shards: match.sides.blue.shards[id] ?? [] }));
+  }
+
   function renderPlanning() {
-    const selectedReserve=blue().cards.reserves.find(u=>u.id===state.selectedReserveId);
-    const selectedCard = blue().cards.hand.find((item) => item.instanceId === state.selectedCardId);
-    const affordable = (cost) => canAfford(blue().cards, cost);
-    const queued = (blue().cards.queuedSpells || []).map((cast) => {
+    const displayCards=state.playbackCards||blue().cards;
+    const selectedReserve=displayCards.reserves.find(u=>u.id===state.selectedReserveId);
+    const selectedCard = displayCards.hand.find((item) => item.instanceId === state.selectedCardId);
+    const affordable = (cost) => canAfford(displayCards, cost);
+    const queued = (displayCards.queuedSpells || []).map((cast) => {
       const spell = SPELL_CARDS[cast.spellId];
       return {
         queueId: cast.queueId,
@@ -338,26 +359,34 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
         summary: upgradePreview.ok ? `${upgradePreview.stars.to}★ · HP ${upgradePreview.unit.hp}/${upgradePreview.unit.maxHp} · STR ${upgradePreview.unit.str} · Population ${upgradePreview.population.before} → ${upgradePreview.population.after}` : upgradePreview.reason,
       };
     }
+    const side = match.sides?.blue ?? {};
+    const dock = side.shardDock ?? [];
+    if (state.selectedShardId && !dock.some((x) => x.id === state.selectedShardId)) state.selectedShardId = null;
+    const selectedShard = dock.find((x) => x.id === state.selectedShardId);
+    const classList = shardClasses();
     const controlledCount = [...territory.values()].filter((owner) => owner === 'blue').length;
     const prompt = state.notice || (state.selectedReserveId ? 'Choose an open tile by your keep or a captured village.'
+      : selectedShard ? `Apply ${shardLabel(selectedShard.shardId, selectedShard.tier)} to a unit class, or keep it in the dock.`
+      : selectedCard?.type === 'shard' ? 'Buy this shard into the dock, then apply it to a unit class.'
       : selectedCard?.type === 'spell' ? 'Select this spell, then choose a legal battlefield target.'
-        : selectedCard?.type === 'skill' ? 'Choose a unit type to equip this transferable skill for all its units.'
+        : uiFlags.abilities && selectedCard?.type === 'skill' ? 'Choose a unit type to equip this transferable skill for all its units.'
         : state.upgradeChoice ? 'Choose the surviving copy and destination, then confirm.'
           : 'Select a card to recruit or prepare a spell.');
     const m = {
-      supply: blue().cards.supply, maxSupply:CARD_LIMITS.maxSupply, population: blue().cards.population, populationCap: CARD_LIMITS.populationCap,
-      reserveCount: blue().cards.reserves.length, reserveCapacity: CARD_LIMITS.reserveCapacity,
-      cyclesRemaining:blue().cards.cyclesRemaining, locations: controlledCount, prompt, phase: state.phase, collapsed: state.trayCollapsed,
+      supply: displayCards.supply, maxSupply:CARD_LIMITS.maxSupply, population: displayCards.population, populationCap: CARD_LIMITS.populationCap,
+      reserveCount: displayCards.reserves.length, reserveCapacity: CARD_LIMITS.reserveCapacity,
+      cyclesRemaining:displayCards.cyclesRemaining, locations: controlledCount, prompt, phase: state.phase, collapsed: state.trayCollapsed,
       hand: handHTML({
-        hand: blue().cards.hand, selectedCardId: state.selectedCardId, canAfford: affordable,
+        hand: displayCards.hand, selectedCardId: state.selectedCardId, canAfford: affordable,
         portraitFor: (item) => portraitSVG(units.list.find((entry) => entry.data.faction === 'blue' && (entry.data.variantId ?? entry.data.cls) === item.unitId)?.data || createRecruitUnit(item.unitId, `preview-${item.unitId}`, 'blue', 0, 0)),
       }),
-      reserves: reservesHTML({ reserves: blue().cards.reserves, selectedReserveId: state.selectedReserveId, definitions: UNIT_CARDS, definitionFor: unitCardFor, portraitFor: (reserve) => portraitSVG({ ...createRecruitUnit(reserve.unitId,reserve.id,'blue',0,0), ...reserve, faction: 'blue' }) }),
-      detail: detailHTML({ selectedCard, selectedReserve, cyclePreview: (selectedReserve||selectedCard)?previewCycle(blue().cards,{source:selectedReserve?'bench':'hand',id:selectedReserve?.id??selectedCard?.instanceId}):null, selectedSkillType: state.selectedSkillType, skillLoadouts: blue().loadouts, canAfford: affordable }),
+      reserves: reservesHTML({ reserves: displayCards.reserves, selectedReserveId: state.selectedReserveId, definitions: UNIT_CARDS, definitionFor: unitCardFor, portraitFor: (reserve) => portraitSVG({ ...createRecruitUnit(reserve.unitId,reserve.id,'blue',0,0), ...reserve, faction: 'blue' }) }),
+      shardDock: shardDockHTML({ dock, selectedShardId: state.selectedShardId, combos: findShardCombos(dock) }),
+      detail: (selectedShard && !selectedCard && !selectedReserve ? shardApplyHTML({ shard: selectedShard, classes: classList.map((c) => ({ id: c.id, label: c.label, count: c.shards.length, max: SHARD_RULES.classSlots })) }) : '') || detailHTML({ dockFree: SHARD_RULES.dockSlots - dock.length, selectedCard, selectedReserve, cyclePreview: (selectedReserve||selectedCard)?previewCycle(displayCards,{source:selectedReserve?'bench':'hand',id:selectedReserve?.id??selectedCard?.instanceId}):null, selectedSkillType: state.selectedSkillType, skillLoadouts: blue().loadouts, canAfford: affordable }),
       queued: queuedHTML({ queued }),
       upgrades: upgradePromptsHTML({ groups }),
       choice: upgradeChoiceHTML({ choice }),
-      loadouts: loadoutsHTML({ skillLoadouts: blue().loadouts, skillTransferTargets: state.skillTransferTargets }),
+      loadouts: appliedShardsHTML({ classes: classList }) + (uiFlags.abilities ? loadoutsHTML({ skillLoadouts: blue().loadouts, skillTransferTargets: state.skillTransferTargets }) : ''),
     };
     planning.innerHTML = trayHTML(m);
     applyTrayState(planning, m);
@@ -379,6 +408,8 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     card.hidden = !html || state.sheet;
     card.className = cls;
     card.innerHTML = html;
+    const cadenceUnit=units.byId.get(state.hoverId||state.selectedId)?.data;
+    if(match.combat&&cadenceUnit){const info=card.querySelector('.info');if(info){const cadence=document.createElement('div');cadence.className='cls';cadence.textContent='Basic attack every '+attackInterval(cadenceUnit,match.combat).toFixed(1)+'s';info.appendChild(cadence);}}
     // Ease in only when the subject changes, not on every hover refresh.
     const subject = `${state.mode}:${state.mode === 'target' ? state.hoverId || state.targetId : state.hoverId || state.selectedId}`;
     if (subject !== lastSubject) {
@@ -401,12 +432,16 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
       stats: match.unitStats(u.id),
       moveType: { armor: 'Armored', mounted: 'Mounted', foot: 'Foot' }[MOVE_TYPE[u.cls] || 'foot'],
     });
-    if(u.faction==='blue'&&!state.busy&&!state.over) {
+    if(!uiFlags.abilities&&u.faction==='blue'&&!state.busy&&!state.over) {
+      const fl={north:'↑ North',east:'→ East',south:'↓ South',west:'← West'};
+      sheet.insertAdjacentHTML('beforeend',`<div class="sheet-facing"><span>Facing</span>${Object.keys(FACING).map(k=>`<button type="button" data-facing="${k}" aria-pressed="${u.facing===k}">${fl[k]}</button>`).join('')}</div>`);
+    }
+    if(uiFlags.abilities&&!match.combat&&u.faction==='blue'&&!state.busy&&!state.over) {
       if(state.abilityDraft?.unitId!==u.id) {
-        state.abilityDraft={unitId:u.id,ids:[...(u.selectedAbilities||[])]};state.abilityTargets=[u.id];state.abilityNotice='';state.abilityGroupOpen=false;
+        state.abilityDraft={unitId:u.id,ids:[...(u.selectedAbilities||[])],slots:defaultSkillSlots(u),selectedSkill:null};state.abilityTargets=[u.id];state.abilityNotice='';state.abilityGroupOpen=false;
       }
       const stats=sheet.innerHTML.slice(sheet.innerHTML.indexOf('</button>')+9);
-      sheet.innerHTML=`<button class="btn close" data-act="close" aria-label="Close">×</button><div class="eyebrow">Planning</div><div class="name">${esc(u.name)}</div>`+abilityEditorHTML(u,{draft:state.abilityDraft.ids,targets:state.abilityTargets,units:match.alive(),notice:state.abilityNotice,groupOpen:state.abilityGroupOpen,lastResults:state.lastAbilityResults[u.id]||[]})+`<details class="plan-stats"><summary>Unit stats and equipment</summary>${stats}</details>`;
+      sheet.innerHTML=`<button class="btn close" data-act="close" aria-label="Close">×</button><div class="eyebrow">Planning</div><div class="name">${esc(u.name)}</div>`+abilityEditorHTML(u,{draft:state.abilityDraft.ids,slots:match.combat?state.abilityDraft.slots:null,skillTimes:match.combat?.skillTimes,selectedSkill:state.abilityDraft.selectedSkill,targets:state.abilityTargets,units:match.alive(),notice:state.abilityNotice,groupOpen:state.abilityGroupOpen,lastResults:state.lastAbilityResults[u.id]||[]})+`<details class="plan-stats"><summary>Unit stats and equipment</summary>${stats}</details>`;
     }
 
   }
@@ -431,19 +466,20 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     } else if (state.selectedCardId) {
       const card = blue().cards.hand.find((item) => item.instanceId === state.selectedCardId);
       if (card?.type === 'unit') html += btn('recruit', `Recruit · ${card.cost}`, '✚', '↵', 'primary', !canAfford(blue().cards, card.cost));
+      if (card?.type === 'shard') html += btn('buyShard', `Buy · ${card.cost}S`, '◆', '↵', 'primary', !canAfford(blue().cards, card.cost) || blue().shardDock?.length >= SHARD_RULES.dockSlots);
       if (card?.type === 'spell') html += btn('targetSpell', 'Choose target', '✧', '↵', 'primary');
       const cycle=previewCycle(blue().cards,{source:'hand',id:state.selectedCardId});
       html+=btn('cycle','Cycle card','↻','', '',!cycle.ok);
       html += btn('cancelCard', 'Clear card', '‹', 'Esc');
     } else {
-      if (u) html += btn('inspect', u.faction==='blue'?'Plan abilities':'Inspect', 'ⓘ', 'I');
+      if (u) html += btn('inspect', u.faction==='blue'&&uiFlags.abilities?'Plan abilities':'Inspect', 'ⓘ', 'I');
       if (canWithdraw(u)) html += btn('withdraw', 'Withdraw to reserve', '⇲', 'W');
       if (u?.faction === 'blue') {
         const st = u.stance || 'advance';
         html += btn('stance', `Stance · ${STANCE_LABEL[st] || st}${st === 'protect' ? ' Brenna' : ''}`, stanceIcon(st, 14), 'S', `stance-${st}`).replace('title="', `title="${STANCE_HINT[st] || ''} (S to change) · `);
       }
       html += btn('danger', 'Danger zone', '◈', 'D', state.danger ? 'on' : '');
-      html += btn('resolve', 'Resolve battle', '⚔', '↵', 'primary');
+      html += btn('resolve', match.combat?'Start 18s combat':'Resolve battle', '⚔', '↵', 'primary');
     }
     if (match.campaign) {
       const cs = match.campaign, stage = cs.stages[cs.stage];
@@ -539,7 +575,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
   }
 
   function refresh() {
-    objectLayer.sync(match.objects);
+    objectLayer.sync(state.playbackObjects||match.objects);
     match.battleStats();
     renderArmy();
     renderReport();
@@ -552,7 +588,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     for (const entry of units.list) if (!roster.querySelector(`[data-id="${CSS.escape(entry.data.id)}"]`)) addRosterUnit(entry.data);
     for (const el of roster.children) {
       if (!units.byId.has(el.dataset.id)) continue;
-      decorateRoster(el, data(el.dataset.id), { active: el.dataset.id === state.selectedId });
+      decorateRoster(el, {...data(el.dataset.id),hp:units.byId.get(el.dataset.id).displayHp??data(el.dataset.id).hp}, { active: el.dataset.id === state.selectedId });
     }
     feed.sync({ phase: state.phase, turn: state.turn, notice: state.notice, busy: state.busy, over: state.over });
     plates.sync(state);
@@ -562,9 +598,29 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
   function renderArmy() {
     army.innerHTML=armyHTML(groupsNow(),{portraitFor:u=>portraitSVG(u),activeType:selected()?unitType(selected()):null,managedType:state.managedType});
     army.classList.toggle('locked',state.busy);
+    renderTypeSkills();
     armyPopover.replaceChildren();armyPopover.hidden=true;
-    if(innerWidth<=820){const options=army.querySelector('.army-options');if(options){armyPopover.hidden=false;armyPopover.appendChild(options);}}
+    if(innerWidth<=820&&!state.unitSkillsOpen){const options=army.querySelector('.army-options');if(options){armyPopover.hidden=false;armyPopover.appendChild(options);}}
   }
+  function renderTypeSkills(){
+    const u=selected();skillPanel.hidden=!match.combat||!state.unitSkillsOpen||!u||state.busy;
+    document.body.classList.toggle('type-skills-open',!skillPanel.hidden);
+    if(skillPanel.hidden)return;
+    const editable=u.faction==='blue'&&!state.over;
+    if(editable&&state.abilityDraft?.unitId!==u.id){state.abilityDraft={unitId:u.id,ids:[...(u.selectedAbilities||[])],slots:defaultSkillSlots(u),selectedSkill:null};state.abilityNotice='';}
+    if(editable)state.abilityTargets=match.alive('blue').filter(o=>unitType(o)===unitType(u)).map(o=>o.id);
+    const st=match.unitStats(u.id),stat=(label,value)=>`<span>${label}<b>${value??0}</b></span>`;
+    const statsHTML=`<div class="type-unit-stats">${stat('HP',u.hp+'/'+u.maxHp)}${stat('Energy',u.energy+'/'+u.maxEnergy)}${stat('Attack / sec',(1/attackInterval(u,match.combat)).toFixed(2))}${stat('STR',u.str)}${stat('DEF',u.def)}${stat('SPD',u.spd)}${stat('MAG',u.mag)}${stat('SKL',u.skl)}${stat('RES',u.res)}${stat('Damage dealt',st?.damageDealt)}${stat('Damage taken',st?.damageTaken)}${stat('Ability uses',Object.values(st?.abilityUses||{}).reduce((a,b)=>a+b,0))}</div>`;
+    skillPanel.innerHTML=`<button class="type-skills-close" data-skill-close aria-label="Close unit panel">×</button><header><span class="army-face">${portraitSVG(u)}</span><div><small>${editable?'Shared type timeline':'Unit inspection'}</small><h3>${esc(u.name)}</h3><p>${esc(unitType(u))} · ${editable?state.abilityTargets.length+' field units':''}</p></div></header>`;
+    if(editable)skillPanel.insertAdjacentHTML('beforeend',abilityEditorHTML(u,{draft:state.abilityDraft.ids,slots:state.abilityDraft.slots,skillTimes:match.combat.skillTimes,selectedSkill:state.abilityDraft.selectedSkill,targets:state.abilityTargets,units:match.alive(),notice:state.abilityNotice||'Changes save immediately for this type, including bench units and future recruits.',groupOpen:false,typeShared:true,lastResults:state.lastAbilityResults[u.id]||[]}));
+    const slots=skillPanel.querySelector('.skill-slots');if(slots)slots.insertAdjacentHTML('afterend',statsHTML);else skillPanel.insertAdjacentHTML('beforeend',statsHTML);
+  }
+  function saveTypeTimeline(){
+    const result=act({type:'abilities',unitId:selected().id,skillSlots:state.abilityDraft.slots});
+    state.abilityNotice=result.ok?'Saved for all '+selected().name+' units, including future recruits.':'Cannot save: '+result.reason;
+    state.abilityDraft.slots=defaultSkillSlots(selected());state.abilityDraft.ids=state.abilityDraft.slots.filter(Boolean);
+  }
+  skillPanel.addEventListener('click',e=>{if(e.target.closest('[data-skill-close]')){state.unitSkillsOpen=false;refresh();}});
   function renderReport() {
     reportPanel.hidden=!state.reportOpen;reportBackdrop.hidden=!state.reportOpen;if(!state.reportOpen)return;
     let report=match.battleStats(),title='Battle statistics';
@@ -577,10 +633,10 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     if(innerWidth<=820||innerHeight>innerWidth){actions.style.left='';actions.style.top='';return;}
     const u=selected(),entry=u?units.byId.get(u.id):null;
     const p=entry?entry.group.position.clone().add(new THREE.Vector3(0,1.5,0)).project(camera):null;
-    const half=actions.offsetWidth/2,topMargin=match.campaign?142:85;
+    const half=actions.offsetWidth/2,railEdge=!skillPanel.hidden?skillPanel.getBoundingClientRect().right+8:150,topMargin=match.campaign?142:85;
     const x=p?(p.x+1)*innerWidth/2:innerWidth/2;
     const y=p?(1-p.y)*innerHeight/2-12:innerHeight-(planning.offsetHeight||145)-20;
-    actions.style.left=Math.round(Math.max(half+150,Math.min(innerWidth-half-12,x)))+'px';
+    actions.style.left=Math.round(Math.max(half+railEdge,Math.min(innerWidth-half-12,x)))+'px';
     actions.style.top=Math.round(Math.max(topMargin+actions.offsetHeight,Math.min(innerHeight-100,y)))+'px';
   }
   function handleArmyClick(e) {
@@ -595,7 +651,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     if(action==='stats'){commands.battleStats();return;}
     if(!g)return;
     if(action==='next'&&g.field.length){const i=g.field.findIndex(u=>u.id===state.selectedId);select(g.field[(i+1)%g.field.length].id);}
-    if(action==='plan'&&g.field.length){select(g.field[0].id);state.sheet=true;state.abilityDraft={unitId:g.field[0].id,ids:[...(g.field[0].selectedAbilities||[])]};state.abilityTargets=g.field.map(u=>u.id);state.abilityGroupOpen=true;refresh();}
+    if(action==='plan'&&g.field.length){select(g.field[0].id);if(!match.combat){state.sheet=true;refresh();}}
     if(['advance','hold'].includes(action)){for(const u of g.field)act({type:'stance',unitId:u.id,stance:action});refresh();}
   }
   army.addEventListener('click',handleArmyClick);armyPopover.addEventListener('click',handleArmyClick);
@@ -641,6 +697,8 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
   function select(id) {
     if (state.selectedId !== id) state.selectedAt = performance.now();
     state.selectedId = id;
+    state.unitSkillsOpen=Boolean(id&&match.combat);
+    if(match.combat)state.sheet=false;
     if (id && state.selectedCardId) state.selectedCardId = null;
     if (id && state.selectedReserveId) state.selectedReserveId = null;
     state.mode = 'idle';
@@ -653,6 +711,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
 
   // End of match: banner with the reason.
   function showEnd() {
+    combatClock.hide();
     state.busy = false;
     state.mode = 'idle';
     refresh();
@@ -769,6 +828,29 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     refresh();
   }
 
+  function buySelectedShard() {
+    const card = blue().cards.hand.find((item) => item.instanceId === state.selectedCardId);
+    if (!card || card.type !== 'shard') return;
+    const res = act({ type: 'buyShard', cardId: card.instanceId });
+    if (res.ok) {
+      state.selectedCardId = null;
+      state.selectedShardId = res.shardInstanceId;
+      state.notice = `${shardLabel(res.shardId, res.tier)} stored in the shard dock. Pick a class to apply it to.`;
+    }
+    refresh();
+  }
+
+  function applySelectedShard(unitType) {
+    const shard = blue().shardDock.find((x) => x.id === state.selectedShardId);
+    if (!shard) return;
+    const res = act({ type: 'applyShard', shardInstanceId: shard.id, unitType });
+    if (res.ok) {
+      state.selectedShardId = null;
+      state.notice = `${shardLabel(res.shardId, res.tier)} applied: every ${titleCase(unitType)} gains it.`;
+    }
+    refresh();
+  }
+
   function equipSelectedSkill() {
     const card = blue().cards.hand.find((item) => item.instanceId === state.selectedCardId);
     if (!card || card.type !== 'skill') return false;
@@ -798,10 +880,17 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
   // the outcome: every record already holds its final state; the HP bars show `displayHp` meanwhile.
   async function resolveBattle() {
     if (state.busy || state.over || state.phase !== 'player') return;
+    state.playbackRound=match.round;
+    state.playbackCards=structuredClone(blue().cards);
+    if(match.combat)state.playbackObjects=structuredClone(match.objects);
+    state.beforeBattleTrayCollapsed=state.trayCollapsed;
+    if(match.combat)state.trayCollapsed=true;
     state.busy = true;
     state.phase = 'battle';
+    state.sheet=false;state.managedType=null;state.reportOpen=false;
     state.mode = 'idle';
     state.selectedCardId = null;
+    state.selectedShardId = null;
     state.selectedReserveId = null;
     state.selectedId = null;
     state.notice = '';
@@ -820,9 +909,12 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     const restore = () => { for (const u of match.units) { const at = final.get(u.id); if (at) { u.c = at[0]; u.r = at[1]; } } };
     restore();
     refresh();
-    await banner('Battle begins', '', 500 / speed);
+    if(!match.combat)await banner('Battle begins','',500/speed);
     const show = (id, delta) => { const u = units.byId.get(id); if (u && u.displayHp != null) u.displayHp = Math.max(0, u.displayHp + delta); };
     const dying = async (id) => { if (units.byId.has(id) && (units.byId.get(id).displayHp ?? 1) <= 0) await units.die(id); };
+    if(match.combat){
+      await playTimedBattle(result.batches,shown,show,restore);
+    }else{
     for (const batch of result.batches) {
       if (batch.type === 'spells') {
         for (const e of batch.events) {
@@ -830,6 +922,10 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
           if (e.status && e.targetId) pop(e.status === 'ward' ? 'Ward' : e.status, e.targetId, 'ward');
           for (const hit of e.events || []) { if (hit.amount > 0) { pop(`${hit.amount}`, hit.targetId); show(hit.targetId, -hit.amount); } await dying(hit.targetId); }
           await wait(120);
+        }
+      } else if (batch.type === 'shards') {
+        for (const e of batch.events) {
+          if (e.type === 'regen' && e.amount > 0) { pop(`+${e.amount}`, e.unitId, 'heal'); show(e.unitId, e.amount); await wait(90); }
         }
       } else if (batch.type === 'abilities') {
         for (const e of batch.events) {
@@ -856,10 +952,14 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
               else if (e.barrierReduction||e.braceReduction) pop('Blocked', e.targetId, 'barrier');
             } else pop('MISS', e.targetId, 'miss');
             await wait(110);
+          } else if (e.type === 'thorns') {
+            if (e.amount > 0 && units.byId.has(e.targetId)) { pop(`${e.amount} Thorns`, e.targetId, 'thorns'); show(e.targetId, -e.amount); await dying(e.targetId); await wait(60); }
           } else if (e.type === 'death') await units.die(e.unitId);
         }
       }
     }
+    }
+    state.playbackRound=null;state.playbackCards=null;state.playbackObjects=null;state.trayCollapsed=state.beforeBattleTrayCollapsed;
     for (const u of units.list) u.displayHp = null;
     syncView();
     state.notice = result.notes.filter((n) => n.faction === 'blue' || /fallen|Captured|Lost/.test(n.text)).map((n) => n.text).join(' · ');
@@ -868,8 +968,51 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     await planningStage();
   }
 
+  async function playTimedBattle(batches,shown,show,restore){
+    const end=batches.find(b=>b.events.some(e=>e.type==='combatEnd'))?.time??match.combat.duration;
+    const visual=new Map([...shown.keys()].map(id=>[id,fromVisual(id)]));
+    function fromVisual(id){const u=units.byId.get(id);const movement=batches.flatMap(b=>b.type==='movement'?b.events:[]).find(e=>e.unitId===id);return movement?[movement.from.c,movement.from.r]:[u.data.c,u.data.r];}
+    const activeAnimations=new Map();
+    const animate=(id,fn)=>{const task=(activeAnimations.get(id)||Promise.resolve()).then(fn);activeAnimations.set(id,task);return task;};
+    let elapsed=0,last=performance.now();state.combatElapsed=0;
+    combatClock.start(match.combat);
+    const timer=setInterval(()=>{const now=performance.now();if(!document.hidden)elapsed=Math.min(end,elapsed+(now-last)/1000*speed);last=now;state.combatElapsed=elapsed;combatClock.update(elapsed);},30);
+    try{
+      for(const batch of batches){
+        const time=batch.time??0;
+        while(elapsed+0.001<time)await sleep(16);
+        for(const e of batch.events){
+          if(e.objectSpawn){state.playbackObjects.push(e.objectSpawn);objectLayer.sync(state.playbackObjects);}
+          if(e.consumedIds||e.type==='objectDestroyed'){
+            const gone=new Set(e.consumedIds||[e.unitId]);state.playbackObjects=state.playbackObjects.filter(o=>!gone.has(o.id));objectLayer.sync(state.playbackObjects);
+          }
+          if(batch.type==='movement'&&e.type==='move'&&units.byId.has(e.unitId)){
+            visual.set(e.unitId,[e.to.c,e.to.r]);
+            animate(e.unitId,async()=>{await units.moveAlong(e.unitId,e.path?.length?e.path:[[e.to.c,e.to.r]],speed);restore();});
+          }else if(e.type==='strike'){
+            if(units.byId.has(e.attackerId)&&visual.has(e.targetId))animate(e.attackerId,()=>units.lunge(e.attackerId,visual.get(e.targetId),speed));
+            if(e.hit){if(e.damage){show(e.targetId,-e.damage);pop(e.crit?e.damage+'!':String(e.damage),e.targetId,e.crit?'crit':'');}else if(e.braceReduction||e.barrierReduction)pop('Blocked',e.targetId,'barrier');}
+            else pop('MISS',e.targetId,'miss');
+          }else if(e.type==='thorns'){show(e.targetId,-e.amount);pop(String(e.amount),e.targetId);}
+          else if(e.type==='death'&&units.byId.has(e.unitId))animate(e.unitId,()=>units.die(e.unitId,speed));
+          else if(batch.type==='abilities'&&e.applied){
+            if(e.effect?.type==='heal'&&e.effect.amount){show(e.unitId,e.effect.amount);pop(e.name+' +'+e.effect.amount,e.unitId,'heal');}
+            else pop(e.name,e.unitId,'ward');
+            for(const h of e.heals||[]){show(h.unitId,h.amount);if(h.amount)pop('+'+h.amount,h.unitId,'heal');}
+          }else if(batch.type==='spells'){
+            if(e.amount&&e.targetId){show(e.targetId,e.amount);pop('+'+e.amount,e.targetId,'heal');}
+            for(const h of e.events||[]){show(h.targetId,-h.amount);if(h.amount)pop(String(h.amount),h.targetId);if((units.byId.get(h.targetId)?.displayHp??1)<=0)animate(h.targetId,()=>units.die(h.targetId,speed));}
+          }else if(batch.type==='shards'&&e.amount){show(e.unitId,e.amount);pop('+'+e.amount,e.unitId,'heal');}
+        }
+      }
+      await Promise.all(activeAnimations.values());
+      combatClock.finish();
+    }finally{clearInterval(timer);combatClock.hide();state.combatElapsed=null;restore();}
+  }
+
   // Start of a planning stage: the AI side(s) plan, then the player (or blue AI in autoplay).
   async function planningStage(first = false) {
+    combatClock.hide();
     const notes = [];
     const red = runAI('red', redPolicy);
     if (red) notes.push(red);
@@ -912,6 +1055,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
       refresh();
     },
     equipSkill() { equipSelectedSkill(); },
+    buyShard() { buySelectedShard(); },
     // Advance -> Hold -> Protect (Brenna) -> Advance. Brenna herself has no one to protect.
     stance() {
       const u = selected();
@@ -942,7 +1086,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
       state.targetId = range.targets.size === 1 ? [...range.targets.keys()][0] : null;
       refresh();
     },
-    inspect() { if (selected()) { state.sheet = true; refresh(); } },
+    inspect() { if (selected()) { if(match.combat)state.unitSkillsOpen=true;else state.sheet=true;refresh(); } },
     close() { state.sheet = false; state.abilityDraft=null; refresh(); },
     cancel() { state.mode = 'idle'; state.targetId = null; refresh(); },
     danger() { state.danger = !state.danger; refresh(); },
@@ -962,6 +1106,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     const cardButton = e.target.closest('[data-card-id]');
     if (cardButton) {
       state.selectedCardId = cardButton.dataset.cardId;
+      state.selectedShardId = null;
       state.selectedReserveId = null;
       state.mode = 'idle';
       state.notice = '';
@@ -970,10 +1115,36 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     }
     const reserveButton = e.target.closest('[data-reserve-id]');
     if (reserveButton) {
+      state.selectedShardId = null;
       state.selectedReserveId = reserveButton.dataset.reserveId;
       state.selectedCardId = null;
       state.mode = 'deploy';
       state.notice = '';
+      refresh();
+      return;
+    }
+    const shardSlot = e.target.closest('[data-shard-id]');
+    if (shardSlot) {
+      state.selectedShardId = state.selectedShardId === shardSlot.dataset.shardId ? null : shardSlot.dataset.shardId;
+      state.selectedCardId = null; state.selectedReserveId = null; state.mode = 'idle'; state.notice = '';
+      refresh();
+      return;
+    }
+    const applyBtn = e.target.closest('[data-apply-shard-class]');
+    if (applyBtn) { if (!applyBtn.disabled) applySelectedShard(applyBtn.dataset.applyShardClass); return; }
+    const removeBtn = e.target.closest('[data-remove-shard]');
+    if (removeBtn) {
+      const [unitType, index] = removeBtn.dataset.removeShard.split(':');
+      const res = act({ type: 'removeShard', unitType, index: Number(index) });
+      if (res.ok) state.notice = `${shardLabel(res.shardId, res.tier)} returned to the dock.`;
+      refresh();
+      return;
+    }
+    const combineBtn = e.target.closest('[data-combine-shard]');
+    if (combineBtn) {
+      const [shardId, tier] = combineBtn.dataset.combineShard.split(':');
+      const res = act({ type: 'combineShards', shardId, tier: Number(tier) });
+      if (res.ok) { state.selectedShardId = res.shardInstanceId; state.notice = `Combined three into ${shardLabel(res.shardId, res.tier)}.`; }
       refresh();
       return;
     }
@@ -1022,21 +1193,36 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
   };
   actions.addEventListener('click', onAction);
   sheet.addEventListener('click', onAction);
-  sheet.addEventListener('click',e=>{
+  const handleSkillClick=e=>{
     if(state.busy||state.over||selected()?.faction!=='blue') return;
     const pick=e.target.closest('[data-ability]');
-    if(pick) {
+    if(pick&&match.combat){state.abilityDraft.selectedSkill=pick.dataset.ability;state.abilityNotice='Choose a timing slot for this skill.';refresh();}
+    else if(pick) {
       const id=pick.dataset.ability,ids=state.abilityDraft.ids;
       state.abilityDraft.ids=ids.includes(id)?ids.filter(x=>x!==id):[...ids,id];state.abilityNotice='Unapplied picks';refresh();
     }
+    const slot=e.target.closest('[data-skill-slot]'),clear=e.target.closest('[data-clear-slot]');
+    if(slot&&match.combat&&state.abilityDraft.selectedSkill){assignSkill(state.abilityDraft.selectedSkill,Number(slot.dataset.skillSlot));}
+    if(clear&&match.combat){state.abilityDraft.slots[Number(clear.dataset.clearSlot)]=null;state.abilityDraft.ids=state.abilityDraft.slots.filter(Boolean);state.abilityNotice='Timeline changed. Save to apply.';if(e.currentTarget===skillPanel)saveTypeTimeline();refresh();}
     if(e.target.closest('[data-plan-class]')) {state.abilityTargets=match.alive('blue').filter(u=>unitType(u)===unitType(selected())).map(u=>u.id);refresh();}
     if(e.target.closest('[data-plan-apply]')) {
-      const result=act({type:'abilities',unitIds:state.abilityTargets,abilityIds:state.abilityDraft.ids});
-      state.abilityNotice=result.ok?'Picks saved. They repeat when ready.':`Cannot apply: ${result.reason.replaceAll('-',' ')}. No units changed.`;refresh();
+      const result=act({type:'abilities',unitIds:state.abilityTargets,abilityIds:state.abilityDraft.ids,...(match.combat?{skillSlots:state.abilityDraft.slots}:{})});
+      state.abilityNotice=result.ok?(match.combat?'Timeline saved. Skills trigger at their assigned times.':'Picks saved. They repeat when ready.'):`Cannot apply: ${result.reason.replaceAll('-',' ')}. No units changed.`;refresh();
     }
     const facing=e.target.closest('[data-facing]');
     if(facing) {act({type:'facing',unitId:selected().id,facing:facing.dataset.facing});refresh();}
-  });
+  };
+  sheet.addEventListener('click',handleSkillClick);skillPanel.addEventListener('click',handleSkillClick);
+  function assignSkill(id,index){
+    if(state.busy||state.over||!match.combat||!state.abilityDraft||index<0||index>2)return;
+    state.abilityDraft.slots=placeSkill(state.abilityDraft.slots,id,index);state.abilityDraft.ids=state.abilityDraft.slots.filter(Boolean);state.abilityDraft.selectedSkill=null;state.abilityNotice='Timeline changed. Save to apply.';if(state.unitSkillsOpen)saveTypeTimeline();refresh();
+  }
+  for(const editor of [sheet,skillPanel]){
+  editor.addEventListener('dragstart',e=>{const skill=e.target.closest('[data-drag-skill]');if(!skill||state.busy)return;e.dataTransfer.setData('text/plain',skill.dataset.dragSkill);e.dataTransfer.effectAllowed='move';});
+  editor.addEventListener('dragover',e=>{const slot=e.target.closest('[data-drop-slot]');if(slot&&!state.busy){e.preventDefault();slot.classList.add('drag-over');e.dataTransfer.dropEffect='move';}});
+  editor.addEventListener('dragleave',e=>e.target.closest('[data-drop-slot]')?.classList.remove('drag-over'));
+  editor.addEventListener('drop',e=>{const slot=e.target.closest('[data-drop-slot]');if(!slot)return;e.preventDefault();const id=e.dataTransfer.getData('text/plain');if(selected()&&kitFor(selected()).some(a=>a.id===id))assignSkill(id,Number(slot.dataset.dropSlot));});
+  }
   sheet.addEventListener('toggle',e=>{if(e.target.matches('.plan-group')) state.abilityGroupOpen=e.target.open;},true);
   sheet.addEventListener('change',e=>{
     if(e.target.matches('[data-plan-unit]')) {
@@ -1061,7 +1247,8 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
         const card = blue().cards.hand.find((item) => item.instanceId === state.selectedCardId);
         if (card?.type === 'unit') commands.recruit();
         else if (card?.type === 'spell') commands.targetSpell();
-        else if (card?.type === 'skill') commands.equipSkill();
+        else if (card?.type === 'skill' && uiFlags.abilities) commands.equipSkill();
+        else if (card?.type === 'shard') commands.buyShard();
       } else resolveBattle();
     }
     else if (k === 'escape') commands.back();
@@ -1169,6 +1356,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
       state, feed, plates, commands, refresh, syncView, territory, units,
       match,
       get cardState() { return blue().cards; }, set cardState(v) { blue().cards = v; },
+      get shardDock() { return blue().shardDock; }, get shards() { return blue().shards; },
       get skillLoadouts() { return blue().loadouts; }, set skillLoadouts(v) { blue().loadouts = v; },
     };
   }

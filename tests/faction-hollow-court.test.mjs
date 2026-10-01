@@ -497,3 +497,7 @@ test('full matches with the Court on either side play out, log the culture and r
   for (const side of ['blue', 'red']) for (const champion of COURT_CHAMPIONS) play(side, 11, champion);
   done();
 });
+
+// Ability kits are off in the shipped game (Shards replaced them); this file exercises the kits, so it opts in.
+import { setAbilitiesEnabled } from '../src/abilities.js';
+setAbilitiesEnabled(true);

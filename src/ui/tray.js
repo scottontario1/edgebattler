@@ -31,6 +31,7 @@ export function trayHTML(m) {
       <button type="button" class="tray-toggle" data-act="toggleTray" aria-expanded="${!collapsed}" aria-controls="planning-body" aria-label="${collapsed ? 'Expand' : 'Collapse'} planning tray" title="${collapsed ? 'Expand' : 'Collapse'} planning tray"${battle ? ' disabled' : ''}>${chevron}</button>
     </div>
     <div class="planning-body" id="planning-body">
+      ${m.shardDock || ''}
       <div class="plan-row"><div class="hand-strip" aria-label="Hand cards">${m.hand || '<span class="empty-hand">Hand is empty</span>'}</div><div class="reserve-strip" aria-label="Paid reserves">${m.reserves}</div></div>
       <div class="plan-foot">${m.detail}<div class="queued-spells">${m.queued}</div><div class="upgrade-prompts">${m.upgrades}</div>${m.choice}${m.loadouts}</div>
     </div>`;

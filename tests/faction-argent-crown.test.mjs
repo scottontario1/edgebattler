@@ -482,3 +482,7 @@ test('with the culture unregistered the shipped registries and headers are uncha
   assert.equal(log.entries[0].cultures, undefined);
   assert.equal(log.entries[0].pools, undefined);
 });
+
+// Ability kits are off in the shipped game (Shards replaced them); this file exercises the kits, so it opts in.
+import { setAbilitiesEnabled } from '../src/abilities.js';
+setAbilitiesEnabled(true);

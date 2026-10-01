@@ -365,14 +365,14 @@ export function createUnits(scene, records = UNITS) {
 
     // ---- animation: each returns a promise that resolves when it finishes ----
     /** Walk along tiles [[c, r], ...] (excluding the start), hopping between them. */
-    async moveAlong(id, tiles) {
+    async moveAlong(id, tiles, animationSpeed=1) {
       const u = byId.get(id);
       const at = (c, r) => { const p = toWorld(c, r); return new THREE.Vector3(p.x, tileTop(c, r), p.z); };
       let from = u.group.position.clone();
       for (const [c, r] of tiles) {
         const to = at(c, r);
         const start = from;
-        await tween(STEP_TIME, (k) => {
+        await tween(STEP_TIME/animationSpeed, (k) => {
           u.group.position.lerpVectors(start, to, k);
           u.group.position.y += Math.sin(Math.PI * k) * 0.05;
         });
@@ -382,12 +382,12 @@ export function createUnits(scene, records = UNITS) {
       u.group.position.copy(from);
     },
     /** Lunge toward a tile and back (an attack swing). */
-    async lunge(id, [c, r]) {
+    async lunge(id, [c, r], animationSpeed=1) {
       const u = byId.get(id);
       const base = u.group.position.clone();
       const p = toWorld(c, r);
       const dir = new THREE.Vector3(p.x - base.x, 0, p.z - base.z).normalize().multiplyScalar(0.28);
-      await tween(0.26, (k) => u.group.position.copy(base).addScaledVector(dir, Math.sin(Math.PI * k)));
+      await tween(0.26/animationSpeed, (k) => u.group.position.copy(base).addScaledVector(dir, Math.sin(Math.PI * k)));
       u.group.position.copy(base);
     },
     /** Recoil shake when struck. */
@@ -398,9 +398,9 @@ export function createUnits(scene, records = UNITS) {
       u.group.position.copy(base);
     },
     /** Shrink away when defeated. */
-    async die(id) {
+    async die(id, animationSpeed=1) {
       const u = byId.get(id);
-      await tween(0.5, (k) => u.group.scale.setScalar(Math.max(0.001, 1 - k * k)));
+      await tween(0.5/animationSpeed, (k) => u.group.scale.setScalar(Math.max(0.001, 1 - k * k)));
       u.group.visible = false;
     },
     /** World position above a unit's head, for floating text. */

@@ -5,7 +5,7 @@
 import { setMap, DEFAULT_MAP } from './board.js';
 import { createMatch, setExperimentRules } from './match.js';
 import { UNITS, createRecruitUnit, createGradedRecruitUnit, CHAMPION_TEMPLATES, createChampionUnit } from './roster.js';
-import { cardFor, skillCardFor, setRarityGate } from './cards.js';
+import { cardFor, setRarityGate } from './cards.js';
 import { resetCultures } from './cultures.js';
 import { prepareFactions } from './setup.js';
 import { enableCandidates, disableCandidates } from '../experiments/candidates/index.mjs';
@@ -40,11 +40,11 @@ export function describeStep(s, def = null) {
   if (s.deploy) return `Round ${s.round}: recruit the reinforcement card and deploy it${at(s.deploy)}${tag}`;
   if (s.muster) return `Round ${s.round}: muster the reinforcement card${at(s.muster)} with ${who(s, def)}${tag}`;
   if (s.spell) return `Round ${s.round}: cast ${human(s.spell)}${s.unit ? ` on ${who({ unit: s.unit }, def)}` : at(s.c != null ? [s.c, s.r] : null)}${tag}`;
-  if (s.equip) return `Round ${s.round}: equip ${human(s.equip)} on ${human(s.unitType)}${tag}`;
+  if (s.equip) return `Round ${s.round}: apply a Garnet (Bulwark) II shard to ${human(s.unitType)}${tag}`;
   const parts = [];
   if (s.stance) parts.push(`${s.stance}${s.tile ? ` toward ${s.tile[0]},${s.tile[1]}` : ''}`);
   if (s.facing) parts.push(`face ${s.facing}`);
-  if (s.abilities) parts.push(`picks ${s.abilities.length ? s.abilities.map(human).join(' + ') : 'nothing'}`);
+  if (!parts.length) return null; // ability picks are gone (Shards replaced skills); a step with nothing else is not a hint
   return `Round ${s.round}: ${who(s, def)} ${parts.join(', ')}${tag}`;
 }
 
@@ -56,7 +56,7 @@ export const LEVELS = GROUPS.flatMap((g) => g.suites.map((suite, i) => {
     group: g.id, groupName: g.name, faction: g.faction, number: i + 1,
     title: suite.title, question: shorten(suite.question), setup: shorten(suite.setup || ''), def,
     maxRounds: def.maxRounds ?? 14,
-    hints: steps.filter((s) => s.faction === 'blue').sort((a, b) => a.round - b.round).map((s) => describeStep(s, def)),
+    hints: steps.filter((s) => s.faction === 'blue').sort((a, b) => a.round - b.round).map((s) => describeStep(s, def)).filter(Boolean),
   };
 }));
 export const LEVEL_BY_ID = Object.fromEntries(LEVELS.map((l) => [l.id, l]));
@@ -88,18 +88,23 @@ function applyStep(m, s) {
     else m.apply({ type: 'deploy', faction: f, reserveId: res.reserveId, c: s.deploy[0], r: s.deploy[1] }, actor);
     return;
   }
-  if (s.spell || s.equip) {
-    const id = s.spell ? `spell-${s.spell}` : `skill-${s.equip}`;
+  if (s.equip) {
+    // The old Barrier skill is now a Garnet (Bulwark) tier II shard (block 2): scripted grant, then a normal apply.
+    const g = m.apply({ type: 'grantShard', faction: f, shardId: 'garnet', tier: 2 }, actor);
+    if (g.ok) m.apply({ type: 'applyShard', faction: f, shardInstanceId: g.shardInstanceId, unitType: s.unitType }, actor);
+    return;
+  }
+  if (s.spell) {
+    const id = `spell-${s.spell}`;
     const card = m.sides[f].cards.hand.find((c) => c.id === id);
     if (!card) return;
-    if (s.spell) m.apply({ type: 'spell', faction: f, cardId: card.instanceId, ...(s.unit ? { unitId: s.unit } : { c: s.c, r: s.r }) }, actor);
-    else m.apply({ type: 'equip', faction: f, cardId: card.instanceId, unitType: s.unitType }, actor);
+    m.apply({ type: 'spell', faction: f, cardId: card.instanceId, ...(s.unit ? { unitId: s.unit } : { c: s.c, r: s.r }) }, actor);
     return;
   }
   for (const u of targets(m, s)) {
     if (s.stance) m.apply({ type: 'stance', faction: f, unitId: u.id, stance: s.stance, ...(s.tile ? { tile: s.tile } : {}), ...(s.targetId ? { targetId: s.targetId } : {}) }, actor);
     if (s.facing) m.apply({ type: 'facing', faction: f, unitId: u.id, facing: s.facing }, actor);
-    if (s.abilities) m.apply({ type: 'abilities', faction: f, unitId: u.id, abilityIds: s.abilities }, actor);
+    if (s.abilities && m.abilitiesEnabled) m.apply({ type: 'abilities', faction: f, unitId: u.id, abilityIds: s.abilities }, actor);
   }
 }
 
@@ -109,7 +114,7 @@ export const redScriptPolicy = (level) => (m) => {
 };
 
 /** Build the match for a level. Registers the level's faction and rules in this process (call before the scene is built). */
-export function createLevelMatch(level, { seed, log = null, meta = {} } = {}) {
+export function createLevelMatch(level, { seed, log = null, meta = {}, combat = null, abilities } = {}) {
   const def = level.def;
   const map = MAPS[def.map || 'river_ford'];
   if (!map) throw new Error(`map ${def.map} is not registered (registerMaps)`);
@@ -122,15 +127,18 @@ export function createLevelMatch(level, { seed, log = null, meta = {} } = {}) {
   setRarityGate({});
   const champions = {};
   for (const u of def.units) if (isChampionKey(u.key ?? u.cls)) champions[u.faction] = u.key ?? u.cls;
-  const m = createMatch({ ...(seed !== undefined ? { seed } : {}), maxRounds: def.maxRounds ?? 14, log, roster: def.units.map(rosterUnit),
+  const m = createMatch({ ...(seed !== undefined ? { seed } : {}), maxRounds: def.maxRounds ?? 14, log, combat, ...(abilities!==undefined?{abilities}:{}), roster: def.units.map(rosterUnit),
     ...(Object.keys(champions).length ? { champions } : {}), meta: { ...meta, source: 'level', level: level.id, scenario: def } });
   for (const u of def.units) {
     const rec = m.byId(isChampionKey(u.key ?? u.cls) ? (u.key ?? u.cls) : u.id);
     if (u.energy != null) rec.energy = Math.min(rec.maxEnergy, u.energy);
-    if (u.abilities) rec.selectedAbilities = [...u.abilities]; // free initial picks (energy is not re-validated)
+    if (u.abilities && m.abilitiesEnabled) rec.selectedAbilities = [...u.abilities]; // free initial picks (energy is not re-validated)
   }
   for (const [side, byType] of Object.entries(def.loadouts || {})) {
-    for (const [type, ids] of Object.entries(byType)) m.sides[side].loadouts[type] = ids.map((id) => ({ ...skillCardFor(id), id }));
+    for (const [type, ids] of Object.entries(byType)) {
+      // Old Barrier loadouts became Garnet (Bulwark) II shards on the same class (block 2); other skill ids no longer exist.
+      for (const id of ids) if (id === 'barrier') m.seedShard(side, type, 'garnet', 2);
+    }
   }
   for (const h of def.hand || []) {
     for (let i = 0; i < (h.n || 1); i += 1) {

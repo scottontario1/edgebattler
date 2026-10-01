@@ -561,3 +561,7 @@ test('ENGINE OBSERVATION: an Advancing melee unit stalls when the nearest enemy 
   for (let i = 0; i < 6 && !attacked; i += 1) attacked = combatOf(m.resolveRound()).some((e) => e.type === 'strike' && e.attackerId === 'r' && e.targetId === 'b');
   assert.equal(attacked || m.byId('r').c < 9 || m.byId('r').r !== 6, true, 'the Red Pikeman should path toward the bridge within six rounds');
 });
+
+// Ability kits are off in the shipped game (Shards replaced them); this file exercises the kits, so it opts in.
+import { setAbilitiesEnabled } from '../src/abilities.js';
+setAbilitiesEnabled(true);

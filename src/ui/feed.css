@@ -58,6 +58,7 @@
 .pop.miss { --o: #23262e; color: #d5dbe8; font-size: 24px; font-weight: 700; font-style: italic; }
 .pop.heal { --o: #0b4a2c; color: #a8f0cb; }
 .pop.ward { --o: #06364d; color: #7fe0ff; font-size: 24px; }
+.pop.thorns { --o: #2a1f3a; color: #d6c3ff; font-size: 22px; }
 .pop.barrier { --o: #4a3200; color: #ffd97a; font-size: 24px; }
 @keyframes pop-rise {
   0% { opacity: 0; transform: translate(-50%, -20%) scale(0.7); }

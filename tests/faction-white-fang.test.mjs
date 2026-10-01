@@ -557,3 +557,7 @@ test('Dreg fielded by the Blue side respawns as Blue Dreg (with his kit) two rou
     assert.ok(respawned, 'Dreg respawned in the seed sweep');
   });
 });
+
+// Ability kits are off in the shipped game (Shards replaced them); this file exercises the kits, so it opts in.
+import { setAbilitiesEnabled } from '../src/abilities.js';
+setAbilitiesEnabled(true);
