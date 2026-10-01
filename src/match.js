@@ -82,7 +82,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
   for (const f of FACTIONS) {
     // Blue keeps the original UI seed so existing seeded games are unchanged.
     const rng = seededRandom(f === 'blue' ? seed : (seed ^ 0x5a5a5a5a) + 0x1057b11);
-    const cards = drawOpeningHand(createCardState({ population: 0, pool: (pools?.[f] ?? activePool()).flatMap((k) => !SHARD_IDS.includes(k) ? [k] : shardTypes.includes(k) ? [k, k] : []) }), rng).state;
+    const cards = drawOpeningHand(createCardState({ population: 0, shardPool: shardTypes, pool: (pools?.[f] ?? activePool()).flatMap((k) => !SHARD_IDS.includes(k) ? [k] : shardTypes.includes(k) ? [k, k] : []) }), rng).state;
     sides[f] = { cards, rng, loadouts: {}, shardDock: [], shards: {}, shardSeq: 0, queuedSpellCards: {}, heroRespawnAt: null,
       stats: { recruited: {}, spells: {}, skills: 0, deployed: 0, withdrawn: 0, combined: 0, shardsBought: 0, shardsCombined: 0, lost: {}, killed: {}, supplySpent: 0, captures: 0, respawns: 0, blockedDraws: 0, abilities: {}, abilitySkips: {}, energySpent: 0, energyCapped: 0, cycles: {hand:0,bench:0}, supplyRefunded: 0 } };
   }

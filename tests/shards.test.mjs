@@ -276,3 +276,17 @@ test('each match draws shards from a seeded subset of 4 types, shared by both si
   assert.ok(seen.size > 4, 'different seeds pick different subsets');
   assert.equal(pickShardSubset(1, 8).length, 8);
 });
+
+test('every round deals 2-3 shard cards on top of the draw, ignoring the hand cap; unbought ones are replaced', () => {
+  for (let seed = 1; seed <= 20; seed += 1) {
+    const m = createMatch({ seed, maxRounds: 6 });
+    const sub = pickShardSubset(seed);
+    for (let round = 0; round < 5 && !m.over; round += 1) {
+      const hand = m.sides.blue.cards.hand, shards = hand.filter((c) => c.type === 'shard');
+      assert.ok(shards.length >= 2 && shards.length <= 3, `seed ${seed} round ${round}: ${shards.length} shards`);
+      assert.ok(shards.every((c) => sub.includes(c.shardId)));
+      assert.equal(hand.filter((c) => c.type !== 'shard').length <= 8, true);
+      m.resolveRound();
+    }
+  }
+});

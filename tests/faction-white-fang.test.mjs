@@ -446,7 +446,7 @@ test('a clan match plays end to end with per-side pools, recruits every clan car
     assert.equal(m.champion('blue'), 'dreg');
     assert.equal(m.champion('red'), 'brenna');
     assert.deepEqual(m.alive('blue').map((u) => u.cls).sort(), ['archer', 'cavalier', 'fangReaver', 'fangReaver', 'barbarian'].sort());
-    assert.ok(m.summary('blue').hand.every((id) => ['unit-fangReaver', 'unit-fangHunter', 'unit-cavalier', 'spell-warCry', 'spell-bloodOath', 'spell-mend', 'spell-ward', 'spell-fireburst'].includes(id)), `round-1 hand ${m.summary('blue').hand}`);
+    assert.ok(m.summary('blue').hand.filter((id) => !id.startsWith('shard-')).every((id) => ['unit-fangReaver', 'unit-fangHunter', 'unit-cavalier', 'spell-warCry', 'spell-bloodOath', 'spell-mend', 'spell-ward', 'spell-fireburst'].includes(id)), `round-1 hand ${m.summary('blue').hand}`);
     const seen = new Set();
     while (!m.over) {
       runFang(m, 'blue');

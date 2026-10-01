@@ -226,8 +226,8 @@ test('per-side pools: a culture draws only its cards, the other side keeps the s
   const m = createMatch({ seed: 11, maxRounds: 4, log: log.push, pools });
   const hand = m.summary('blue').hand;
   assert.ok(hand.length > 0);
-  assert.ok(hand.every((id) => ['unit-fxGuard', 'unit-fxBanner', 'spell-fxCry'].includes(id)), `blue hand ${hand}`);
-  assert.ok(m.summary('red').hand.every((id) => RECRUITMENT_POOL.some((k) => id.endsWith(k))), 'red keeps the shared pool');
+  assert.ok(hand.filter((id) => !id.startsWith('shard-')).every((id) => ['unit-fxGuard', 'unit-fxBanner', 'spell-fxCry'].includes(id)), `blue hand ${hand}`);
+  assert.ok(m.summary('red').hand.filter((id) => !id.startsWith('shard-')).every((id) => RECRUITMENT_POOL.some((k) => id.endsWith(k))), 'red keeps the shared pool');
   // Play blue's culture cards to the bench and through a few rounds, then replay from the header.
   const card = m.summary('blue').handState.find((c) => c.type === 'unit');
   if (card) {
