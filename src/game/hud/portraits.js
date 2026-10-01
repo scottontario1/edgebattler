@@ -36,6 +36,7 @@ export function portraitHTML(portrait, { alt = '' } = {}) {
  * @returns {import('./types.js').Portrait | null}
  */
 export function portraitFromManifest(key, factionsManifest, base = '/') {
-  const entry = factionsManifest?.units?.[key];
+  const units = factionsManifest?.units ?? factionsManifest;
+  const entry = units?.[key];
   return entry?.portrait ? { kind: 'image', src: `${base}${entry.portrait}` } : null;
 }
