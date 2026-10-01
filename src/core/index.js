@@ -17,3 +17,10 @@ export { TIMED_COMBAT_DEFAULTS, attackInterval, timedCombatConfig, resolveTimedB
 
 // Framework-independent commanders plan ordinary actions against match snapshots.
 export { COMMANDERS, passiveCommander, greedyCommander, heuristicCommander, planCommander, runCommander } from './ai/commanders.js';
+
+// Match factories and controllers own game state and return detached snapshots.
+export { createMatch } from './match/index.js';
+export { createSkirmish, createCampaign, createCampaignMatch } from './setup/match.js';
+
+// Schema-4 action logs and callback-based replay stay independent of the renderer.
+export { createLogEntry, createLogCollector, toJSONL, fromJSONL, normalizeLogValue, firstDifference, replayLog, replayJSONL } from './log/index.js';
