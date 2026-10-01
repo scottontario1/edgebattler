@@ -1,7 +1,7 @@
 // Fixed simulation time; rendering, playback speed and browser frame rate never affect dice.
 import {resolveBattleRound} from './battle.js';
 import {facingFromPath} from './abilities.js';
-export const TIMED_COMBAT_DEFAULTS = Object.freeze({duration:18,tick:0.25,skillTimes:[3,9,15],damageScale:0.35,moveInterval:0.8,attackBase:2.8,speedFactor:0.12,acceleration:0});
+export const TIMED_COMBAT_DEFAULTS = Object.freeze({duration:18,skillMode:'slots',tick:0.25,skillTimes:[3,9,15],damageScale:0.35,moveInterval:0.8,attackBase:2.8,speedFactor:0.12,acceleration:0});
 const classDelay={pikeman:0.1,archer:0,cavalier:-0.15,berserker:0.3,knight:0.3};
 export function attackInterval(u,config=TIMED_COMBAT_DEFAULTS) {
   const interval=Number.isFinite(u.attackInterval)?u.attackInterval:(config.attackBase??2.8)-(config.speedFactor??0.12)*((u.spd??4)-4)+(classDelay[u.cls]||0);

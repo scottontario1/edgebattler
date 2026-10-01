@@ -67,7 +67,7 @@ export function unitCardHTML(u, m) {
         <div class="hp"><span>HP</span><div class="bar"><i style="width:${pctOf(u.hp, u.maxHp)}%"></i></div><b>${u.hp}/${u.maxHp}</b></div>
         ${m.stats?`<div class="cls battle-mini" title="Strike damage after mitigation, including overkill">DMG ${m.stats.damageDealt} · Taken ${m.stats.damageTaken}${uiFlags.abilities?` · Abilities ${Object.values(m.stats.abilityUses).reduce((a,b)=>a+b,0)}`:''}</div>`:''}
         <div class="sts">${stanceChip(u)}${energyChip(u)}<span class="schip" title="Authoritative facing">${esc(u.facing||'north')}</span>${statusChips(u, { iconOnly: many })}</div>
-        <div class="cls">${uiFlags.abilities?(u.selectedAbilities||[]).map(id=>ABILITIES[id]?.name||id).join(' · '):''}${(uiFlags.abilities&&(u.selectedAbilities||[]).length)?'':(monsterPassives(u).map(p=>esc(p.name)).join(' · ')||'Basic actions')}${uiFlags.abilities&&selectedCost(u)>u.energy?' · Paid picks suspended':''}</div>
+        <div class="cls">${uiFlags.abilities?(u.selectedAbilities||[]).map(id=>ABILITIES[id]?.name||id).join(' · '):''}${(uiFlags.abilities&&(u.selectedAbilities||[]).length)?'':(monsterPassives(u).map(p=>esc(p.name)).join(' · ')||'Basic actions')}${uiFlags.abilities&&!u.skillSlots&&selectedCost(u)>u.energy?' · Paid picks suspended':''}</div>
         ${shardBonusLine(u)}
       </div>`;
 }

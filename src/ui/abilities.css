@@ -20,3 +20,13 @@
 @media(pointer:coarse) {.ability-editor button,.plan-group label {min-height:44px}}
 
 .plan-stats {grid-column:1/-1;margin-top:10px;font-size:12px}.plan-stats summary {cursor:pointer;min-height:32px}.sheet:has(.ability-editor) {display:block}
+
+.skill-slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:12px 0}
+.skill-slot{position:relative;min-width:0;border:1px dashed var(--gold);border-radius:5px;background:#352f22}
+.skill-slot>button:first-child{width:100%;min-height:90px;padding:8px 5px;display:flex;flex-direction:column;justify-content:center;gap:6px;border:none;background:transparent;text-align:center}
+.skill-slot small{font-size:11px;color:var(--gold)}
+.skill-slot b{font-size:12px;overflow-wrap:anywhere}
+.skill-slot .slot-clear{position:absolute;right:0;top:0;padding:0;min-height:24px;width:24px;background:#182230}
+.skill-slot.drag-over{outline:2px solid var(--gold-bright);background:#51482e}
+.ability-pick[draggable=true]{cursor:grab}
+@media(pointer:coarse){.skill-slot .slot-clear{min-height:32px;width:32px}.skill-slot>button:first-child{padding-top:34px}}

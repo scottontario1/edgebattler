@@ -1,10 +1,11 @@
+import {defaultSkillSlots,placeSkill} from './skill-slots.js';
 import {createCombatClock} from './ui/combat-clock.js';
 import {attackInterval} from './timed-battle.js';
 import { armyGroups, armyHTML, unitType } from './ui/army.js';
 import { battleReportHTML } from './ui/battlereport.js';
 import { createObjectLayer } from './objects.js';
 import {abilityEditorHTML} from './ui/abilities.js';
-import {selectedCost,FACING,flankSide} from './abilities.js';
+import {selectedCost,FACING,flankSide,kitFor} from './abilities.js';
 import './ui/abilities.css';
 import * as THREE from 'three';
 import { W, H, TERRAIN, inBounds, terrainAt, toWorld, tileTop } from './map.js';
@@ -436,10 +437,10 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     }
     if(uiFlags.abilities&&u.faction==='blue'&&!state.busy&&!state.over) {
       if(state.abilityDraft?.unitId!==u.id) {
-        state.abilityDraft={unitId:u.id,ids:[...(u.selectedAbilities||[])]};state.abilityTargets=[u.id];state.abilityNotice='';state.abilityGroupOpen=false;
+        state.abilityDraft={unitId:u.id,ids:[...(u.selectedAbilities||[])],slots:defaultSkillSlots(u),selectedSkill:null};state.abilityTargets=[u.id];state.abilityNotice='';state.abilityGroupOpen=false;
       }
       const stats=sheet.innerHTML.slice(sheet.innerHTML.indexOf('</button>')+9);
-      sheet.innerHTML=`<button class="btn close" data-act="close" aria-label="Close">×</button><div class="eyebrow">Planning</div><div class="name">${esc(u.name)}</div>`+abilityEditorHTML(u,{draft:state.abilityDraft.ids,targets:state.abilityTargets,units:match.alive(),notice:state.abilityNotice,groupOpen:state.abilityGroupOpen,lastResults:state.lastAbilityResults[u.id]||[]})+`<details class="plan-stats"><summary>Unit stats and equipment</summary>${stats}</details>`;
+      sheet.innerHTML=`<button class="btn close" data-act="close" aria-label="Close">×</button><div class="eyebrow">Planning</div><div class="name">${esc(u.name)}</div>`+abilityEditorHTML(u,{draft:state.abilityDraft.ids,slots:match.combat?state.abilityDraft.slots:null,skillTimes:match.combat?.skillTimes,selectedSkill:state.abilityDraft.selectedSkill,targets:state.abilityTargets,units:match.alive(),notice:state.abilityNotice,groupOpen:state.abilityGroupOpen,lastResults:state.lastAbilityResults[u.id]||[]})+`<details class="plan-stats"><summary>Unit stats and equipment</summary>${stats}</details>`;
     }
 
   }
@@ -629,7 +630,7 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
     if(action==='stats'){commands.battleStats();return;}
     if(!g)return;
     if(action==='next'&&g.field.length){const i=g.field.findIndex(u=>u.id===state.selectedId);select(g.field[(i+1)%g.field.length].id);}
-    if(action==='plan'&&g.field.length){select(g.field[0].id);state.sheet=true;state.abilityDraft={unitId:g.field[0].id,ids:[...(g.field[0].selectedAbilities||[])]};state.abilityTargets=g.field.map(u=>u.id);state.abilityGroupOpen=true;refresh();}
+    if(action==='plan'&&g.field.length){select(g.field[0].id);state.sheet=true;state.abilityDraft={unitId:g.field[0].id,ids:[...(g.field[0].selectedAbilities||[])],slots:defaultSkillSlots(g.field[0]),selectedSkill:null};state.abilityTargets=g.field.map(u=>u.id);state.abilityGroupOpen=true;refresh();}
     if(['advance','hold'].includes(action)){for(const u of g.field)act({type:'stance',unitId:u.id,stance:action});refresh();}
   }
   army.addEventListener('click',handleArmyClick);armyPopover.addEventListener('click',handleArmyClick);
@@ -1172,18 +1173,30 @@ export function createUI({ renderer, camera, scene, units, view, match, policies
   sheet.addEventListener('click',e=>{
     if(state.busy||state.over||selected()?.faction!=='blue') return;
     const pick=e.target.closest('[data-ability]');
-    if(pick) {
+    if(pick&&match.combat){state.abilityDraft.selectedSkill=pick.dataset.ability;state.abilityNotice='Choose a timing slot for this skill.';refresh();}
+    else if(pick) {
       const id=pick.dataset.ability,ids=state.abilityDraft.ids;
       state.abilityDraft.ids=ids.includes(id)?ids.filter(x=>x!==id):[...ids,id];state.abilityNotice='Unapplied picks';refresh();
     }
+    const slot=e.target.closest('[data-skill-slot]'),clear=e.target.closest('[data-clear-slot]');
+    if(slot&&match.combat&&state.abilityDraft.selectedSkill){assignSkill(state.abilityDraft.selectedSkill,Number(slot.dataset.skillSlot));}
+    if(clear&&match.combat){state.abilityDraft.slots[Number(clear.dataset.clearSlot)]=null;state.abilityDraft.ids=state.abilityDraft.slots.filter(Boolean);state.abilityNotice='Timeline changed. Save to apply.';refresh();}
     if(e.target.closest('[data-plan-class]')) {state.abilityTargets=match.alive('blue').filter(u=>unitType(u)===unitType(selected())).map(u=>u.id);refresh();}
     if(e.target.closest('[data-plan-apply]')) {
-      const result=act({type:'abilities',unitIds:state.abilityTargets,abilityIds:state.abilityDraft.ids});
-      state.abilityNotice=result.ok?'Picks saved. They repeat when ready.':`Cannot apply: ${result.reason.replaceAll('-',' ')}. No units changed.`;refresh();
+      const result=act({type:'abilities',unitIds:state.abilityTargets,abilityIds:state.abilityDraft.ids,...(match.combat?{skillSlots:state.abilityDraft.slots}:{})});
+      state.abilityNotice=result.ok?(match.combat?'Timeline saved. Skills trigger at their assigned times.':'Picks saved. They repeat when ready.'):`Cannot apply: ${result.reason.replaceAll('-',' ')}. No units changed.`;refresh();
     }
     const facing=e.target.closest('[data-facing]');
     if(facing) {act({type:'facing',unitId:selected().id,facing:facing.dataset.facing});refresh();}
   });
+  function assignSkill(id,index){
+    if(state.busy||state.over||!match.combat||!state.abilityDraft||index<0||index>2)return;
+    state.abilityDraft.slots=placeSkill(state.abilityDraft.slots,id,index);state.abilityDraft.ids=state.abilityDraft.slots.filter(Boolean);state.abilityDraft.selectedSkill=null;state.abilityNotice='Timeline changed. Save to apply.';refresh();
+  }
+  sheet.addEventListener('dragstart',e=>{const skill=e.target.closest('[data-drag-skill]');if(!skill||state.busy)return;e.dataTransfer.setData('text/plain',skill.dataset.dragSkill);e.dataTransfer.effectAllowed='move';});
+  sheet.addEventListener('dragover',e=>{const slot=e.target.closest('[data-drop-slot]');if(slot&&!state.busy){e.preventDefault();slot.classList.add('drag-over');e.dataTransfer.dropEffect='move';}});
+  sheet.addEventListener('dragleave',e=>e.target.closest('[data-drop-slot]')?.classList.remove('drag-over'));
+  sheet.addEventListener('drop',e=>{const slot=e.target.closest('[data-drop-slot]');if(!slot)return;e.preventDefault();const id=e.dataTransfer.getData('text/plain');if(selected()&&kitFor(selected()).some(a=>a.id===id))assignSkill(id,Number(slot.dataset.dropSlot));});
   sheet.addEventListener('toggle',e=>{if(e.target.matches('.plan-group')) state.abilityGroupOpen=e.target.open;},true);
   sheet.addEventListener('change',e=>{
     if(e.target.matches('[data-plan-unit]')) {

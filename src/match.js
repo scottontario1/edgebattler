@@ -1,3 +1,4 @@
+import {defaultSkillSlots,validateSkillSlots} from './skill-slots.js';
 import {resolveTimedBattle, timedCombatConfig} from './timed-battle.js';
 import { createBattleStats } from './battle-stats.js';
 // Match controller: the authoritative state of one game and the only code that changes it.
@@ -71,7 +72,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
   const combatConfig = combat ? timedCombatConfig(combat) : null;
   const CHAMPION = { ...DEFAULT_CHAMPION, ...(champions || {}) };
   const emit = (entry) => { if (log) log(entry); };
-  const units = clone(roster).map((u) => {const next=prepare(u);if(combatConfig&&abilitiesOn&&!next.selectedAbilities.length)next.selectedAbilities=kitFor(next).map(a=>a.id);next.energy=Math.min(next.maxEnergy,next.energy+1);return next;});
+  const units = clone(roster).map((u) => {const next=prepare(u);next.energy=Math.min(next.maxEnergy,next.energy+1);return next;});
   const territory = new Map();
   for (let r = 0; r < H; r += 1) for (let c = 0; c < W; c += 1) {
     const t = LAYOUT[r][c];
@@ -143,6 +144,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       stance: u.stance || unitCardFor(u.cls)?.defaultStance || (u.cls === 'archer' ? 'hold' : 'advance'),
       selectedAbilities: abilitiesOn ? ((u.selectedAbilities?.length||!combatConfig)?(u.selectedAbilities||[]):kitFor(u).map(a=>a.id)) : [],
     }));
+    if(combatConfig?.skillMode==='slots'&&abilitiesOn){u.skillSlots=defaultSkillSlots(u);u.selectedAbilities=u.skillSlots.filter(Boolean);}
     u.costPaid=u.costPaid??0;
     u.rarity=u.rarity??unitCardFor(u.variantId ?? u.cls)?.rarity??'common';
     u.state = 'field';
@@ -302,6 +304,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       const carried = Object.fromEntries(Object.entries(reserve).filter(([k, v]) => v != null && !['id', 'fieldId', 'state', 'faction', 'c', 'r', 'unitId'].includes(k)));
       Object.assign(unit, carried);
       Object.assign(unit, initializeAbilityState(unit));
+      if(combatConfig?.skillMode==='slots'&&abilitiesOn){unit.skillSlots=defaultSkillSlots(unit);unit.selectedAbilities=unit.skillSlots.filter(Boolean);}
       unit.id = id; unit.faction = f; unit.c = c; unit.r = r; unit.state = 'field'; unit.planningMoved = false;
       syncShards(unit);
       side.cards = { ...side.cards, reserves: side.cards.reserves.filter((u) => u.id !== reserveId) };
@@ -361,17 +364,21 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       u.stance = stance;
       return { ok: true };
     },
-    abilities({faction:f,unitId,unitIds,abilityIds}) {
+    abilities({faction:f,unitId,unitIds,abilityIds,skillSlots}) {
       if(!abilitiesOn) return fail('abilities-disabled');
       const ids=unitIds??[unitId];
       if(!Array.isArray(ids)||!ids.length||new Set(ids).size!==ids.length) return fail('invalid-group');
       const targets=ids.map(byId);
       for(const u of targets) {
         if(!u||u.hp<=0||u.faction!==f) return fail('unit-not-found');
-        const check=validateAbilitySelection(u,abilityIds);
+        const slots=skillSlots??Array.from({length:3},(_,i)=>abilityIds?.[i]||null);
+        const check=combatConfig?.skillMode==='slots'?validateSkillSlots(u,slots):validateAbilitySelection(u,abilityIds);
         if(!check.ok) return {...check,unitId:u.id};
       }
-      for(const u of targets) u.selectedAbilities=[...new Set(abilityIds)];
+      for(const u of targets){
+        if(combatConfig?.skillMode==='slots'){u.skillSlots=[...(skillSlots??Array.from({length:3},(_,i)=>abilityIds?.[i]||null))];u.selectedAbilities=u.skillSlots.filter(Boolean);}
+        else u.selectedAbilities=[...new Set(abilityIds)];
+      }
       return {ok:true,unitIds:ids};
     },
     facing({faction:f,unitId,facing}) {
@@ -589,13 +596,14 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       }
     };
     const fired=new Map();
+    let activeSkillSlot=-1;
     const activateFor=(unit,phase,ctx)=>{
       if(!combatConfig)return activatePhase(unit,phase,ctx);
       const picks=unit.selectedAbilities||[],used=fired.get(unit.id)||new Set();
       let next=unit;const events=[];
       // Timed auto-casts are individual energy checks, with at most one successful
-      // use of each selected skill per combat phase. Failed triggers retry next window.
-      for(const a of kitFor(unit).filter(a=>a.phase===phase&&picks.includes(a.id)&&!used.has(a.id))){
+      // use of each selected skill per combat phase, only in its assigned window.
+      for(const a of kitFor(unit).filter(a=>a.phase===phase&&picks.includes(a.id)&&(combatConfig.skillMode!=='slots'||unit.skillSlots?.[activeSkillSlot]===a.id)&&!used.has(a.id))){
         const act=activatePhase({...next,selectedAbilities:[a.id]},phase,{...ctx,paid:next.energy>=a.cost});
         next=act.unit;events.push(...act.events);
         if(act.events.some(e=>e.applied))used.add(a.id);
@@ -762,7 +770,8 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
     const pathForMove=(u,to,shared)=>computeRange(u,board(shared),combatConfig?u.mov:battleMovement({...u,stance:orders[u.id]?.stance}),{blockAllies:Boolean(combatConfig)}).pathTo(to.c,to.r);
     const battle = combatConfig ? resolveTimedBattle({
       units:[...snapshot,...objectSnap],orders:ordersFor,seed:(m.seed+m.round)>>>0,forecastAttack,legalMoves,pathForMove,config:combatConfig,
-      skillWindow:(records,history)=>{
+      skillWindow:(records,history,time)=>{
+        activeSkillSlot=combatConfig.skillTimes.indexOf(time);
         const start=recoveryEvents.length;
         for(const u of records)if(u.hp>0&&u.kind!=='object')u.energy=Math.min(u.maxEnergy,(u.energy||0)+1);
         const defense=defensePhase(records);
@@ -902,7 +911,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
     if (side.cards.supply < RULES.heroRespawnCost) return null;
     const tile = deploymentTiles(f).find(([c, r]) => !unitAt(c, r) && MOVE_COST.armor[terrainAt(c, r)] !== undefined);
     if (!tile) return null;
-    const hero = advanceAbilityRound(prepare({ ...createHeroRespawnData(CHAMPION[f], tile[0], tile[1]), faction: f }));
+    const hero = advanceAbilityRound(prepare({ ...createHeroRespawnData(CHAMPION[f], tile[0], tile[1]), ...(combatConfig?.skillMode==='slots'&&byId(CHAMPION[f])?.skillSlots?{skillSlots:[...byId(CHAMPION[f]).skillSlots]}:{}), faction: f }));
     m.units = m.units.filter((u) => u.id !== hero.id);
     m.units.push(hero);
     syncShards(hero);
@@ -956,7 +965,7 @@ export function createMatch({ seed = 0x415348, maxRounds = null, log = null, met
       territory: [...territory.values()].filter((o) => o === f).length,
       championDown: side.heroRespawnAt !== null,
       unitState:field.map(u=>({id:u.id,c:u.c,r:u.r,hp:u.hp,energy:u.energy,facing:u.facing,stance:u.stance,objective:u.objective,
-        selectedAbilities:u.selectedAbilities,cooldowns:u.cooldowns,energyGainNextTurn:u.energyGainNextTurn})),
+        selectedAbilities:u.selectedAbilities,...(combatConfig?.skillMode==='slots'?{skillSlots:u.skillSlots}:{}),cooldowns:u.cooldowns,energyGainNextTurn:u.energyGainNextTurn})),
       reserveState:clone(side.cards.reserves),
       shardDock:clone(side.shardDock), shards:clone(side.shards),
     };
