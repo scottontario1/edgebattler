@@ -13,8 +13,9 @@ test('every demo map id exists in the content', () => {
   for (const id of DEMO_MAP_IDS) assert.ok(MAPS[id], id);
 });
 
-test('defaults to the River Ford demo', () => {
-  assert.deepEqual(parseLaunch(''), { demo: 'world', mapId: DEFAULT_MAP_ID, warnings: [] });
+test('defaults to the start menu (no demo) on River Ford', () => {
+  assert.deepEqual(parseLaunch(''), { demo: null, mapId: DEFAULT_MAP_ID, warnings: [] });
+  assert.equal(parseLaunch('demo=world').demo, 'world');
 });
 
 test('accepts file-style spellings', () => {
