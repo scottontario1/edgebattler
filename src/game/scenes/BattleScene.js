@@ -56,6 +56,7 @@ export class BattleScene extends Phaser.Scene {
 
     if (this.launch.demo === 'world') installWorldDemo(this, this.launch);
     else if (this.launch.board) this.showWorld(this.launch);
+    this.game.events.emit('battle:ready', this);
   }
 
   // ---- API for the integration layer -------------------------------------------------------------

@@ -119,7 +119,7 @@ export function buildGameViewModel(match, ui = {}) {
 
   const campaign = state.campaign;
   const stage = campaign?.stages[campaign.stage];
-  const battle = state.phase === 'battle';
+  const battle = state.phase === 'battle' || ui.playback === true;
   const over = state.over;
   const report = summaryReport(match, state);
   const outcome = state.winner === 'blue' ? 'victory' : state.winner === 'red' ? 'defeat' : 'draw';

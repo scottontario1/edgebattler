@@ -12,14 +12,11 @@ export class GameApp {
     this.ai = 'heuristic';
     this.ui = { selectedType: null, selectedCard: null, selectedReserve: null, showStats: false };
     this.unsubscribe = hud.onIntent((intent) => this.handle(intent));
-    game.events.once('ready', () => this.#onReady());
-    if (game.isBooted) this.#onReady();
-  }
-
-  #onReady() {
-    this.scene = this.game.scene.getScene('Battle');
-    this.#bindWorld();
-    if (this.launch.demo !== 'world') this.showMenu();
+    game.events.once('battle:ready', (scene) => {
+      this.scene = scene;
+      this.#bindWorld();
+      if (this.launch.demo !== 'world') this.showMenu();
+    });
   }
 
   showMenu(error = '') {
@@ -123,15 +120,21 @@ export class GameApp {
 
   async resolveRound() {
     const state = this.match?.getState();
-    if (!state || state.over || state.phase !== 'planning') return;
+    if (this.playing || !state || state.over || state.phase !== 'planning') return;
     if (!state.campaign) this.#runAiPlanning();
+    this.playing = true;
+    this.ui.playback = true;
     this.#render();
-
-    const result = this.match.resolveRound();
-    const batches = Array.isArray(result) ? result : result?.batches ?? [];
-    await this.#playBatches(batches);
-    this.#syncWorld();
-    this.#render();
+    try {
+      const result = this.match.resolveRound();
+      const batches = Array.isArray(result) ? result : result?.batches ?? [];
+      await this.#playBatches(batches);
+    } finally {
+      this.playing = false;
+      this.ui.playback = false;
+      this.#syncWorld();
+      this.#render();
+    }
   }
 
   #runAiPlanning() {
